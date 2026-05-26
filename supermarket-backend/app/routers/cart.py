@@ -1,18 +1,30 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from ..core.database import get_db
-from ..schemas.cart import CartResponse, CartItemBase
+from fastapi import APIRouter
 
 router = APIRouter()
-
-# For now, using in-memory cart (we can improve later with database)
-fake_cart = []
+cart_store = []
 
 @router.get("/")
 def get_cart():
-    return {"items": fake_cart, "total": sum(item.get("price",0) * item.get("quantity",1) for item in fake_cart)}
+    total = sum(item.get("Unit_Price", 0) * item.get("qty", 1) for item in cart_store)
+    return {"items": cart_store, "total": total}
 
-@router.post("/add")
-def add_to_cart(item: CartItemBase):
-    fake_cart.append(item.dict())
-    return {"message": "Added to cart", "cart": fake_cart}
+@router.post("/")
+def add_to_cart(item: dict):
+    existing = next((i for i in cart_store if i.get("Product_ID") == item.get("Product_ID")), None)
+    if existing:
+        existing["qty"] = existing.get("qty", 1) + 1
+    else:
+        item["qty"] = 1
+        cart_store.append(item)
+    return {"message": "Added to cart", "cart": cart_store}
+
+@router.delete("/{product_id}")
+def remove_from_cart(product_id: int):
+    global cart_store
+    cart_store = [i for i in cart_store if i.get("Product_ID") != product_id]
+    return {"message": "Removed", "cart": cart_store}
+
+@router.delete("/")
+def clear_cart():
+    cart_store.clear()
+    return {"message": "Cart cleared"}

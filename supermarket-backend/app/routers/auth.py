@@ -2,18 +2,89 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..core.database import get_db
 from ..models.user import User as UserModel
-from ..schemas.user import UserCreate, User
+from ..core.config import settings
+import bcrypt
+import jwt
+import datetime
 
 router = APIRouter()
 
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode(), hashed.encode())
+
+def create_token(user_id: int, email: str) -> str:
+    payload = {
+        "sub": str(user_id),
+        "email": email,
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    }
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+def decode_token(token: str) -> dict:
+    try:
+        return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
 @router.post("/register")
-def register(user: UserCreate, db: Session = Depends(get_db)):
-    existing_user = db.query(UserModel).filter(UserModel.email == user.email).first()
-    if existing_user:
+def register(data: dict, db: Session = Depends(get_db)):
+    if db.query(UserModel).filter(UserModel.email == data["email"]).first():
         raise HTTPException(status_code=400, detail="Email already registered")
-    
-    new_user = UserModel(**user.dict())
-    db.add(new_user)
+    user = UserModel(
+        full_name=data.get("name", ""),
+        email=data["email"],
+        password=hash_password(data["password"]),
+        phone=data.get("phone", "")
+    )
+    db.add(user)
     db.commit()
-    db.refresh(new_user)
-    return {"message": "User registered successfully", "user": new_user}
+    db.refresh(user)
+    token = create_token(user.id, user.email)
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "name": user.full_name,
+            "email": user.email,
+            "phone": user.phone
+        }
+    }
+
+@router.post("/login")
+def login(data: dict, db: Session = Depends(get_db)):
+    user = db.query(UserModel).filter(UserModel.email == data["email"]).first()
+    if not user or not verify_password(data["password"], user.password):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    token = create_token(user.id, user.email)
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "name": user.full_name,
+            "email": user.email,
+            "phone": user.phone
+        }
+    }
+
+@router.get("/me")
+def get_me(authorization: str = None, db: Session = Depends(get_db)):
+    from fastapi import Header
+    raise HTTPException(status_code=401, detail="Use Authorization header")
+
+@router.post("/me")
+def get_me_post(data: dict, db: Session = Depends(get_db)):
+    payload = decode_token(data.get("token", ""))
+    user = db.query(UserModel).filter(UserModel.id == int(payload["sub"])).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "id": user.id,
+        "name": user.full_name,
+        "email": user.email,
+        "phone": user.phone
+    }
