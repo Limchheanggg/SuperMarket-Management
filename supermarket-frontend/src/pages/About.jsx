@@ -134,7 +134,7 @@ export default function About() {
             ["CL", "Chhay Lyveng", "Lead Developer", "e20230135"],
             ["KL", "Khun Limchheang", "Backend Engineer", "e20230393"],
             ["HH", "Horn Hengveasna", "Database Designer", "e20230754"],
-            ["LV", "Lay Vathana", "Supervisor", "Professor"],
+            ["KV", "KHEAN Visal", "Supervisor", "Professor"],
           ].map(([init, name, role, id]) => (
             <div
               key={name}
