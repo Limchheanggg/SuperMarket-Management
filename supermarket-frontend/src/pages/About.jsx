@@ -131,8 +131,13 @@ export default function About() {
           }}
         >
           {[
-            ["CL", "Chhay Lyveng", "Lead Developer", "e20230135"],
-            ["KL", "Khun Limchheang", "Backend Engineer", "e20230393"],
+            ["CL", "Chhay Lyveng", "Database Designer", "e20230135"],
+            [
+              "KL",
+              "Khun Limchheang",
+              "Backend and Frontend Engineer",
+              "e20230393",
+            ],
             ["HH", "Horn Hengveasna", "Database Designer", "e20230754"],
             ["KV", "KHEAN Visal", "Supervisor", "Professor"],
           ].map(([init, name, role, id]) => (
