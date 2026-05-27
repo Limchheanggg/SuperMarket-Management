@@ -13,18 +13,18 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [sumRes, dayRes, invRes, salesRes] = await Promise.all([
+        const [sumRes, dayRes, invRes, salesRes] = await Promise.allSettled([
           API.get("/api/sales/reports/summary"),
           API.get("/api/sales/reports/daily"),
           API.get("/api/inventory/"),
           API.get("/api/sales/"),
         ]);
-        setSummary(sumRes.data);
-        setDaily(dayRes.data);
-        setInventory(invRes.data);
-        setRecentSales(salesRes.data.slice(0, 5));
-      } catch (err) {
-        setError(err.response?.data?.detail || "Failed to load dashboard data");
+        if (sumRes.status === "fulfilled") setSummary(sumRes.value.data);
+        if (dayRes.status === "fulfilled") setDaily(dayRes.value.data);
+        if (invRes.status === "fulfilled") setInventory(invRes.value.data);
+        if (salesRes.status === "fulfilled")
+          setRecentSales(salesRes.value.data.slice(0, 5));
+      } catch {
       } finally {
         setLoading(false);
       }
