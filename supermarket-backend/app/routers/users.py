@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..core.database import get_db
+from ..core.dependencies import require_admin
 from ..models.user import User as UserModel
 from ..models.customer import Customer as CustomerModel
 import bcrypt
@@ -12,12 +13,12 @@ def hash_password(password: str) -> str:
 
 # ── Employees ──────────────────────────────────────────────
 @router.get("/employees")
-def get_employees(db: Session = Depends(get_db)):
+def get_employees(db: Session = Depends(get_db), _=Depends(require_admin)):
     users = db.query(UserModel).filter(UserModel.role != "customer").all()
     return [{"id": u.id, "full_name": u.full_name, "email": u.email, "phone": u.phone, "role": u.role} for u in users]
 
 @router.post("/employees")
-def create_employee(data: dict, db: Session = Depends(get_db)):
+def create_employee(data: dict, db: Session = Depends(get_db), _=Depends(require_admin)):
     if db.query(UserModel).filter(UserModel.email == data["email"]).first():
         raise HTTPException(status_code=400, detail="Email already registered")
     user = UserModel(
@@ -33,7 +34,7 @@ def create_employee(data: dict, db: Session = Depends(get_db)):
     return {"id": user.id, "full_name": user.full_name, "email": user.email, "role": user.role}
 
 @router.put("/employees/{user_id}")
-def update_employee(user_id: int, data: dict, db: Session = Depends(get_db)):
+def update_employee(user_id: int, data: dict, db: Session = Depends(get_db), _=Depends(require_admin)):
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -45,7 +46,7 @@ def update_employee(user_id: int, data: dict, db: Session = Depends(get_db)):
     return {"id": user.id, "full_name": user.full_name, "email": user.email, "role": user.role}
 
 @router.delete("/employees/{user_id}")
-def delete_employee(user_id: int, db: Session = Depends(get_db)):
+def delete_employee(user_id: int, db: Session = Depends(get_db), _=Depends(require_admin)):
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -55,12 +56,11 @@ def delete_employee(user_id: int, db: Session = Depends(get_db)):
 
 # ── Customers ──────────────────────────────────────────────
 @router.get("/customers")
-def get_customers(db: Session = Depends(get_db)):
-    customers = db.query(CustomerModel).all()
-    return customers
+def get_customers(db: Session = Depends(get_db), _=Depends(require_admin)):
+    return db.query(CustomerModel).all()
 
 @router.post("/customers")
-def create_customer(data: dict, db: Session = Depends(get_db)):
+def create_customer(data: dict, db: Session = Depends(get_db), _=Depends(require_admin)):
     customer = CustomerModel(
         First_Name=data.get("First_Name", ""),
         Last_Name=data.get("Last_Name", ""),
@@ -75,7 +75,7 @@ def create_customer(data: dict, db: Session = Depends(get_db)):
     return customer
 
 @router.put("/customers/{customer_id}")
-def update_customer(customer_id: int, data: dict, db: Session = Depends(get_db)):
+def update_customer(customer_id: int, data: dict, db: Session = Depends(get_db), _=Depends(require_admin)):
     customer = db.query(CustomerModel).filter(CustomerModel.Customer_ID == customer_id).first()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
@@ -86,7 +86,7 @@ def update_customer(customer_id: int, data: dict, db: Session = Depends(get_db))
     return customer
 
 @router.delete("/customers/{customer_id}")
-def delete_customer(customer_id: int, db: Session = Depends(get_db)):
+def delete_customer(customer_id: int, db: Session = Depends(get_db), _=Depends(require_admin)):
     customer = db.query(CustomerModel).filter(CustomerModel.Customer_ID == customer_id).first()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")

@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..core.database import get_db
+from ..core.dependencies import require_admin, get_current_user
 from ..models.sales import Membership
 from ..models.customer import Customer as CustomerModel
+from ..models.user import User as UserModel
 
 router = APIRouter()
 
@@ -13,7 +15,7 @@ def get_tier(points: int) -> str:
     return "Bronze"
 
 @router.get("/")
-def get_all_memberships(db: Session = Depends(get_db)):
+def get_all_memberships(db: Session = Depends(get_db), _=Depends(require_admin)):
     memberships = db.query(Membership).all()
     result = []
     for m in memberships:
@@ -30,16 +32,13 @@ def get_all_memberships(db: Session = Depends(get_db)):
     return result
 
 @router.post("/register")
-def register_membership(data: dict, db: Session = Depends(get_db)):
+def register_membership(data: dict, db: Session = Depends(get_db), _=Depends(require_admin)):
     customer_id = data.get("customer_id")
     customer = db.query(CustomerModel).filter(CustomerModel.Customer_ID == customer_id).first()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
-
-    existing = db.query(Membership).filter(Membership.Customer_ID == customer_id).first()
-    if existing:
+    if db.query(Membership).filter(Membership.Customer_ID == customer_id).first():
         raise HTTPException(status_code=400, detail="Customer already has membership")
-
     membership = Membership(Customer_ID=customer_id, Tier="Bronze", Points=0, Total_Spent=0)
     db.add(membership)
     db.commit()
@@ -50,15 +49,13 @@ def register_membership(data: dict, db: Session = Depends(get_db)):
 def redeem_points(data: dict, db: Session = Depends(get_db)):
     customer_id = data.get("customer_id")
     points_to_redeem = data.get("points", 0)
-
     membership = db.query(Membership).filter(Membership.Customer_ID == customer_id).first()
     if not membership:
         raise HTTPException(status_code=404, detail="Membership not found")
     if membership.Points < points_to_redeem:
         raise HTTPException(status_code=400, detail="Insufficient points")
-
     membership.Points -= points_to_redeem
-    discount_value = round(points_to_redeem * 0.01, 2)  # 1 point = $0.01
+    discount_value = round(points_to_redeem * 0.01, 2)
     db.commit()
     return {"message": "Points redeemed", "discount": discount_value, "remaining_points": membership.Points}
 
@@ -77,7 +74,7 @@ def get_customer_membership(customer_id: int, db: Session = Depends(get_db)):
     }
 
 @router.put("/add-points/{customer_id}")
-def add_points(customer_id: int, data: dict, db: Session = Depends(get_db)):
+def add_points(customer_id: int, data: dict, db: Session = Depends(get_db), _=Depends(require_admin)):
     membership = db.query(Membership).filter(Membership.Customer_ID == customer_id).first()
     if not membership:
         raise HTTPException(status_code=404, detail="Membership not found")

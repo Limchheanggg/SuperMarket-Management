@@ -1,14 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..core.database import get_db
+from ..core.dependencies import require_staff
 from ..models.inventory import Inventory, StockMovement
 from ..models.product import Product as ProductModel
 from ..models.category import Category as CategoryModel
+from ..models.user import User as UserModel
 
 router = APIRouter()
 
 @router.get("/")
-def get_inventory(db: Session = Depends(get_db)):
+def get_inventory(db: Session = Depends(get_db), _=Depends(require_staff)):
     products = db.query(ProductModel).all()
     result = []
     for p in products:
@@ -30,33 +32,37 @@ def get_inventory(db: Session = Depends(get_db)):
         })
     return result
 
+@router.get("/movements/{product_id}")
+def get_movements(product_id: int, db: Session = Depends(get_db), _=Depends(require_staff)):
+    return db.query(StockMovement).filter(
+        StockMovement.Product_ID == product_id
+    ).order_by(StockMovement.Created_At.desc()).limit(20).all()
+
 @router.get("/{product_id}")
-def get_product_stock(product_id: int, db: Session = Depends(get_db)):
+def get_product_stock(product_id: int, db: Session = Depends(get_db), _=Depends(require_staff)):
     inv = db.query(Inventory).filter(Inventory.Product_ID == product_id).first()
     if not inv:
         raise HTTPException(status_code=404, detail="Inventory record not found")
     return inv
 
 @router.post("/restock")
-def restock_product(data: dict, db: Session = Depends(get_db)):
+def restock_product(data: dict, db: Session = Depends(get_db), _=Depends(require_staff)):
     product_id = data.get("product_id")
     quantity = data.get("quantity", 0)
     note = data.get("note", "Manual restock")
-
     inv = db.query(Inventory).filter(Inventory.Product_ID == product_id).first()
     if inv:
         inv.Quantity += quantity
     else:
         inv = Inventory(Product_ID=product_id, Quantity=quantity)
         db.add(inv)
-
     movement = StockMovement(Product_ID=product_id, Movement_Type="in", Quantity=quantity, Note=note)
     db.add(movement)
     db.commit()
     return {"message": "Stock updated", "new_quantity": inv.Quantity}
 
 @router.put("/{product_id}")
-def update_stock(product_id: int, data: dict, db: Session = Depends(get_db)):
+def update_stock(product_id: int, data: dict, db: Session = Depends(get_db), _=Depends(require_staff)):
     inv = db.query(Inventory).filter(Inventory.Product_ID == product_id).first()
     new_qty = data.get("quantity", 0)
     if inv:
@@ -66,7 +72,6 @@ def update_stock(product_id: int, data: dict, db: Session = Depends(get_db)):
         old_qty = 0
         inv = Inventory(Product_ID=product_id, Quantity=new_qty)
         db.add(inv)
-
     movement = StockMovement(
         Product_ID=product_id,
         Movement_Type="adjustment",
@@ -76,7 +81,3 @@ def update_stock(product_id: int, data: dict, db: Session = Depends(get_db)):
     db.add(movement)
     db.commit()
     return {"message": "Stock adjusted", "new_quantity": new_qty}
-
-@router.get("/movements/{product_id}")
-def get_movements(product_id: int, db: Session = Depends(get_db)):
-    return db.query(StockMovement).filter(StockMovement.Product_ID == product_id).order_by(StockMovement.Created_At.desc()).limit(20).all()
