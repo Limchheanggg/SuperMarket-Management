@@ -25,6 +25,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminSales from "./pages/admin/AdminSales";
 import AdminMembership from "./pages/admin/AdminMembership";
 import AdminReports from "./pages/admin/AdminReports";
+import AdminRoute from "./components/common/AdminRoute";
 
 export default function App() {
   return (
@@ -50,7 +51,8 @@ export default function App() {
       </Route>
 
       {/* Admin Routes */}
-      <Route path="/admin" element={<AdminLayout />}>
+      <Route element={<AdminRoute />}>
+        <Route path="/admin" element={<AdminLayout />}></Route>
         <Route index element={<AdminDashboard />} />
         <Route path="inventory" element={<AdminInventory />} />
         <Route path="users" element={<AdminUsers />} />
