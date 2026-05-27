@@ -46,3 +46,4 @@ export default function Dashboard() {
     </div>
   )
 }
+// Admin panel shortcut is handled in Navbar

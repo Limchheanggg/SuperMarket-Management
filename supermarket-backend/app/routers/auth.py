@@ -4,7 +4,7 @@ from ..core.database import get_db
 from ..models.user import User as UserModel
 from ..core.config import settings
 import bcrypt
-import PyJWT as jwt
+import jwt
 import datetime
 
 router = APIRouter()
