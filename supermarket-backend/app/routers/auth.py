@@ -4,7 +4,7 @@ from ..core.database import get_db
 from ..models.user import User as UserModel
 from ..core.config import settings
 import bcrypt
-import jwt
+import PyJWT as jwt
 import datetime
 
 router = APIRouter()
@@ -15,11 +15,12 @@ def hash_password(password: str) -> str:
 def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
 
-def create_token(user_id: int, email: str) -> str:
+def create_token(user_id: int, email: str, role: str = "customer") -> str:
     payload = {
         "sub": str(user_id),
         "email": email,
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        "role": role,
+        "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
@@ -42,7 +43,7 @@ def register(data: dict, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
-    token = create_token(user.id, user.email)
+    token = create_token(user.id, user.email, user.role)
     return {
         "access_token": token,
         "token_type": "bearer",
@@ -50,7 +51,8 @@ def register(data: dict, db: Session = Depends(get_db)):
             "id": user.id,
             "name": user.full_name,
             "email": user.email,
-            "phone": user.phone
+            "phone": user.phone,
+            "role":user.role
         }
     }
 
@@ -59,7 +61,7 @@ def login(data: dict, db: Session = Depends(get_db)):
     user = db.query(UserModel).filter(UserModel.email == data["email"]).first()
     if not user or not verify_password(data["password"], user.password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
-    token = create_token(user.id, user.email)
+    token = create_token(user.id, user.email,user.role)
     return {
         "access_token": token,
         "token_type": "bearer",
@@ -67,7 +69,8 @@ def login(data: dict, db: Session = Depends(get_db)):
             "id": user.id,
             "name": user.full_name,
             "email": user.email,
-            "phone": user.phone
+            "phone": user.phone,
+            "role": user.role
         }
     }
 
