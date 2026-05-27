@@ -9,3 +9,4 @@ class User(Base):
     email = Column(String(100), unique=True, index=True)
     password = Column(String(255))
     phone = Column(String(20))
+    role = Column(String(20), default="customer")  # customer, admin, manager, cashier, employee
