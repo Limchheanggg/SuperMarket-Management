@@ -15,12 +15,15 @@ API.interceptors.request.use((config) => {
 export const login = (data) => API.post("/api/auth/login", data);
 export const register = (data) => API.post("/api/auth/register", data);
 export const getMe = () => API.get("/api/auth/me");
+export const updateMe = (data) => API.put("/api/auth/me", data);
 
 // Products
 export const getProducts = (params) => API.get("/api/products", { params });
 export const getProduct = (id) => API.get(`/api/products/${id}`);
-export const getCategories = () => API.get("/api/categories");
+export const getCategories = () => API.get("/api/products/categories");
 export const createProduct = (data) => API.post("/api/products/", data);
+export const updateProduct = (id, data) => API.put(`/api/products/${id}`, data);
+export const deleteProduct = (id) => API.delete(`/api/products/${id}`);
 
 // Cart
 export const getCart = () => API.get("/api/cart");
