@@ -184,19 +184,19 @@ SuperMarket-Management/
     <th>Role</th>
   </tr>
   <tr>
-    <td><b>CHHAY Lyveng</b></td>
-    <td>Frontend Development</td>
+    <td><b>KHEAN Visal</b></td>
+    <td>Supervisor</td>
   </tr>
   <tr>
     <td><b>KHUN Limchheang</b></td>
     <td>Core System Development</td>
   </tr>
   <tr>
-    <td><b>HORN Hengveasna</b></td>
-    <td>Database Design</td>
+    <td><b>CHHAY Lyveng</b></td>
+    <td>Frontend Development</td>
   </tr>
   <tr>
-    <td><b>KHEAN Visal</b></td>
-    <td>Supervisor</td>
+    <td><b>HORN Hengveasna</b></td>
+    <td>Database Design</td>
   </tr>
 </table>
