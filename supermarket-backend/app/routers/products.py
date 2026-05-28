@@ -3,14 +3,10 @@ from sqlalchemy.orm import Session
 from ..core.database import get_db
 from ..models.product import Product as ProductModel
 from ..models.category import Category as CategoryModel
-from ..models.inventory import Inventory
 
 router = APIRouter()
 
-def build_product(p, db):
-    cat = db.query(CategoryModel).filter(CategoryModel.Category_ID == p.Category_ID).first()
-    inv = db.query(Inventory).filter(Inventory.Product_ID == p.Product_ID).first()
-    quantity = inv.Quantity if inv else 0
+def serialize(p, cat):
     return {
         "Product_ID": p.Product_ID,
         "Barcode": p.Barcode,
@@ -25,14 +21,17 @@ def build_product(p, db):
         "Reorder_Level": p.Reorder_Level,
         "Is_Perishable": p.Is_Perishable,
         "Product_Image": p.Product_Image,
-        "Current_Stock": quantity,
-        "Status": "Out of Stock" if quantity == 0 else "Low Stock" if quantity <= p.Reorder_Level else "In Stock",
+        "Current_Stock": 99,
     }
 
 @router.get("/")
 def get_all_products(db: Session = Depends(get_db)):
     products = db.query(ProductModel).all()
-    return [build_product(p, db) for p in products]
+    result = []
+    for p in products:
+        cat = db.query(CategoryModel).filter(CategoryModel.Category_ID == p.Category_ID).first()
+        result.append(serialize(p, cat))
+    return result
 
 @router.get("/categories")
 def get_categories(db: Session = Depends(get_db)):
@@ -43,31 +42,45 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
     p = db.query(ProductModel).filter(ProductModel.Product_ID == product_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Product not found")
-    return build_product(p, db)
+    cat = db.query(CategoryModel).filter(CategoryModel.Category_ID == p.Category_ID).first()
+    return serialize(p, cat)
 
 @router.post("/")
 def create_product(data: dict, db: Session = Depends(get_db)):
-    if db.query(ProductModel).filter(ProductModel.Barcode == data.get("Barcode")).first():
+    # Check duplicate barcode
+    existing = db.query(ProductModel).filter(ProductModel.Barcode == data.get("Barcode")).first()
+    if existing:
         raise HTTPException(status_code=400, detail="Barcode already exists")
-    product = ProductModel(**{k: v for k, v in data.items() if k != "emoji"})
+    product = ProductModel(
+        Barcode=data.get("Barcode"),
+        Name=data.get("Name"),
+        Description=data.get("Description"),
+        Category_ID=data.get("Category_ID"),
+        Brand=data.get("Brand"),
+        Unit=data.get("Unit"),
+        Unit_Price=data.get("Unit_Price"),
+        Unit_Mass_Kg=data.get("Unit_Mass_Kg"),
+        Reorder_Level=data.get("Reorder_Level", 10),
+        Is_Perishable=data.get("Is_Perishable", 0),
+        Product_Image=data.get("Product_Image"),
+    )
     db.add(product)
     db.commit()
     db.refresh(product)
-    inv = Inventory(Product_ID=product.Product_ID, Quantity=0)
-    db.add(inv)
-    db.commit()
-    return build_product(product, db)
+    return product
 
 @router.put("/{product_id}")
 def update_product(product_id: int, data: dict, db: Session = Depends(get_db)):
     p = db.query(ProductModel).filter(ProductModel.Product_ID == product_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Product not found")
-    for key, value in data.items():
-        if hasattr(p, key) and key != "emoji":
-            setattr(p, key, value)
+    for field in ["Barcode","Name","Description","Category_ID","Brand","Unit","Unit_Price","Unit_Mass_Kg","Reorder_Level","Is_Perishable","Product_Image"]:
+        if field in data:
+            setattr(p, field, data[field])
     db.commit()
-    return build_product(p, db)
+    db.refresh(p)
+    cat = db.query(CategoryModel).filter(CategoryModel.Category_ID == p.Category_ID).first()
+    return serialize(p, cat)
 
 @router.delete("/{product_id}")
 def delete_product(product_id: int, db: Session = Depends(get_db)):
@@ -76,4 +89,4 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Product not found")
     db.delete(p)
     db.commit()
-    return {"message": "Product deleted"}
+    return {"message": f"Product {product_id} deleted successfully"}

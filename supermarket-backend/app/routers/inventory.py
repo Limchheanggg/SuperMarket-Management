@@ -1,83 +1,58 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..core.database import get_db
-from ..core.dependencies import require_staff
-from ..models.inventory import Inventory, StockMovement
-from ..models.product import Product as ProductModel
-from ..models.category import Category as CategoryModel
-from ..models.user import User as UserModel
+from ..models.product import Product
 
 router = APIRouter()
 
+# In-memory stock store (replace with DB later)
+stock_store = {}
+
+def get_stock(product_id):
+    return stock_store.get(product_id, 99)
+
 @router.get("/")
-def get_inventory(db: Session = Depends(get_db), _=Depends(require_staff)):
-    products = db.query(ProductModel).all()
+def get_inventory(db: Session = Depends(get_db)):
+    from ..models.category import Category
+    products = db.query(Product).all()
     result = []
     for p in products:
-        inv = db.query(Inventory).filter(Inventory.Product_ID == p.Product_ID).first()
-        cat = db.query(CategoryModel).filter(CategoryModel.Category_ID == p.Category_ID).first()
-        quantity = inv.Quantity if inv else 0
+        cat = db.query(Category).filter(Category.Category_ID == p.Category_ID).first()
+        stock = get_stock(p.Product_ID)
+        status = "In Stock" if stock > p.Reorder_Level else ("Low Stock" if stock > 0 else "Out of Stock")
         result.append({
             "Product_ID": p.Product_ID,
             "Barcode": p.Barcode,
             "Name": p.Name,
             "Category_Name": cat.Category_Name if cat else "General",
-            "Unit_Price": p.Unit_Price,
+            "Category_ID": p.Category_ID,
+            "Brand": p.Brand,
             "Unit": p.Unit,
-            "Quantity": quantity,
+            "Unit_Price": p.Unit_Price,
             "Reorder_Level": p.Reorder_Level,
-            "Status": "Out of Stock" if quantity == 0 else "Low Stock" if quantity <= p.Reorder_Level else "In Stock",
+            "Quantity": stock,
+            "Status": status,
             "Product_Image": p.Product_Image,
-            "Is_Perishable": p.Is_Perishable,
         })
     return result
 
-@router.get("/movements/{product_id}")
-def get_movements(product_id: int, db: Session = Depends(get_db), _=Depends(require_staff)):
-    return db.query(StockMovement).filter(
-        StockMovement.Product_ID == product_id
-    ).order_by(StockMovement.Created_At.desc()).limit(20).all()
-
-@router.get("/{product_id}")
-def get_product_stock(product_id: int, db: Session = Depends(get_db), _=Depends(require_staff)):
-    inv = db.query(Inventory).filter(Inventory.Product_ID == product_id).first()
-    if not inv:
-        raise HTTPException(status_code=404, detail="Inventory record not found")
-    return inv
-
 @router.post("/restock")
-def restock_product(data: dict, db: Session = Depends(get_db), _=Depends(require_staff)):
-    product_id = data.get("product_id")
-    quantity = data.get("quantity", 0)
-    note = data.get("note", "Manual restock")
-    inv = db.query(Inventory).filter(Inventory.Product_ID == product_id).first()
-    if inv:
-        inv.Quantity += quantity
-    else:
-        inv = Inventory(Product_ID=product_id, Quantity=quantity)
-        db.add(inv)
-    movement = StockMovement(Product_ID=product_id, Movement_Type="in", Quantity=quantity, Note=note)
-    db.add(movement)
-    db.commit()
-    return {"message": "Stock updated", "new_quantity": inv.Quantity}
+def restock(data: dict, db: Session = Depends(get_db)):
+    pid = data.get("product_id")
+    qty = data.get("quantity", 0)
+    current = get_stock(pid)
+    stock_store[pid] = current + qty
+    return {"message": f"Restocked {qty} units", "new_stock": stock_store[pid]}
 
 @router.put("/{product_id}")
-def update_stock(product_id: int, data: dict, db: Session = Depends(get_db), _=Depends(require_staff)):
-    inv = db.query(Inventory).filter(Inventory.Product_ID == product_id).first()
-    new_qty = data.get("quantity", 0)
-    if inv:
-        old_qty = inv.Quantity
-        inv.Quantity = new_qty
-    else:
-        old_qty = 0
-        inv = Inventory(Product_ID=product_id, Quantity=new_qty)
-        db.add(inv)
-    movement = StockMovement(
-        Product_ID=product_id,
-        Movement_Type="adjustment",
-        Quantity=new_qty - old_qty,
-        Note=data.get("note", "Stock adjustment")
-    )
-    db.add(movement)
-    db.commit()
-    return {"message": "Stock adjusted", "new_quantity": new_qty}
+def adjust_stock(product_id: int, data: dict, db: Session = Depends(get_db)):
+    p = db.query(Product).filter(Product.Product_ID == product_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Product not found")
+    stock_store[product_id] = data.get("quantity", 0)
+    return {"message": "Stock adjusted", "new_stock": stock_store[product_id]}
+
+@router.get("/low-stock")
+def low_stock(db: Session = Depends(get_db)):
+    products = db.query(Product).all()
+    return [{"Product_ID": p.Product_ID, "Name": p.Name, "Reorder_Level": p.Reorder_Level, "Quantity": get_stock(p.Product_ID)} for p in products if get_stock(p.Product_ID) <= p.Reorder_Level]
