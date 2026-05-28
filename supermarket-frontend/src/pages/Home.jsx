@@ -843,7 +843,7 @@ export default function Home() {
             {[
               {
                 name: "Lyveng C.",
-                role: "Student, AITC",
+                role: "Student, ITC",
                 text: "FreshMart has the freshest produce in Phnom Penh. The loyalty points are a great bonus and the delivery is super fast!",
                 stars: 5,
                 color: "#dcfce7",
