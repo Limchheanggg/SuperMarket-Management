@@ -1,11 +1,33 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from ..core.database import get_db
 from ..models.product import Product as ProductModel
 from ..models.category import Category as CategoryModel
-from ..models.inventory import Inventory
 
 router = APIRouter()
+
+# Same in-memory stock store as inventory router
+from app.routers.inventory import get_stock
+
+def serialize(p, cat):
+    stock = get_stock(p.Product_ID)
+    return {
+        "Product_ID": p.Product_ID,
+        "Barcode": p.Barcode,
+        "Name": p.Name,
+        "Description": p.Description,
+        "Category_ID": p.Category_ID,
+        "Category_Name": cat.Category_Name if cat else "General",
+        "Brand": p.Brand,
+        "Unit": p.Unit,
+        "Unit_Price": p.Unit_Price,
+        "Unit_Mass_Kg": p.Unit_Mass_Kg,
+        "Reorder_Level": p.Reorder_Level,
+        "Is_Perishable": p.Is_Perishable,
+        "Product_Image": p.Product_Image,
+        "Current_Stock": stock,
+    }
 
 @router.get("/")
 def get_all_products(db: Session = Depends(get_db)):
@@ -13,23 +35,7 @@ def get_all_products(db: Session = Depends(get_db)):
     result = []
     for p in products:
         cat = db.query(CategoryModel).filter(CategoryModel.Category_ID == p.Category_ID).first()
-        inv = db.query(Inventory).filter(Inventory.Product_ID == p.Product_ID).first()
-        result.append({
-            "Product_ID": p.Product_ID,
-            "Barcode": p.Barcode,
-            "Name": p.Name,
-            "Description": p.Description,
-            "Category_ID": p.Category_ID,
-            "Category_Name": cat.Category_Name if cat else "General",
-            "Brand": p.Brand,
-            "Unit": p.Unit,
-            "Unit_Price": p.Unit_Price,
-            "Unit_Mass_Kg": p.Unit_Mass_Kg,
-            "Reorder_Level": p.Reorder_Level,
-            "Is_Perishable": p.Is_Perishable,
-            "Product_Image": p.Product_Image,
-            "Current_Stock": inv.Quantity if inv else 0,
-        })
+        result.append(serialize(p, cat))
     return result
 
 @router.get("/categories")
@@ -42,29 +48,13 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
     if not p:
         raise HTTPException(status_code=404, detail="Product not found")
     cat = db.query(CategoryModel).filter(CategoryModel.Category_ID == p.Category_ID).first()
-    inv = db.query(Inventory).filter(Inventory.Product_ID == p.Product_ID).first()
-    return {
-        "Product_ID": p.Product_ID,
-        "Barcode": p.Barcode,
-        "Name": p.Name,
-        "Description": p.Description,
-        "Category_ID": p.Category_ID,
-        "Category_Name": cat.Category_Name if cat else "General",
-        "Brand": p.Brand,
-        "Unit": p.Unit,
-        "Unit_Price": p.Unit_Price,
-        "Reorder_Level": p.Reorder_Level,
-        "Is_Perishable": p.Is_Perishable,
-        "Product_Image": p.Product_Image,
-        "Current_Stock": inv.Quantity if inv else 0,
-    }
+    return serialize(p, cat)
 
 @router.post("/")
 def create_product(data: dict, db: Session = Depends(get_db)):
-    # Strip image if too large (>1MB base64 ~ 1.3M chars)
-    if data.get("Product_Image") and len(data["Product_Image"]) > 1_300_000:
-        data["Product_Image"] = None
-
+    existing = db.query(ProductModel).filter(ProductModel.Barcode == data.get("Barcode")).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Barcode already exists")
     product = ProductModel(
         Barcode=data.get("Barcode"),
         Name=data.get("Name"),
@@ -81,45 +71,36 @@ def create_product(data: dict, db: Session = Depends(get_db)):
     db.add(product)
     db.commit()
     db.refresh(product)
-
-    # Auto-create inventory record with 0 stock
-    inv = Inventory(Product_ID=product.Product_ID, Quantity=0)
-    db.add(inv)
-    db.commit()
-
-    return {"Product_ID": product.Product_ID, "Name": product.Name, "message": "Product created"}
+    return product
 
 @router.put("/{product_id}")
 def update_product(product_id: int, data: dict, db: Session = Depends(get_db)):
-    product = db.query(ProductModel).filter(ProductModel.Product_ID == product_id).first()
-    if not product:
+    p = db.query(ProductModel).filter(ProductModel.Product_ID == product_id).first()
+    if not p:
         raise HTTPException(status_code=404, detail="Product not found")
-
-    # Strip image if too large
-    if data.get("Product_Image") and len(data["Product_Image"]) > 1_300_000:
-        data.pop("Product_Image")  # keep existing image
-
-    updatable = ["Barcode","Name","Description","Category_ID","Brand","Unit",
-                 "Unit_Price","Unit_Mass_Kg","Reorder_Level","Is_Perishable","Product_Image"]
-    for field in updatable:
+    for field in ["Barcode","Name","Description","Category_ID","Brand","Unit","Unit_Price","Unit_Mass_Kg","Reorder_Level","Is_Perishable","Product_Image"]:
         if field in data:
-            setattr(product, field, data[field])
-
+            setattr(p, field, data[field])
     db.commit()
-    db.refresh(product)
-    return {"Product_ID": product.Product_ID, "Name": product.Name, "message": "Product updated"}
+    db.refresh(p)
+    cat = db.query(CategoryModel).filter(CategoryModel.Category_ID == p.Category_ID).first()
+    return serialize(p, cat)
 
 @router.delete("/{product_id}")
 def delete_product(product_id: int, db: Session = Depends(get_db)):
-    product = db.query(ProductModel).filter(ProductModel.Product_ID == product_id).first()
-    if not product:
+    p = db.query(ProductModel).filter(ProductModel.Product_ID == product_id).first()
+    if not p:
         raise HTTPException(status_code=404, detail="Product not found")
-
-    # Delete related inventory records first (avoid FK constraint)
-    from ..models.inventory import StockMovement
-    db.query(StockMovement).filter(StockMovement.Product_ID == product_id).delete()
-    db.query(Inventory).filter(Inventory.Product_ID == product_id).delete()
-
-    db.delete(product)
-    db.commit()
-    return {"message": f"Product '{product.Name}' deleted successfully"}
+    try:
+        db.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+        db.execute(text(f"DELETE FROM Inventory_Batch WHERE Product_ID = {product_id}"))
+        db.execute(text(f"DELETE FROM Sale_Item WHERE Product_ID = {product_id}"))
+        db.execute(text(f"DELETE FROM Stock_Adjustment WHERE Product_ID = {product_id}"))
+        db.delete(p)
+        db.commit()
+        db.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+        return {"message": f"Product {product_id} deleted"}
+    except Exception as e:
+        db.rollback()
+        db.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+        raise HTTPException(status_code=500, detail=str(e))
