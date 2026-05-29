@@ -3,9 +3,9 @@ import API from "../../services/api";
 import toast from "react-hot-toast";
 
 const statusColor = {
-  "In Stock": "#00B207",
-  "Low Stock": "#FF8C00",
-  "Out of Stock": "#EA4B48",
+  "In Stock": "#16a34a",
+  "Low Stock": "#d97706",
+  "Out of Stock": "#dc2626",
 };
 
 const EMOJIS = {
@@ -22,6 +22,8 @@ const EMOJIS = {
   Produce: "🥬",
   Meat: "🥩",
   Frozen: "🧊",
+  Seafood: "🐟",
+  Organic: "🌿",
 };
 
 const EMPTY_PRODUCT = {
@@ -38,6 +40,40 @@ const EMPTY_PRODUCT = {
   Product_Image: "",
 };
 
+// ── Resize image to max 400x400px and return base64 ──
+function resizeImage(file, maxSize = 400) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let w = img.width,
+          h = img.height;
+        if (w > h) {
+          if (w > maxSize) {
+            h = Math.round((h * maxSize) / w);
+            w = maxSize;
+          }
+        } else {
+          if (h > maxSize) {
+            w = Math.round((w * maxSize) / h);
+            h = maxSize;
+          }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", 0.75)); // 75% quality JPEG
+      };
+      img.onerror = reject;
+      img.src = ev.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function ProductFormModal({
   title,
   productForm,
@@ -53,19 +89,20 @@ function ProductFormModal({
   const set = (field) => (e) =>
     setProductForm((f) => ({ ...f, [field]: e.target.value }));
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Image must be under 2MB");
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setImagePreview(ev.target.result);
-      setProductForm((f) => ({ ...f, Product_Image: ev.target.result }));
-    };
-    reader.readAsDataURL(file);
+    try {
+      const resized = await resizeImage(file, 400);
+      setImagePreview(resized);
+      setProductForm((f) => ({ ...f, Product_Image: resized }));
+    } catch {
+      toast.error("Failed to process image");
+    }
   };
 
   return (
@@ -106,7 +143,7 @@ function ProductFormModal({
         >
           <h3
             style={{
-              fontFamily: "'Josefin Sans',sans-serif",
+              fontFamily: "'Plus Jakarta Sans',sans-serif",
               fontSize: 18,
               fontWeight: 700,
             }}
@@ -147,7 +184,7 @@ function ProductFormModal({
               transition: "border-color 0.2s",
             }}
             onMouseEnter={(e) =>
-              (e.currentTarget.style.borderColor = "#00B207")
+              (e.currentTarget.style.borderColor = "#16a34a")
             }
             onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#ddd")}
           >
@@ -171,46 +208,96 @@ function ProductFormModal({
             style={{ display: "none" }}
             onChange={handleImageChange}
           />
-          <button
-            onClick={() => fileRef.current?.click()}
-            style={{
-              fontSize: 12,
-              color: "#00B207",
-              fontWeight: 700,
-              background: "none",
-              border: "1px solid #00B207",
-              borderRadius: 6,
-              padding: "4px 12px",
-              cursor: "pointer",
-            }}
-          >
-            {imagePreview ? "Change Photo" : "Upload Photo"}
-          </button>
-          {imagePreview && (
+          <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
             <button
-              onClick={() => {
-                setImagePreview(null);
-                setProductForm((f) => ({ ...f, Product_Image: "" }));
-              }}
+              onClick={() => fileRef.current?.click()}
               style={{
                 fontSize: 12,
-                color: "#EA4B48",
+                color: "#16a34a",
                 fontWeight: 700,
                 background: "none",
-                border: "none",
+                border: "1px solid #16a34a",
+                borderRadius: 6,
+                padding: "4px 12px",
                 cursor: "pointer",
-                marginLeft: 8,
               }}
             >
-              Remove
+              {imagePreview ? "Change Photo" : "Upload Photo"}
             </button>
-          )}
+            {imagePreview && (
+              <button
+                onClick={() => {
+                  setImagePreview(null);
+                  setProductForm((f) => ({ ...f, Product_Image: "" }));
+                }}
+                style={{
+                  fontSize: 12,
+                  color: "#dc2626",
+                  fontWeight: 700,
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                Remove
+              </button>
+            )}
+          </div>
+          <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 6 }}>
+            Image will be auto-resized to 400×400px
+          </p>
         </div>
 
-        {/* Form — ALL fields are type="text" to prevent browser locking */}
+        {/* Form Fields */}
         <div
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}
         >
+          {[
+            ["Barcode", "Barcode", "e.g. 8991000000001"],
+            ["Name", "Product Name", "e.g. Fresh Milk 1L"],
+            ["Brand", "Brand", "e.g. DairyBest"],
+            ["Unit", "Unit", "e.g. Bottle, kg, Pack"],
+            ["Unit_Price", "Unit Price ($)", "e.g. 1.99"],
+            ["Unit_Mass_Kg", "Weight (kg)", "e.g. 0.600"],
+            ["Reorder_Level", "Reorder Level", "e.g. 10"],
+          ].map(([key, label, ph]) => (
+            <div key={key}>
+              <label
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  display: "block",
+                  marginBottom: 5,
+                  color: "#374151",
+                }}
+              >
+                {label}
+                {(key === "Unit_Price" || key === "Unit_Mass_Kg") &&
+                  productForm[key] &&
+                  isNaN(Number(productForm[key])) && (
+                    <span
+                      style={{ color: "#dc2626", fontSize: 11, marginLeft: 6 }}
+                    >
+                      ⚠ must be a number
+                    </span>
+                  )}
+              </label>
+              <input
+                className="form-input"
+                placeholder={ph}
+                value={productForm[key] || ""}
+                onChange={set(key)}
+                style={{
+                  borderColor:
+                    (key === "Unit_Price" || key === "Unit_Mass_Kg") &&
+                    productForm[key] &&
+                    isNaN(Number(productForm[key]))
+                      ? "#dc2626"
+                      : undefined,
+                }}
+              />
+            </div>
+          ))}
           <div>
             <label
               style={{
@@ -218,45 +305,10 @@ function ProductFormModal({
                 fontWeight: 700,
                 display: "block",
                 marginBottom: 5,
+                color: "#374151",
               }}
             >
-              Barcode *
-            </label>
-            <input
-              className="form-input"
-              placeholder="e.g. 8991000000001"
-              value={productForm.Barcode}
-              onChange={set("Barcode")}
-            />
-          </div>
-          <div>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                display: "block",
-                marginBottom: 5,
-              }}
-            >
-              Product Name *
-            </label>
-            <input
-              className="form-input"
-              placeholder="e.g. Fresh Milk 1L"
-              value={productForm.Name}
-              onChange={set("Name")}
-            />
-          </div>
-          <div>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                display: "block",
-                marginBottom: 5,
-              }}
-            >
-              Category *
+              Category
             </label>
             <select
               className="form-input"
@@ -278,147 +330,7 @@ function ProductFormModal({
                 fontWeight: 700,
                 display: "block",
                 marginBottom: 5,
-              }}
-            >
-              Brand
-            </label>
-            <input
-              className="form-input"
-              placeholder="e.g. DairyBest"
-              value={productForm.Brand}
-              onChange={set("Brand")}
-            />
-          </div>
-          <div>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                display: "block",
-                marginBottom: 5,
-              }}
-            >
-              Unit Price ($) *
-              {productForm.Unit_Price &&
-                isNaN(Number(productForm.Unit_Price)) && (
-                  <span
-                    style={{ color: "#EA4B48", fontSize: 11, marginLeft: 6 }}
-                  >
-                    ⚠ must be a number
-                  </span>
-                )}
-            </label>
-            {/* type="text" so browser never rejects/locks input */}
-            <input
-              className="form-input"
-              placeholder="e.g. 1.99"
-              value={productForm.Unit_Price}
-              onChange={set("Unit_Price")}
-              style={{
-                borderColor:
-                  productForm.Unit_Price &&
-                  isNaN(Number(productForm.Unit_Price))
-                    ? "#EA4B48"
-                    : undefined,
-              }}
-            />
-          </div>
-          <div>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                display: "block",
-                marginBottom: 5,
-              }}
-            >
-              Unit *
-            </label>
-            <input
-              className="form-input"
-              placeholder="e.g. Bottle, kg, Pack"
-              value={productForm.Unit}
-              onChange={set("Unit")}
-            />
-          </div>
-          <div>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                display: "block",
-                marginBottom: 5,
-              }}
-            >
-              Weight (kg)
-              {productForm.Unit_Mass_Kg &&
-                isNaN(Number(productForm.Unit_Mass_Kg)) && (
-                  <span
-                    style={{ color: "#EA4B48", fontSize: 11, marginLeft: 6 }}
-                  >
-                    ⚠ must be a number
-                  </span>
-                )}
-            </label>
-            <input
-              className="form-input"
-              placeholder="e.g. 0.600"
-              value={productForm.Unit_Mass_Kg}
-              onChange={set("Unit_Mass_Kg")}
-              style={{
-                borderColor:
-                  productForm.Unit_Mass_Kg &&
-                  isNaN(Number(productForm.Unit_Mass_Kg))
-                    ? "#EA4B48"
-                    : undefined,
-              }}
-            />
-          </div>
-          <div>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                display: "block",
-                marginBottom: 5,
-              }}
-            >
-              Reorder Level
-            </label>
-            <input
-              className="form-input"
-              placeholder="e.g. 10"
-              value={productForm.Reorder_Level}
-              onChange={set("Reorder_Level")}
-            />
-          </div>
-          <div style={{ gridColumn: "1/-1" }}>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                display: "block",
-                marginBottom: 5,
-              }}
-            >
-              Description
-            </label>
-            <textarea
-              className="form-input"
-              rows={3}
-              placeholder="Product description…"
-              value={productForm.Description}
-              onChange={set("Description")}
-              style={{ resize: "vertical" }}
-            />
-          </div>
-          <div>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                display: "block",
-                marginBottom: 5,
+                color: "#374151",
               }}
             >
               Perishable?
@@ -432,6 +344,27 @@ function ProductFormModal({
               <option value="1">Yes</option>
             </select>
           </div>
+          <div style={{ gridColumn: "1/-1" }}>
+            <label
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                display: "block",
+                marginBottom: 5,
+                color: "#374151",
+              }}
+            >
+              Description
+            </label>
+            <textarea
+              className="form-input"
+              rows={3}
+              placeholder="Product description…"
+              value={productForm.Description || ""}
+              onChange={set("Description")}
+              style={{ resize: "vertical" }}
+            />
+          </div>
         </div>
 
         <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
@@ -443,7 +376,7 @@ function ProductFormModal({
               padding: "12px",
               borderRadius: 8,
               border: "none",
-              background: "#00B207",
+              background: "linear-gradient(135deg,#15803d,#22c55e)",
               color: "#fff",
               fontWeight: 700,
               cursor: saving ? "not-allowed" : "pointer",
@@ -660,7 +593,6 @@ export default function AdminInventory() {
     setModal("edit");
   };
 
-  // Search filters directly on every keystroke — no debounce needed for local data
   const filtered = inventory.filter((i) => {
     const s = search.toLowerCase().trim();
     const matchSearch =
@@ -669,8 +601,7 @@ export default function AdminInventory() {
       (i.Barcode || "").toLowerCase().includes(s) ||
       (i.Category_Name || "").toLowerCase().includes(s) ||
       (i.Brand || "").toLowerCase().includes(s);
-    const matchFilter = filter === "All" || i.Status === filter;
-    return matchSearch && matchFilter;
+    return matchSearch && (filter === "All" || i.Status === filter);
   });
 
   const stats = {
@@ -681,7 +612,7 @@ export default function AdminInventory() {
   };
 
   return (
-    <div style={{ padding: 28 }}>
+    <div style={{ padding: 28, fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
       <div
         style={{
           display: "flex",
@@ -690,15 +621,22 @@ export default function AdminInventory() {
           marginBottom: 20,
         }}
       >
-        <h2
-          style={{
-            fontFamily: "'Josefin Sans',sans-serif",
-            fontSize: 22,
-            fontWeight: 700,
-          }}
-        >
-          📦 Inventory Management
-        </h2>
+        <div>
+          <h2
+            style={{
+              fontFamily: "'Plus Jakarta Sans',sans-serif",
+              fontSize: 22,
+              fontWeight: 800,
+              color: "#0f172a",
+              marginBottom: 4,
+            }}
+          >
+            📦 Inventory Management
+          </h2>
+          <p style={{ color: "#64748b", fontSize: 13 }}>
+            {stats.total} products total
+          </p>
+        </div>
         <button
           onClick={() => {
             setProductForm(EMPTY_PRODUCT);
@@ -707,13 +645,15 @@ export default function AdminInventory() {
           }}
           style={{
             padding: "10px 20px",
-            borderRadius: 8,
+            borderRadius: 10,
             border: "none",
-            background: "#00B207",
+            background: "linear-gradient(135deg,#15803d,#22c55e)",
             color: "#fff",
             fontWeight: 700,
             cursor: "pointer",
             fontSize: 14,
+            fontFamily: "'Plus Jakarta Sans',sans-serif",
+            boxShadow: "0 4px 12px rgba(21,128,61,.3)",
           }}
         >
           + Add Product
@@ -730,32 +670,58 @@ export default function AdminInventory() {
         }}
       >
         {[
-          ["Total Products", stats.total, "#3b82f6"],
-          ["In Stock", stats.inStock, "#00B207"],
-          ["Low Stock", stats.low, "#FF8C00"],
-          ["Out of Stock", stats.out, "#EA4B48"],
-        ].map(([l, v, c]) => (
+          [
+            "Total Products",
+            stats.total,
+            "#6366f1",
+            "linear-gradient(135deg,#eef2ff,#e0e7ff)",
+          ],
+          [
+            "In Stock",
+            stats.inStock,
+            "#16a34a",
+            "linear-gradient(135deg,#f0fdf4,#dcfce7)",
+          ],
+          [
+            "Low Stock",
+            stats.low,
+            "#d97706",
+            "linear-gradient(135deg,#fffbeb,#fef3c7)",
+          ],
+          [
+            "Out of Stock",
+            stats.out,
+            "#dc2626",
+            "linear-gradient(135deg,#fef2f2,#fee2e2)",
+          ],
+        ].map(([l, v, c, bg]) => (
           <div
             key={l}
             style={{
-              background: "#fff",
-              borderRadius: 12,
+              background: bg,
+              borderRadius: 14,
               padding: "16px 20px",
-              borderLeft: `4px solid ${c}`,
-              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+              border: `1.5px solid ${c}22`,
             }}
           >
-            <div style={{ fontSize: 12, color: "#888", marginBottom: 4 }}>
+            <div
+              style={{
+                fontSize: 12,
+                color: "#64748b",
+                marginBottom: 4,
+                fontWeight: 600,
+              }}
+            >
               {l}
             </div>
-            <div style={{ fontSize: 26, fontWeight: 700, color: c }}>{v}</div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: c }}>{v}</div>
           </div>
         ))}
       </div>
 
       {/* Search + Filter */}
       <div
-        style={{ display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap" }}
+        style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}
       >
         <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
           <input
@@ -766,10 +732,12 @@ export default function AdminInventory() {
               width: "100%",
               padding: "9px 14px",
               paddingRight: search ? 36 : 14,
-              borderRadius: 8,
-              border: "1px solid #ddd",
+              borderRadius: 10,
+              border: "1.5px solid #e5e7eb",
               fontSize: 13,
               boxSizing: "border-box",
+              outline: "none",
+              fontFamily: "'Plus Jakarta Sans',sans-serif",
             }}
           />
           {search && (
@@ -783,7 +751,7 @@ export default function AdminInventory() {
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-                color: "#888",
+                color: "#9ca3af",
                 fontSize: 18,
                 lineHeight: 1,
                 padding: 0,
@@ -799,13 +767,14 @@ export default function AdminInventory() {
             onClick={() => setFilter(f)}
             style={{
               padding: "9px 16px",
-              borderRadius: 8,
+              borderRadius: 9,
               border: "none",
               cursor: "pointer",
-              fontSize: 13,
-              fontWeight: 600,
-              background: filter === f ? "#00B207" : "#f0f0f0",
-              color: filter === f ? "#fff" : "#555",
+              fontSize: 12,
+              fontWeight: 700,
+              fontFamily: "'Plus Jakarta Sans',sans-serif",
+              background: filter === f ? "#15803d" : "#f1f5f9",
+              color: filter === f ? "#fff" : "#374151",
             }}
           >
             {f}
@@ -813,12 +782,11 @@ export default function AdminInventory() {
         ))}
       </div>
 
-      {/* Results count */}
       {search && (
-        <div style={{ fontSize: 13, color: "#888", marginBottom: 10 }}>
-          Found <strong style={{ color: "#1a1a1a" }}>{filtered.length}</strong>{" "}
+        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 10 }}>
+          Found <strong style={{ color: "#111827" }}>{filtered.length}</strong>{" "}
           result{filtered.length !== 1 ? "s" : ""} for "
-          <strong style={{ color: "#00B207" }}>{search}</strong>"
+          <strong style={{ color: "#16a34a" }}>{search}</strong>"
         </div>
       )}
 
@@ -826,9 +794,10 @@ export default function AdminInventory() {
       <div
         style={{
           background: "#fff",
-          borderRadius: 12,
+          borderRadius: 14,
           overflow: "hidden",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+          border: "1.5px solid #e5e7eb",
+          boxShadow: "0 2px 10px rgba(0,0,0,.04)",
         }}
       >
         <table
@@ -836,7 +805,10 @@ export default function AdminInventory() {
         >
           <thead>
             <tr
-              style={{ background: "#f8f8f8", borderBottom: "2px solid #eee" }}
+              style={{
+                background: "#f8fafc",
+                borderBottom: "2px solid #e5e7eb",
+              }}
             >
               {[
                 "Product",
@@ -850,10 +822,11 @@ export default function AdminInventory() {
                 <th
                   key={h}
                   style={{
-                    padding: "12px 16px",
+                    padding: "13px 16px",
                     textAlign: "left",
                     fontWeight: 700,
-                    color: "#555",
+                    color: "#374151",
+                    fontFamily: "'Plus Jakarta Sans',sans-serif",
                   }}
                 >
                   {h}
@@ -866,7 +839,7 @@ export default function AdminInventory() {
               <tr>
                 <td
                   colSpan={7}
-                  style={{ padding: 40, textAlign: "center", color: "#888" }}
+                  style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}
                 >
                   Loading...
                 </td>
@@ -875,7 +848,7 @@ export default function AdminInventory() {
               <tr>
                 <td
                   colSpan={7}
-                  style={{ padding: 40, textAlign: "center", color: "#888" }}
+                  style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}
                 >
                   <div style={{ fontSize: 40 }}>🔍</div>
                   <p style={{ marginTop: 10 }}>
@@ -883,22 +856,6 @@ export default function AdminInventory() {
                       ? `No results for "${search}"`
                       : "No products found"}
                   </p>
-                  {search && (
-                    <button
-                      onClick={() => setSearch("")}
-                      style={{
-                        marginTop: 10,
-                        color: "#00B207",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        fontWeight: 700,
-                        fontSize: 13,
-                      }}
-                    >
-                      Clear search
-                    </button>
-                  )}
                 </td>
               </tr>
             ) : (
@@ -922,7 +879,7 @@ export default function AdminInventory() {
                           width: 36,
                           height: 36,
                           borderRadius: 8,
-                          background: "#F2FCF3",
+                          background: "#f0fdf4",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -946,20 +903,22 @@ export default function AdminInventory() {
                         )}
                       </div>
                       <div>
-                        <div style={{ fontWeight: 600 }}>{item.Name}</div>
-                        <div style={{ fontSize: 11, color: "#aaa" }}>
+                        <div style={{ fontWeight: 700, color: "#0f172a" }}>
+                          {item.Name}
+                        </div>
+                        <div style={{ fontSize: 11, color: "#9ca3af" }}>
                           {item.Barcode}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td style={{ padding: "12px 16px", color: "#666" }}>
+                  <td style={{ padding: "12px 16px", color: "#64748b" }}>
                     {item.Category_Name}
                   </td>
                   <td
                     style={{
                       padding: "12px 16px",
-                      color: "#00B207",
+                      color: "#16a34a",
                       fontWeight: 700,
                     }}
                   >
@@ -968,19 +927,23 @@ export default function AdminInventory() {
                   <td style={{ padding: "12px 16px", fontWeight: 700 }}>
                     {item.Quantity}{" "}
                     <span
-                      style={{ color: "#888", fontWeight: 400, fontSize: 12 }}
+                      style={{
+                        color: "#9ca3af",
+                        fontWeight: 400,
+                        fontSize: 12,
+                      }}
                     >
                       {item.Unit}
                     </span>
                   </td>
-                  <td style={{ padding: "12px 16px", color: "#888" }}>
+                  <td style={{ padding: "12px 16px", color: "#9ca3af" }}>
                     {item.Reorder_Level}
                   </td>
                   <td style={{ padding: "12px 16px" }}>
                     <span
                       style={{
                         padding: "4px 10px",
-                        borderRadius: 20,
+                        borderRadius: 99,
                         fontSize: 11,
                         fontWeight: 700,
                         background: statusColor[item.Status] + "20",
@@ -1001,13 +964,13 @@ export default function AdminInventory() {
                         }}
                         style={{
                           padding: "5px 10px",
-                          borderRadius: 6,
+                          borderRadius: 7,
                           border: "none",
-                          background: "#00B207",
+                          background: "#16a34a",
                           color: "#fff",
                           cursor: "pointer",
                           fontSize: 11,
-                          fontWeight: 600,
+                          fontWeight: 700,
                         }}
                       >
                         + Stock
@@ -1021,12 +984,12 @@ export default function AdminInventory() {
                         }}
                         style={{
                           padding: "5px 10px",
-                          borderRadius: 6,
-                          border: "1px solid #ddd",
+                          borderRadius: 7,
+                          border: "1.5px solid #e5e7eb",
                           background: "#fff",
                           cursor: "pointer",
                           fontSize: 11,
-                          fontWeight: 600,
+                          fontWeight: 700,
                         }}
                       >
                         Adjust
@@ -1035,13 +998,13 @@ export default function AdminInventory() {
                         onClick={() => openEdit(item)}
                         style={{
                           padding: "5px 10px",
-                          borderRadius: 6,
-                          border: "1px solid #3b82f6",
-                          background: "#eff6ff",
-                          color: "#3b82f6",
+                          borderRadius: 7,
+                          border: "1.5px solid #93c5fd",
+                          background: "#dbeafe",
+                          color: "#1d4ed8",
                           cursor: "pointer",
                           fontSize: 11,
-                          fontWeight: 600,
+                          fontWeight: 700,
                         }}
                       >
                         Edit
@@ -1050,13 +1013,13 @@ export default function AdminInventory() {
                         onClick={() => handleDeleteProduct(item)}
                         style={{
                           padding: "5px 10px",
-                          borderRadius: 6,
-                          border: "1px solid #EA4B48",
+                          borderRadius: 7,
+                          border: "1.5px solid #fca5a5",
                           background: "#fee2e2",
-                          color: "#EA4B48",
+                          color: "#dc2626",
                           cursor: "pointer",
                           fontSize: 11,
-                          fontWeight: 600,
+                          fontWeight: 700,
                         }}
                       >
                         Del
@@ -1097,7 +1060,7 @@ export default function AdminInventory() {
           >
             <h3
               style={{
-                fontFamily: "'Josefin Sans',sans-serif",
+                fontFamily: "'Plus Jakarta Sans',sans-serif",
                 marginBottom: 16,
               }}
             >
@@ -1106,7 +1069,7 @@ export default function AdminInventory() {
             </h3>
             <div
               style={{
-                background: "#F2FCF3",
+                background: "#f0fdf4",
                 borderRadius: 8,
                 padding: "10px 14px",
                 marginBottom: 16,
@@ -1141,6 +1104,7 @@ export default function AdminInventory() {
                   border: "1px solid #ddd",
                   fontSize: 14,
                   boxSizing: "border-box",
+                  outline: "none",
                 }}
               />
             </div>
@@ -1166,6 +1130,7 @@ export default function AdminInventory() {
                   border: "1px solid #ddd",
                   fontSize: 14,
                   boxSizing: "border-box",
+                  outline: "none",
                 }}
               />
             </div>
@@ -1177,7 +1142,7 @@ export default function AdminInventory() {
                   padding: "11px",
                   borderRadius: 8,
                   border: "none",
-                  background: "#00B207",
+                  background: "linear-gradient(135deg,#15803d,#22c55e)",
                   color: "#fff",
                   fontWeight: 700,
                   cursor: "pointer",

@@ -20,9 +20,25 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const tax = totalPrice * 0.1;
 
+  // Map frontend label to DB enum value
+  const PAY_MAP = {
+    Cash: "Cash",
+    Card: "Card",
+    "ABA / Wing": "QR Code",
+    "Bank Transfer": "Bank Transfer",
+  };
+
+  const handlePhone = (e) => {
+    // Only allow digits, +, spaces, dashes, parentheses
+    const val = e.target.value.replace(/[^0-9+\s\-()]/g, "");
+    setForm({ ...form, phone: val });
+  };
+
   const placeOrder = async (e) => {
     e.preventDefault();
     if (cartItems.length === 0) return toast.error("Your cart is empty");
+    if (form.phone.length < 6)
+      return toast.error("Please enter a valid phone number");
     setLoading(true);
     try {
       await createSale({
@@ -36,7 +52,7 @@ export default function Checkout() {
         total: parseFloat((totalPrice + tax).toFixed(2)),
         tax: parseFloat(tax.toFixed(2)),
         discount: 0,
-        payment_method: payMethod,
+        payment_method: PAY_MAP[payMethod] || "Cash",
       });
       clearCart();
       toast.success("Order placed successfully! 🎉");
@@ -91,6 +107,7 @@ export default function Checkout() {
                     <input
                       className="form-input"
                       required
+                      placeholder="e.g. Limchheang"
                       value={form.firstName}
                       onChange={(e) =>
                         setForm({ ...form, firstName: e.target.value })
@@ -102,6 +119,7 @@ export default function Checkout() {
                     <input
                       className="form-input"
                       required
+                      placeholder="e.g. Khun"
                       value={form.lastName}
                       onChange={(e) =>
                         setForm({ ...form, lastName: e.target.value })
@@ -122,21 +140,44 @@ export default function Checkout() {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Phone *</label>
+                  <label className="form-label">
+                    Phone *{" "}
+                    <span
+                      style={{
+                        color: "#9ca3af",
+                        fontSize: 12,
+                        fontWeight: 400,
+                      }}
+                    >
+                      (numbers only)
+                    </span>
+                  </label>
                   <input
                     className="form-input"
                     required
+                    placeholder="e.g. +855 12 345 678"
                     value={form.phone}
-                    onChange={(e) =>
-                      setForm({ ...form, phone: e.target.value })
-                    }
+                    onChange={handlePhone}
+                    inputMode="tel"
+                    style={{
+                      borderColor:
+                        form.phone && form.phone.length < 6
+                          ? "#EA4B48"
+                          : undefined,
+                    }}
                   />
+                  {form.phone && form.phone.length < 6 && (
+                    <small style={{ color: "#EA4B48", fontSize: 12 }}>
+                      Please enter a valid phone number
+                    </small>
+                  )}
                 </div>
                 <div className="form-group">
                   <label className="form-label">Address *</label>
                   <input
                     className="form-input"
                     required
+                    placeholder="e.g. Street 271, Phnom Penh"
                     value={form.address}
                     onChange={(e) =>
                       setForm({ ...form, address: e.target.value })
@@ -184,8 +225,20 @@ export default function Checkout() {
                       readOnly
                       checked={payMethod === method}
                       style={{ accentColor: "#00B207" }}
-                    />{" "}
+                    />
                     {icon} {method}
+                    {payMethod === method && (
+                      <span
+                        style={{
+                          marginLeft: "auto",
+                          color: "#00B207",
+                          fontWeight: 700,
+                          fontSize: 12,
+                        }}
+                      >
+                        ✓ Selected
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -248,6 +301,20 @@ export default function Checkout() {
               >
                 <span>Tax 10%</span>
                 <span>${tax.toFixed(2)}</span>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  padding: "8px 0",
+                  fontSize: 13,
+                  color: "#6b7280",
+                }}
+              >
+                <span>Payment</span>
+                <span style={{ fontWeight: 600, color: "#374151" }}>
+                  {payMethod}
+                </span>
               </div>
               <div
                 style={{
