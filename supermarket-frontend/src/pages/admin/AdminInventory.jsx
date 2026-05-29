@@ -26,6 +26,30 @@ const EMOJIS = {
   Organic: "🌿",
 };
 
+// Unit enum options — select instead of free-type
+const UNIT_OPTIONS = [
+  "Bottle",
+  "Can",
+  "Pack",
+  "Bag",
+  "Box",
+  "Carton",
+  "Loaf",
+  "Piece",
+  "kg",
+  "g",
+  "L",
+  "ml",
+  "Dozen",
+  "Bundle",
+  "Tray",
+  "Jar",
+  "Tube",
+  "Sachet",
+  "Roll",
+  "Bar",
+];
+
 const EMPTY_PRODUCT = {
   Barcode: "",
   Name: "",
@@ -40,7 +64,6 @@ const EMPTY_PRODUCT = {
   Product_Image: "",
 };
 
-// ── Resize image to max 400x400px and return base64 ──
 function resizeImage(file, maxSize = 400) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -64,7 +87,7 @@ function resizeImage(file, maxSize = 400) {
         canvas.width = w;
         canvas.height = h;
         canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL("image/jpeg", 0.75)); // 75% quality JPEG
+        resolve(canvas.toDataURL("image/jpeg", 0.75));
       };
       img.onerror = reject;
       img.src = ev.target.result;
@@ -74,6 +97,7 @@ function resizeImage(file, maxSize = 400) {
   });
 }
 
+// ── Product Form Modal — defined OUTSIDE so React never remounts it ──
 function ProductFormModal({
   title,
   productForm,
@@ -244,7 +268,7 @@ function ProductFormModal({
             )}
           </div>
           <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 6 }}>
-            Image will be auto-resized to 400×400px
+            Auto-resized to 400×400px
           </p>
         </div>
 
@@ -252,52 +276,6 @@ function ProductFormModal({
         <div
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}
         >
-          {[
-            ["Barcode", "Barcode", "e.g. 8991000000001"],
-            ["Name", "Product Name", "e.g. Fresh Milk 1L"],
-            ["Brand", "Brand", "e.g. DairyBest"],
-            ["Unit", "Unit", "e.g. Bottle, kg, Pack"],
-            ["Unit_Price", "Unit Price ($)", "e.g. 1.99"],
-            ["Unit_Mass_Kg", "Weight (kg)", "e.g. 0.600"],
-            ["Reorder_Level", "Reorder Level", "e.g. 10"],
-          ].map(([key, label, ph]) => (
-            <div key={key}>
-              <label
-                style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  display: "block",
-                  marginBottom: 5,
-                  color: "#374151",
-                }}
-              >
-                {label}
-                {(key === "Unit_Price" || key === "Unit_Mass_Kg") &&
-                  productForm[key] &&
-                  isNaN(Number(productForm[key])) && (
-                    <span
-                      style={{ color: "#dc2626", fontSize: 11, marginLeft: 6 }}
-                    >
-                      ⚠ must be a number
-                    </span>
-                  )}
-              </label>
-              <input
-                className="form-input"
-                placeholder={ph}
-                value={productForm[key] || ""}
-                onChange={set(key)}
-                style={{
-                  borderColor:
-                    (key === "Unit_Price" || key === "Unit_Mass_Kg") &&
-                    productForm[key] &&
-                    isNaN(Number(productForm[key]))
-                      ? "#dc2626"
-                      : undefined,
-                }}
-              />
-            </div>
-          ))}
           <div>
             <label
               style={{
@@ -305,10 +283,45 @@ function ProductFormModal({
                 fontWeight: 700,
                 display: "block",
                 marginBottom: 5,
-                color: "#374151",
               }}
             >
-              Category
+              Barcode *
+            </label>
+            <input
+              className="form-input"
+              placeholder="e.g. 8991000000001"
+              value={productForm.Barcode}
+              onChange={set("Barcode")}
+            />
+          </div>
+          <div>
+            <label
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                display: "block",
+                marginBottom: 5,
+              }}
+            >
+              Product Name *
+            </label>
+            <input
+              className="form-input"
+              placeholder="e.g. Fresh Milk 1L"
+              value={productForm.Name}
+              onChange={set("Name")}
+            />
+          </div>
+          <div>
+            <label
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                display: "block",
+                marginBottom: 5,
+              }}
+            >
+              Category *
             </label>
             <select
               className="form-input"
@@ -330,7 +343,153 @@ function ProductFormModal({
                 fontWeight: 700,
                 display: "block",
                 marginBottom: 5,
-                color: "#374151",
+              }}
+            >
+              Brand
+            </label>
+            <input
+              className="form-input"
+              placeholder="e.g. DairyBest"
+              value={productForm.Brand}
+              onChange={set("Brand")}
+            />
+          </div>
+          <div>
+            <label
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                display: "block",
+                marginBottom: 5,
+              }}
+            >
+              Unit Price ($) *
+              {productForm.Unit_Price &&
+                isNaN(Number(productForm.Unit_Price)) && (
+                  <span
+                    style={{ color: "#dc2626", fontSize: 11, marginLeft: 6 }}
+                  >
+                    ⚠ must be a number
+                  </span>
+                )}
+            </label>
+            <input
+              className="form-input"
+              placeholder="e.g. 1.99"
+              value={productForm.Unit_Price}
+              onChange={set("Unit_Price")}
+              style={{
+                borderColor:
+                  productForm.Unit_Price &&
+                  isNaN(Number(productForm.Unit_Price))
+                    ? "#dc2626"
+                    : undefined,
+              }}
+            />
+          </div>
+          <div>
+            {/* Unit is now a SELECT dropdown — no more free typing */}
+            <label
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                display: "block",
+                marginBottom: 5,
+              }}
+            >
+              Unit *
+            </label>
+            <select
+              className="form-input"
+              value={productForm.Unit}
+              onChange={set("Unit")}
+            >
+              <option value="">Select unit...</option>
+              {UNIT_OPTIONS.map((u) => (
+                <option key={u} value={u}>
+                  {u}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                display: "block",
+                marginBottom: 5,
+              }}
+            >
+              Weight (kg)
+              {productForm.Unit_Mass_Kg &&
+                isNaN(Number(productForm.Unit_Mass_Kg)) && (
+                  <span
+                    style={{ color: "#dc2626", fontSize: 11, marginLeft: 6 }}
+                  >
+                    ⚠ must be a number
+                  </span>
+                )}
+            </label>
+            <input
+              className="form-input"
+              placeholder="e.g. 0.600"
+              value={productForm.Unit_Mass_Kg}
+              onChange={set("Unit_Mass_Kg")}
+              style={{
+                borderColor:
+                  productForm.Unit_Mass_Kg &&
+                  isNaN(Number(productForm.Unit_Mass_Kg))
+                    ? "#dc2626"
+                    : undefined,
+              }}
+            />
+          </div>
+          <div>
+            <label
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                display: "block",
+                marginBottom: 5,
+              }}
+            >
+              Reorder Level
+            </label>
+            <input
+              className="form-input"
+              placeholder="e.g. 10"
+              value={productForm.Reorder_Level}
+              onChange={set("Reorder_Level")}
+            />
+          </div>
+          <div style={{ gridColumn: "1/-1" }}>
+            <label
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                display: "block",
+                marginBottom: 5,
+              }}
+            >
+              Description
+            </label>
+            <textarea
+              className="form-input"
+              rows={3}
+              placeholder="Product description…"
+              value={productForm.Description}
+              onChange={set("Description")}
+              style={{ resize: "vertical" }}
+            />
+          </div>
+          <div>
+            <label
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                display: "block",
+                marginBottom: 5,
               }}
             >
               Perishable?
@@ -343,27 +502,6 @@ function ProductFormModal({
               <option value="0">No</option>
               <option value="1">Yes</option>
             </select>
-          </div>
-          <div style={{ gridColumn: "1/-1" }}>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                display: "block",
-                marginBottom: 5,
-                color: "#374151",
-              }}
-            >
-              Description
-            </label>
-            <textarea
-              className="form-input"
-              rows={3}
-              placeholder="Product description…"
-              value={productForm.Description || ""}
-              onChange={set("Description")}
-              style={{ resize: "vertical" }}
-            />
           </div>
         </div>
 
@@ -407,6 +545,104 @@ function ProductFormModal({
   );
 }
 
+// ── Delete Confirm Modal — replaces window.confirm ──
+function DeleteModal({ item, onConfirm, onClose }) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+        padding: 20,
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: 16,
+          padding: 28,
+          width: "100%",
+          maxWidth: 400,
+          boxShadow: "0 8px 40px rgba(0,0,0,0.2)",
+          textAlign: "center",
+        }}
+      >
+        <div style={{ fontSize: 56, marginBottom: 12 }}>🗑️</div>
+        <h3
+          style={{
+            fontFamily: "'Plus Jakarta Sans',sans-serif",
+            fontSize: 18,
+            fontWeight: 800,
+            color: "#0f172a",
+            marginBottom: 8,
+          }}
+        >
+          Delete Product?
+        </h3>
+        <p style={{ color: "#64748b", fontSize: 14, marginBottom: 6 }}>
+          You are about to delete:
+        </p>
+        <p
+          style={{
+            fontWeight: 700,
+            color: "#0f172a",
+            fontSize: 15,
+            marginBottom: 6,
+          }}
+        >
+          "{item.Name}"
+        </p>
+        <p style={{ color: "#ef4444", fontSize: 13, marginBottom: 24 }}>
+          ⚠️ This action cannot be undone. The product and all its inventory
+          records will be permanently removed.
+        </p>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1,
+              padding: "12px",
+              borderRadius: 10,
+              border: "1.5px solid #e5e7eb",
+              background: "#f8fafc",
+              fontWeight: 700,
+              cursor: "pointer",
+              fontSize: 14,
+              fontFamily: "'Plus Jakarta Sans',sans-serif",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              flex: 1,
+              padding: "12px",
+              borderRadius: 10,
+              border: "none",
+              background: "linear-gradient(135deg,#dc2626,#ef4444)",
+              color: "#fff",
+              fontWeight: 700,
+              cursor: "pointer",
+              fontSize: 14,
+              fontFamily: "'Plus Jakarta Sans',sans-serif",
+            }}
+          >
+            Yes, Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminInventory() {
   const [inventory, setInventory] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -414,6 +650,7 @@ export default function AdminInventory() {
   const [filter, setFilter] = useState("All");
   const [modal, setModal] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null); // item to delete
   const [qty, setQty] = useState("");
   const [note, setNote] = useState("");
   const [productForm, setProductForm] = useState(EMPTY_PRODUCT);
@@ -452,7 +689,7 @@ export default function AdminInventory() {
       toast.error("Category is required");
       return false;
     }
-    if (!productForm.Unit.trim()) {
+    if (!productForm.Unit) {
       toast.error("Unit is required");
       return false;
     }
@@ -521,12 +758,13 @@ export default function AdminInventory() {
     }
   };
 
-  const handleDeleteProduct = async (item) => {
-    if (!window.confirm(`Delete "${item.Name}"? This cannot be undone.`))
-      return;
+  // Replaces window.confirm — opens a proper modal instead
+  const handleDeleteProduct = async () => {
+    if (!deleteTarget) return;
     try {
-      await API.delete(`/api/products/${item.Product_ID}`);
-      toast.success("Product deleted");
+      await API.delete(`/api/products/${deleteTarget.Product_ID}`);
+      toast.success(`"${deleteTarget.Name}" deleted`);
+      setDeleteTarget(null);
       fetchInventory();
     } catch (err) {
       toast.error(err.response?.data?.detail || "Failed to delete");
@@ -1009,8 +1247,9 @@ export default function AdminInventory() {
                       >
                         Edit
                       </button>
+                      {/* Del button now opens a proper modal instead of window.confirm */}
                       <button
-                        onClick={() => handleDeleteProduct(item)}
+                        onClick={() => setDeleteTarget(item)}
                         style={{
                           padding: "5px 10px",
                           borderRadius: 7,
@@ -1185,6 +1424,15 @@ export default function AdminInventory() {
           onClose={() => setModal(null)}
           saving={saving}
           categories={categories}
+        />
+      )}
+
+      {/* Delete Confirmation Modal — replaces window.confirm */}
+      {deleteTarget && (
+        <DeleteModal
+          item={deleteTarget}
+          onConfirm={handleDeleteProduct}
+          onClose={() => setDeleteTarget(null)}
         />
       )}
     </div>
