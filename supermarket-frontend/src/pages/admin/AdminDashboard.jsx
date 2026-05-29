@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import API from "../../services/api";
 
-// Mini bar chart component
 function MiniBarChart({ data, color }) {
   const max = Math.max(...data, 1);
   return (
@@ -18,7 +17,6 @@ function MiniBarChart({ data, color }) {
             borderRadius: "3px 3px 0 0",
             height: `${(v / max) * 100}%`,
             minHeight: 4,
-            transition: "height .3s",
           }}
         />
       ))}
@@ -26,14 +24,18 @@ function MiniBarChart({ data, color }) {
   );
 }
 
-// Donut chart SVG
-function DonutChart({ segments, size = 80 }) {
+function DonutChart({ inStock, lowStock, outStock, size = 100 }) {
+  const total = inStock + lowStock + outStock || 1;
   const r = 28,
     cx = 40,
     cy = 40,
     circ = 2 * Math.PI * r;
+  const segments = [
+    { value: inStock, color: "#22c55e" },
+    { value: lowStock, color: "#f59e0b" },
+    { value: outStock, color: "#ef4444" },
+  ];
   let offset = 0;
-  const total = segments.reduce((s, x) => s + x.value, 0);
   return (
     <svg width={size} height={size} viewBox="0 0 80 80">
       <circle
@@ -79,15 +81,15 @@ export default function AdminDashboard() {
     const fetchAll = async () => {
       try {
         const [sumRes, dayRes, invRes, salesRes] = await Promise.all([
-          API.get("/api/sales/reports/summary"),
-          API.get("/api/sales/reports/daily"),
-          API.get("/api/inventory/"),
-          API.get("/api/sales/"),
+          API.get("/api/sales/reports/summary").catch(() => ({ data: null })),
+          API.get("/api/sales/reports/daily").catch(() => ({ data: null })),
+          API.get("/api/inventory/").catch(() => ({ data: [] })),
+          API.get("/api/sales/").catch(() => ({ data: [] })),
         ]);
         setSummary(sumRes.data);
         setDaily(dayRes.data);
-        setInventory(invRes.data);
-        setRecentSales(salesRes.data.slice(0, 6));
+        setInventory(invRes.data || []);
+        setRecentSales((salesRes.data || []).slice(0, 6));
       } catch {
       } finally {
         setLoading(false);
@@ -96,62 +98,69 @@ export default function AdminDashboard() {
     fetchAll();
   }, []);
 
-  const lowStockCount = inventory.filter((i) => i.Status !== "In Stock").length;
+  // ── Correct inventory counts ──
+  // Each product belongs to exactly ONE status bucket
+  const totalProducts = inventory.length;
   const inStockCount = inventory.filter((i) => i.Status === "In Stock").length;
+  const lowStockCount = inventory.filter(
+    (i) => i.Status === "Low Stock",
+  ).length;
   const outCount = inventory.filter((i) => i.Status === "Out of Stock").length;
+  // Sanity: inStock + low + out === total (always true now)
 
   const KPI = [
     {
       label: "Today's Revenue",
-      value: `$${daily?.total_revenue?.toFixed(2) || "0.00"}`,
-      sub: "vs yesterday",
+      value:
+        daily?.total_revenue != null
+          ? `$${daily.total_revenue.toFixed(2)}`
+          : "$0.00",
+      sub: "today",
       icon: "💰",
       color: "#6366f1",
       bg: "linear-gradient(135deg,#eef2ff,#e0e7ff)",
-      bar: "#6366f1",
-      sparkData: [12, 18, 14, 22, 16, 24, daily?.total_revenue || 0],
+      sparkData: [0, 0, 0, 0, 0, 0, daily?.total_revenue || 0],
     },
     {
       label: "Today's Sales",
-      value: daily?.total_sales || 0,
+      value: daily?.total_sales ?? 0,
       sub: "transactions",
       icon: "🛒",
       color: "#16a34a",
       bg: "linear-gradient(135deg,#f0fdf4,#dcfce7)",
-      bar: "#16a34a",
-      sparkData: [3, 5, 4, 7, 5, 8, daily?.total_sales || 0],
+      sparkData: [0, 0, 0, 0, 0, 0, daily?.total_sales || 0],
     },
     {
-      label: "Low Stock Items",
-      value: lowStockCount,
+      label: "Low/Out of Stock",
+      value: lowStockCount + outCount,
       sub: "need restocking",
       icon: "⚠️",
       color: "#d97706",
       bg: "linear-gradient(135deg,#fffbeb,#fef3c7)",
-      bar: "#f59e0b",
-      sparkData: [2, 3, 2, 4, 3, 5, lowStockCount],
+      sparkData: [0, 0, 0, 0, 0, 0, lowStockCount + outCount],
     },
     {
       label: "Monthly Revenue",
-      value: `$${summary?.monthly_revenue?.toFixed(2) || "0.00"}`,
+      value:
+        summary?.monthly_revenue != null
+          ? `$${summary.monthly_revenue.toFixed(2)}`
+          : "$0.00",
       sub: "this month",
       icon: "📈",
       color: "#db2777",
       bg: "linear-gradient(135deg,#fdf2f8,#fce7f3)",
-      bar: "#ec4899",
-      sparkData: [200, 340, 280, 420, 310, 480, summary?.monthly_revenue || 0],
+      sparkData: [0, 0, 0, 0, 0, 0, summary?.monthly_revenue || 0],
     },
   ];
 
   return (
     <div style={{ padding: 28, fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         .ad-card{background:#fff;border-radius:18px;padding:22px;border:1.5px solid #e5e7eb;box-shadow:0 2px 10px rgba(0,0,0,.04);transition:all .25s}
         .ad-card:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.08)}
-        .ad-kpi{border-radius:18px;padding:22px;transition:all .25s}
+        .ad-kpi{border-radius:18px;padding:22px;transition:all .25s;cursor:default}
         .ad-kpi:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.1)}
-        .ad-quick{padding:14px 18px;border-radius:12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;text-decoration:none;text-align:center;transition:all .2s;display:block}
+        .ad-quick{padding:13px 18px;border-radius:12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;text-decoration:none;text-align:center;transition:all .2s;display:block}
         .ad-quick:hover{transform:translateY(-2px);opacity:.9}
       `}</style>
 
@@ -177,27 +186,26 @@ export default function AdminDashboard() {
             Dashboard Overview
           </h1>
           <p style={{ color: "#64748b", fontSize: 14, fontWeight: 500 }}>
-            Welcome back! Here's what's happening today.
+            {totalProducts} products · {inStockCount} in stock ·{" "}
+            {lowStockCount + outCount} need attention
           </p>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <Link
-            to="/admin/sales"
-            style={{
-              padding: "10px 20px",
-              borderRadius: 12,
-              background: "linear-gradient(135deg,#16a34a,#22c55e)",
-              color: "#fff",
-              fontFamily: "'Plus Jakarta Sans',sans-serif",
-              fontSize: 13,
-              fontWeight: 700,
-              textDecoration: "none",
-              boxShadow: "0 4px 12px rgba(22,163,74,.3)",
-            }}
-          >
-            + New Sale
-          </Link>
-        </div>
+        <Link
+          to="/admin/sales"
+          style={{
+            padding: "10px 20px",
+            borderRadius: 12,
+            background: "linear-gradient(135deg,#16a34a,#22c55e)",
+            color: "#fff",
+            fontFamily: "'Plus Jakarta Sans',sans-serif",
+            fontSize: 13,
+            fontWeight: 700,
+            textDecoration: "none",
+            boxShadow: "0 4px 12px rgba(22,163,74,.3)",
+          }}
+        >
+          + New Sale
+        </Link>
       </div>
 
       {/* KPI Cards */}
@@ -237,7 +245,7 @@ export default function AdminDashboard() {
               >
                 {k.icon}
               </div>
-              <MiniBarChart data={k.sparkData} color={k.bar} />
+              <MiniBarChart data={k.sparkData} color={k.color} />
             </div>
             <div
               style={{
@@ -279,13 +287,13 @@ export default function AdminDashboard() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr 300px",
+          gridTemplateColumns: "1fr 1fr 280px",
           gap: 20,
           marginBottom: 20,
         }}
       >
         {/* Recent Sales */}
-        <div className="ad-card" style={{ gridColumn: "span 1" }}>
+        <div className="ad-card">
           <div
             style={{
               display: "flex",
@@ -322,8 +330,22 @@ export default function AdminDashboard() {
               Loading...
             </div>
           ) : recentSales.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 20, color: "#94a3b8" }}>
-              No sales yet
+            <div
+              style={{
+                textAlign: "center",
+                padding: 20,
+                color: "#94a3b8",
+                fontSize: 13,
+              }}
+            >
+              <div style={{ fontSize: 32, marginBottom: 8 }}>🛒</div>
+              No sales yet.{" "}
+              <Link
+                to="/admin/sales"
+                style={{ color: "#16a34a", fontWeight: 700 }}
+              >
+                Create first sale →
+              </Link>
             </div>
           ) : (
             recentSales.map((s) => (
@@ -400,7 +422,7 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        {/* Inventory Summary */}
+        {/* Inventory Donut */}
         <div className="ad-card">
           <div
             style={{
@@ -437,38 +459,39 @@ export default function AdminDashboard() {
             style={{
               display: "flex",
               justifyContent: "center",
-              marginBottom: 20,
+              marginBottom: 16,
             }}
           >
             <DonutChart
+              inStock={inStockCount}
+              lowStock={lowStockCount}
+              outStock={outCount}
               size={100}
-              segments={[
-                { value: inStockCount || 1, color: "#22c55e" },
-                { value: lowStockCount || 1, color: "#f59e0b" },
-                { value: outCount || 1, color: "#ef4444" },
-              ]}
             />
           </div>
+          {/* Correct counts — each product counted ONCE */}
           {[
-            ["In Stock", inStockCount, "#22c55e"],
-            ["Low Stock", lowStockCount, "#f59e0b"],
-            ["Out of Stock", outCount, "#ef4444"],
-          ].map(([l, v, c]) => (
+            ["In Stock", inStockCount, "#22c55e", "#f0fdf4"],
+            ["Low Stock", lowStockCount, "#f59e0b", "#fffbeb"],
+            ["Out of Stock", outCount, "#ef4444", "#fef2f2"],
+          ].map(([l, v, c, bg]) => (
             <div
               key={l}
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                padding: "8px 0",
-                borderBottom: "1px solid #f8fafc",
+                padding: "9px 12px",
+                borderRadius: 10,
+                background: bg,
+                marginBottom: 6,
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div
                   style={{
-                    width: 10,
-                    height: 10,
+                    width: 9,
+                    height: 9,
                     borderRadius: "50%",
                     background: c,
                   }}
@@ -487,7 +510,7 @@ export default function AdminDashboard() {
               <span
                 style={{
                   fontFamily: "'Plus Jakarta Sans',sans-serif",
-                  fontSize: 14,
+                  fontSize: 15,
                   fontWeight: 800,
                   color: c,
                 }}
@@ -496,6 +519,36 @@ export default function AdminDashboard() {
               </span>
             </div>
           ))}
+          <div
+            style={{
+              marginTop: 10,
+              padding: "10px 12px",
+              borderRadius: 10,
+              background: "#f8fafc",
+              border: "1px solid #e5e7eb",
+              textAlign: "center",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "'Plus Jakarta Sans',sans-serif",
+                fontSize: 12,
+                color: "#64748b",
+              }}
+            >
+              Total:{" "}
+            </span>
+            <span
+              style={{
+                fontFamily: "'Plus Jakarta Sans',sans-serif",
+                fontSize: 14,
+                fontWeight: 800,
+                color: "#0f172a",
+              }}
+            >
+              {totalProducts} products
+            </span>
+          </div>
         </div>
 
         {/* Quick Actions */}
@@ -517,38 +570,33 @@ export default function AdminDashboard() {
                 "+  New Sale",
                 "/admin/sales",
                 "linear-gradient(135deg,#16a34a,#22c55e)",
-                "#fff",
               ],
               [
                 "📦 Inventory",
                 "/admin/inventory",
                 "linear-gradient(135deg,#0891b2,#06b6d4)",
-                "#fff",
               ],
               [
-                "👥 Add Employee",
+                "👥 Users",
                 "/admin/users",
                 "linear-gradient(135deg,#7c3aed,#8b5cf6)",
-                "#fff",
               ],
               [
                 "📈 Reports",
                 "/admin/reports",
                 "linear-gradient(135deg,#db2777,#ec4899)",
-                "#fff",
               ],
               [
                 "⭐ Membership",
                 "/admin/membership",
                 "linear-gradient(135deg,#d97706,#f59e0b)",
-                "#fff",
               ],
-            ].map(([l, p, bg, c]) => (
+            ].map(([l, p, bg]) => (
               <Link
                 key={l}
                 to={p}
                 className="ad-quick"
-                style={{ background: bg, color: c }}
+                style={{ background: bg, color: "#fff" }}
               >
                 {l}
               </Link>
@@ -557,7 +605,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Stats Row */}
+      {/* Bottom stats */}
       <div
         style={{
           display: "grid",
@@ -568,28 +616,31 @@ export default function AdminDashboard() {
         {[
           {
             label: "Total Products",
-            value: inventory.length,
+            value: totalProducts,
             icon: "📦",
             color: "#0891b2",
             bg: "#ecfeff",
           },
           {
             label: "Monthly Sales",
-            value: summary?.monthly_sales || 0,
+            value: summary?.monthly_sales ?? 0,
             icon: "📊",
             color: "#7c3aed",
             bg: "#f5f3ff",
           },
           {
             label: "Yearly Revenue",
-            value: `$${summary?.yearly_revenue?.toFixed(0) || "0"}`,
+            value:
+              summary?.yearly_revenue != null
+                ? `$${summary.yearly_revenue.toFixed(0)}`
+                : "$0",
             icon: "💵",
             color: "#16a34a",
             bg: "#f0fdf4",
           },
           {
             label: "Yearly Sales",
-            value: summary?.yearly_sales || 0,
+            value: summary?.yearly_sales ?? 0,
             icon: "🧾",
             color: "#db2777",
             bg: "#fdf2f8",

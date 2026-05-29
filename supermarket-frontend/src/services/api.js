@@ -58,6 +58,7 @@ export const deleteCustomer = (id) => API.delete(`/api/users/customers/${id}`);
 export const getSales = () => API.get("/api/sales/");
 export const getSaleDetail = (id) => API.get(`/api/sales/${id}`);
 export const createSale = (data) => API.post("/api/sales/", data);
+export const clearAllSales = () => API.delete("/api/sales/clear");
 export const getDailyReport = () => API.get("/api/sales/reports/daily");
 export const getSummaryReport = () => API.get("/api/sales/reports/summary");
 
