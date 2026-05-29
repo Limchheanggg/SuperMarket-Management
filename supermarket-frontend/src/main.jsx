@@ -5,15 +5,24 @@ import { Toaster } from 'react-hot-toast'
 import App from './App'
 import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
-import './styles/global.css'
+import { WishlistProvider } from './context/WishlistContext'
+import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <CartProvider>
-          <App />
-          <Toaster position="bottom-right" toastOptions={{ style: { fontFamily: 'Lato, sans-serif', fontSize: '14px' }, success: { iconTheme: { primary: '#00B207', secondary: '#fff' } } }} />
+          <WishlistProvider>
+            <App />
+            <Toaster
+              position="bottom-right"
+              toastOptions={{
+                style: { fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '14px' },
+                success: { iconTheme: { primary: '#16a34a', secondary: '#fff' } },
+              }}
+            />
+          </WishlistProvider>
         </CartProvider>
       </AuthProvider>
     </BrowserRouter>

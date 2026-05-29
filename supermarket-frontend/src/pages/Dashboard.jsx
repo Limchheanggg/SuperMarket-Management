@@ -1,326 +1,162 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { getOrders, getCustomerMembership } from "../services/api";
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import { getOrders } from '../services/api'
+import API from '../services/api'
 
 export default function Dashboard() {
-  const { user } = useAuth();
-  const name = user?.name || user?.email || "Customer";
-  const [orders, setOrders] = useState([]);
-  const [membership, setMembership] = useState(null);
+  const { user } = useAuth()
+  const [orders, setOrders] = useState([])
+  const [inventory, setInventory] = useState([])
+  const [loading, setLoading] = useState(true)
+  const name = user?.name || user?.email || 'Customer'
 
   useEffect(() => {
-    getOrders()
-      .then((r) => setOrders(r.data || []))
-      .catch(() => {});
-  }, []);
+    Promise.all([
+      getOrders().catch(() => ({ data: [] })),
+      API.get('/api/inventory/').catch(() => ({ data: [] }))
+    ]).then(([ordRes, invRes]) => {
+      setOrders(ordRes.data || [])
+      setInventory(invRes.data || [])
+    }).finally(() => setLoading(false))
+  }, [])
 
-  useEffect(() => {
-    if (user?.id) {
-      getCustomerMembership(user.id)
-        .then((r) => setMembership(r.data))
-        .catch(() => {});
-    }
-  }, [user]);
+  const totalSpent = orders.reduce((s, o) => s + Number(o.total || 0), 0)
+  const lowStock = inventory.filter(i => i.Status !== 'In Stock')
 
-  const totalSpent = orders.reduce(
-    (s, o) => s + Number(o.total || o.Total_Amount || 0),
-    0,
-  );
-  const pending = orders.filter(
-    (o) => (o.status || "").toLowerCase() === "processing",
-  ).length;
-  const points = membership?.Points ?? 0;
-  const tier = membership?.Tier ?? "Bronze";
-
-  const tierColor = {
-    Bronze: "#CD7F32",
-    Silver: "#A8A9AD",
-    Gold: "#FFD700",
-    Platinum: "#00B2FF",
-  };
+  const SIDEBAR_LINKS = [
+    ['🏠', 'Dashboard', '/dashboard'],
+    ['📦', 'My Orders', '/orders'],
+    ['❤️', 'Wishlist', '/wishlist'],
+    ['⚙️', 'Settings', '/account'],
+  ]
 
   return (
     <div className="page-enter">
-      <div
-        style={{
-          background: "#F2FCF3",
-          padding: "14px 0",
-          borderBottom: "1px solid #e8e8e8",
-        }}
-      >
+      <div style={{ background:'#fff', borderBottom:'1px solid #e5e7eb', padding:'12px 0' }}>
         <div className="container">
-          <span style={{ fontSize: 13 }}>
-            Home › <strong>Dashboard</strong>
+          <span style={{ fontSize:13, color:'#6b7280', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+            🏠 Home › <strong style={{ color:'#111827' }}>My Dashboard</strong>
           </span>
         </div>
       </div>
-      <div className="container" style={{ padding: "36px 20px" }}>
-        <h2
-          style={{
-            fontFamily: "'Josefin Sans',sans-serif",
-            fontSize: 24,
-            fontWeight: 700,
-            marginBottom: 24,
-          }}
-        >
-          My Dashboard
-        </h2>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "220px 1fr",
-            minHeight: "60vh",
-            background: "#fff",
-            borderRadius: 16,
-            overflow: "hidden",
-            border: "1px solid #e8e8e8",
-          }}
-        >
+
+      <div className="container" style={{ padding:'36px 24px' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'220px 1fr', minHeight:'70vh', background:'#fff', borderRadius:18, overflow:'hidden', border:'1.5px solid #e5e7eb', boxShadow:'0 4px 20px rgba(0,0,0,.06)' }}>
+
           {/* Sidebar */}
-          <aside style={{ background: "#1a1a1a", padding: "28px 0" }}>
-            <div
-              style={{
-                padding: "0 20px 24px",
-                borderBottom: "1px solid #2a2a2a",
-                marginBottom: 10,
-              }}
-            >
-              <div
-                style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: "50%",
-                  background: "#00B207",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 20,
-                  fontWeight: 700,
-                  color: "#fff",
-                  marginBottom: 10,
-                }}
-              >
+          <aside style={{ background:'linear-gradient(180deg,#0f172a,#1e293b)', padding:'28px 12px', display:'flex', flexDirection:'column' }}>
+            <div style={{ padding:'0 8px 24px', borderBottom:'1px solid rgba(255,255,255,.07)', marginBottom:12 }}>
+              <div style={{ width:52, height:52, borderRadius:15, background:'linear-gradient(135deg,#16a34a,#22c55e)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, fontWeight:800, color:'#fff', marginBottom:10, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                 {name[0].toUpperCase()}
               </div>
-              <div style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>
-                {name}
-              </div>
-              <div
-                style={{
-                  color: tierColor[tier] || "#888",
-                  fontSize: 12,
-                  fontWeight: 700,
-                }}
-              >
-                ⭐ {tier} Member
+              <div style={{ color:'#f1f5f9', fontWeight:700, fontSize:15, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{name}</div>
+              <div style={{ color:'#64748b', fontSize:12, marginTop:2 }}>
+                {user?.role === 'admin' ? '🔴 Admin' : '⭐ Gold Member'}
               </div>
             </div>
-            {[
-              ["🏠", "Dashboard", "/dashboard"],
-              ["📦", "My Orders", "/orders"],
-              ["❤️", "Wishlist", "/wishlist"],
-              ["⚙️", "Settings", "/account"],
-            ].map(([icon, label, to]) => (
-              <Link
-                key={to}
-                to={to}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "13px 20px",
-                  color: "#aaa",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  textDecoration: "none",
-                }}
-              >
-                {icon} {label}
-              </Link>
-            ))}
+            <nav style={{ flex:1 }}>
+              {SIDEBAR_LINKS.map(([icon, label, to]) => (
+                <Link key={to} to={to}
+                  style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 16px', color:'#94a3b8', fontSize:14, fontWeight:600, textDecoration:'none', borderRadius:10, marginBottom:4, transition:'all .2s', fontFamily:"'Plus Jakarta Sans',sans-serif" }}
+                  onMouseEnter={e=>{ e.currentTarget.style.background='rgba(255,255,255,.08)'; e.currentTarget.style.color='#e2e8f0' }}
+                  onMouseLeave={e=>{ e.currentTarget.style.background='transparent'; e.currentTarget.style.color='#94a3b8' }}>
+                  <span style={{ fontSize:18 }}>{icon}</span> {label}
+                </Link>
+              ))}
+              {user?.role === 'admin' && (
+                <Link to="/admin"
+                  style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 16px', color:'#a78bfa', fontSize:14, fontWeight:700, textDecoration:'none', borderRadius:10, marginBottom:4, background:'rgba(124,58,237,.15)', border:'1px solid rgba(124,58,237,.3)', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                  <span style={{ fontSize:18 }}>⚙️</span> Admin Panel
+                </Link>
+              )}
+            </nav>
           </aside>
 
           {/* Content */}
-          <div style={{ padding: 28, background: "#f9f9f9" }}>
+          <div style={{ padding:28, background:'#f8fafc' }}>
+            <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:22, fontWeight:800, color:'#0f172a', marginBottom:20 }}>
+              Good day, {name.split(' ')[0]}! 👋
+            </h2>
+
             {/* Stats */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(4,1fr)",
-                gap: 16,
-                marginBottom: 24,
-              }}
-            >
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14, marginBottom:24 }}>
               {[
-                ["Orders", orders.length, "#00B207"],
-                ["Pending", pending, "#FF8C00"],
-                ["Points", points.toLocaleString(), "#3b82f6"],
-                ["Spent", `$${totalSpent.toFixed(2)}`, "#EA4B48"],
-              ].map(([l, v, c]) => (
-                <div
-                  key={l}
-                  style={{
-                    background: "#fff",
-                    borderRadius: 12,
-                    padding: 20,
-                    borderLeft: `4px solid ${c}`,
-                  }}
-                >
-                  <div
-                    style={{ fontSize: 12, color: "#7e7e7e", marginBottom: 6 }}
-                  >
-                    {l}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 24,
-                      fontWeight: 700,
-                      fontFamily: "'Josefin Sans',sans-serif",
-                    }}
-                  >
-                    {v}
-                  </div>
+                ['Total Orders', orders.length, '#6366f1', 'linear-gradient(135deg,#eef2ff,#e0e7ff)'],
+                ['Pending', orders.filter(o=>o.status==='Processing').length, '#d97706', 'linear-gradient(135deg,#fffbeb,#fef3c7)'],
+                ['Loyalty Points', '1,240', '#16a34a', 'linear-gradient(135deg,#f0fdf4,#dcfce7)'],
+                ['Total Spent', `$${totalSpent.toFixed(2)}`, '#db2777', 'linear-gradient(135deg,#fdf2f8,#fce7f3)'],
+              ].map(([l,v,c,bg]) => (
+                <div key={l} style={{ background:bg, borderRadius:14, padding:'18px 20px', border:`1.5px solid ${c}22` }}>
+                  <div style={{ fontSize:12, color:'#64748b', marginBottom:6, fontWeight:600, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{l}</div>
+                  <div style={{ fontSize:26, fontWeight:800, color:c, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{v}</div>
                 </div>
               ))}
             </div>
 
-            {/* Membership card */}
-            {membership && (
-              <div
-                style={{
-                  background: `linear-gradient(135deg, #1a1a1a, #2d4a1e)`,
-                  borderRadius: 12,
-                  padding: 20,
-                  marginBottom: 24,
-                  color: "#fff",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: 12, color: "#aaa", marginBottom: 4 }}>
-                    Membership Tier
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 22,
-                      fontWeight: 700,
-                      fontFamily: "'Josefin Sans',sans-serif",
-                      color: tierColor[tier],
-                    }}
-                  >
-                    {tier}
-                  </div>
-                  <div style={{ fontSize: 13, color: "#aaa", marginTop: 4 }}>
-                    Total Spent:{" "}
-                    <strong style={{ color: "#fff" }}>
-                      ${membership.Total_Spent?.toFixed(2)}
-                    </strong>
-                  </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+              {/* Recent Orders */}
+              <div style={{ background:'#fff', borderRadius:14, padding:20, border:'1.5px solid #e5e7eb' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+                  <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:15, fontWeight:800, color:'#0f172a' }}>Recent Orders</h3>
+                  <Link to="/orders" style={{ fontSize:12, color:'#6366f1', fontWeight:700, textDecoration:'none' }}>View all →</Link>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 12, color: "#aaa", marginBottom: 4 }}>
-                    Loyalty Points
-                  </div>
-                  <div
-                    style={{ fontSize: 32, fontWeight: 700, color: "#00B207" }}
-                  >
-                    {points.toLocaleString()}
-                  </div>
-                  <div style={{ fontSize: 11, color: "#aaa" }}>
-                    1 pt = $0.01 discount
-                  </div>
+                {loading ? <div style={{ textAlign:'center', color:'#94a3b8', padding:20 }}>Loading…</div>
+                  : orders.length === 0 ? (
+                    <div style={{ textAlign:'center', color:'#94a3b8', padding:20, fontSize:13 }}>
+                      No orders yet. <Link to="/shop" style={{ color:'#16a34a', fontWeight:700 }}>Start shopping!</Link>
+                    </div>
+                  ) : orders.slice(0, 5).map(o => (
+                    <div key={o.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'9px 0', borderBottom:'1px solid #f8fafc', fontSize:13 }}>
+                      <span style={{ color:'#16a34a', fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{o.id}</span>
+                      <span className={`status status-${(o.status||'pending').toLowerCase()}`}>{o.status}</span>
+                      <strong style={{ fontFamily:"'Plus Jakarta Sans',sans-serif" }}>${Number(o.total||0).toFixed(2)}</strong>
+                    </div>
+                  ))
+                }
+              </div>
+
+              {/* Loyalty Program */}
+              <div style={{ background:'#fff', borderRadius:14, padding:20, border:'1.5px solid #e5e7eb' }}>
+                <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:15, fontWeight:800, color:'#0f172a', marginBottom:16 }}>🎁 Loyalty Program</h3>
+                <div style={{ background:'linear-gradient(135deg,#f0fdf4,#dcfce7)', borderRadius:12, padding:16, marginBottom:16, border:'1px solid #86efac' }}>
+                  <div style={{ fontSize:30, fontWeight:800, color:'#16a34a', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>1,240 pts</div>
+                  <div style={{ fontSize:13, color:'#15803d', marginTop:4 }}>760 points away from Platinum!</div>
                 </div>
+                <div style={{ background:'#e5e7eb', height:8, borderRadius:99, overflow:'hidden', marginBottom:6 }}>
+                  <div style={{ background:'linear-gradient(90deg,#16a34a,#22c55e)', height:'100%', width:'62%', borderRadius:99 }} />
+                </div>
+                <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'#94a3b8', marginBottom:16 }}>
+                  <span>Gold (1,000)</span><span>Platinum (2,000)</span>
+                </div>
+                <button style={{ width:'100%', padding:'10px', borderRadius:10, border:'1.5px solid #86efac', background:'#f0fdf4', color:'#16a34a', fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                  Redeem Points
+                </button>
+              </div>
+            </div>
+
+            {/* Low Stock Alert for admin */}
+            {user?.role === 'admin' && lowStock.length > 0 && (
+              <div style={{ marginTop:16, background:'#fffbeb', borderRadius:14, padding:18, border:'1.5px solid #fcd34d' }}>
+                <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:14, fontWeight:800, color:'#d97706', marginBottom:12 }}>
+                  ⚠️ {lowStock.length} Low Stock Items
+                </h3>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
+                  {lowStock.slice(0,6).map(item => (
+                    <div key={item.Product_ID} style={{ background:'#fff', borderRadius:8, padding:'10px 12px', border:'1px solid #fde68a', fontSize:12 }}>
+                      <div style={{ fontWeight:700, color:'#0f172a', marginBottom:2 }}>{item.Name}</div>
+                      <div style={{ color:'#d97706', fontWeight:600 }}>{item.Quantity} left</div>
+                    </div>
+                  ))}
+                </div>
+                <Link to="/admin/inventory" style={{ display:'inline-block', marginTop:10, color:'#d97706', fontWeight:700, fontSize:13, textDecoration:'none' }}>
+                  View all in inventory →
+                </Link>
               </div>
             )}
-
-            {/* Recent Orders */}
-            <div
-              style={{
-                background: "#fff",
-                borderRadius: 12,
-                padding: 20,
-                border: "1px solid #e8e8e8",
-              }}
-            >
-              <h3
-                style={{
-                  fontFamily: "'Josefin Sans',sans-serif",
-                  fontSize: 16,
-                  fontWeight: 700,
-                  marginBottom: 14,
-                }}
-              >
-                Recent Orders
-              </h3>
-              {orders.length === 0 ? (
-                <div
-                  style={{
-                    textAlign: "center",
-                    padding: "30px 20px",
-                    color: "#7e7e7e",
-                  }}
-                >
-                  <div style={{ fontSize: 40 }}>📦</div>
-                  <p style={{ marginTop: 10 }}>No orders yet</p>
-                  <Link
-                    to="/shop"
-                    className="btn btn-primary"
-                    style={{ marginTop: 14, display: "inline-flex" }}
-                  >
-                    Start Shopping
-                  </Link>
-                </div>
-              ) : (
-                orders.slice(0, 5).map((o, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "8px 0",
-                      borderBottom: "1px solid #f5f5f5",
-                      fontSize: 13,
-                    }}
-                  >
-                    <span style={{ color: "#00B207", fontWeight: 700 }}>
-                      {o.id || o.Sale_ID}
-                    </span>
-                    <span style={{ color: "#7e7e7e" }}>
-                      {o.date || o.Sale_Date}
-                    </span>
-                    <span
-                      className={`status status-${(o.status || "pending").toLowerCase()}`}
-                    >
-                      {o.status || "Pending"}
-                    </span>
-                    <strong>
-                      ${Number(o.total || o.Total_Amount || 0).toFixed(2)}
-                    </strong>
-                  </div>
-                ))
-              )}
-              {orders.length > 0 && (
-                <Link
-                  to="/orders"
-                  style={{
-                    color: "#00B207",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    marginTop: 10,
-                    display: "block",
-                  }}
-                >
-                  View all →
-                </Link>
-              )}
-            </div>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }
