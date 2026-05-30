@@ -6,6 +6,7 @@ from ..core.config import settings
 import bcrypt
 import jwt
 import datetime
+from typing import Optional
 
 router = APIRouter()
 
@@ -30,15 +31,14 @@ def decode_token(token: str) -> dict:
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
-def get_current_user(authorization: str = Header(None), db: Session = Depends(get_db)):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing token")
-    token = authorization.split(" ")[1]
-    payload = decode_token(token)
-    user = db.query(UserModel).filter(UserModel.id == int(payload["sub"])).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+def user_to_dict(user):
+    return {
+        "id":    user.id,
+        "name":  user.full_name,
+        "email": user.email,
+        "phone": user.phone,
+        "role":  user.role or "customer",
+    }
 
 @router.post("/register")
 def register(data: dict, db: Session = Depends(get_db)):
@@ -49,45 +49,54 @@ def register(data: dict, db: Session = Depends(get_db)):
         email=data["email"],
         password=hash_password(data["password"]),
         phone=data.get("phone", ""),
-        role="customer"
+        role=data.get("role", "customer")
     )
     db.add(user)
     db.commit()
     db.refresh(user)
-    token = create_token(user.id, user.email, user.role)
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "user": { "id": user.id, "name": user.full_name, "email": user.email, "phone": user.phone, "role": user.role }
-    }
+    token = create_token(user.id, user.email, user.role or "customer")
+    return {"access_token": token, "token_type": "bearer", "user": user_to_dict(user)}
 
 @router.post("/login")
 def login(data: dict, db: Session = Depends(get_db)):
     user = db.query(UserModel).filter(UserModel.email == data["email"]).first()
     if not user or not verify_password(data["password"], user.password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
-    token = create_token(user.id, user.email, user.role)
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "user": { "id": user.id, "name": user.full_name, "email": user.email, "phone": user.phone, "role": user.role }
-    }
+    token = create_token(user.id, user.email, user.role or "customer")
+    return {"access_token": token, "token_type": "bearer", "user": user_to_dict(user)}
 
 @router.get("/me")
-def get_me(current_user: UserModel = Depends(get_current_user)):
-    return {
-        "id": current_user.id,
-        "name": current_user.full_name,
-        "email": current_user.email,
-        "phone": current_user.phone,
-        "role": current_user.role
-    }
+def get_me(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No token provided")
+    token = authorization.split(" ")[1]
+    payload = decode_token(token)
+    user = db.query(UserModel).filter(UserModel.id == int(payload["sub"])).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user_to_dict(user)
 
 @router.put("/me")
-def update_me(data: dict, current_user: UserModel = Depends(get_current_user), db: Session = Depends(get_db)):
-    if "name" in data: current_user.full_name = data["name"]
-    if "phone" in data: current_user.phone = data["phone"]
+def update_me(data: dict, authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No token provided")
+    token = authorization.split(" ")[1]
+    payload = decode_token(token)
+    user = db.query(UserModel).filter(UserModel.id == int(payload["sub"])).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if "name" in data:      user.full_name = data["name"]
+    if "phone" in data:     user.phone     = data["phone"]
     if "password" in data and data["password"]:
-        current_user.password = hash_password(data["password"])
+        user.password = hash_password(data["password"])
     db.commit()
-    return { "id": current_user.id, "name": current_user.full_name, "email": current_user.email, "phone": current_user.phone, "role": current_user.role }
+    db.refresh(user)
+    return user_to_dict(user)
+
+@router.post("/me")
+def get_me_post(data: dict, db: Session = Depends(get_db)):
+    payload = decode_token(data.get("token", ""))
+    user = db.query(UserModel).filter(UserModel.id == int(payload["sub"])).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user_to_dict(user)
