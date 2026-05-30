@@ -1,23 +1,34 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import API from '../services/api'
 
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
+  const [user, setUser]       = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
-    const savedUser = localStorage.getItem('user')
-    if (token && savedUser) {
-      try {
-        setUser(JSON.parse(savedUser))
-      } catch {
+    if (!token) { setLoading(false); return }
+
+    API.get('/api/auth/me')
+      .then(res => {
+        const userData = {
+          id:    res.data.id,
+          name:  res.data.name,
+          email: res.data.email,
+          phone: res.data.phone,
+          role:  res.data.role || 'customer',
+        }
+        localStorage.setItem('user', JSON.stringify(userData))
+        setUser(userData)
+      })
+      .catch(() => {
         localStorage.removeItem('token')
         localStorage.removeItem('user')
-      }
-    }
-    setLoading(false)
+        setUser(null)
+      })
+      .finally(() => setLoading(false))
   }, [])
 
   const loginUser = (token, userData) => {

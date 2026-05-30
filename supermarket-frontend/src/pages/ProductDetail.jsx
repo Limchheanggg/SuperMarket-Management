@@ -674,22 +674,22 @@ export default function ProductDetail() {
               >
                 {[
                   {
-                    name: "Lyveng C.",
+                    name: "Narin PHET",
                     stars: 5,
-                    text: "Great quality product! Very fresh and delivered on time.",
+                    text: "The website is smoother than my semester plans, and those never go smoothly.",
                     color: "#dcfce7",
                   },
                   {
-                    name: "Limchheang K.",
+                    name: "Phourany PHEA",
                     stars: 5,
-                    text: "Exactly as described. Will definitely buy again!",
+                    text: "The product details were clear and the ordering process was smooth. My wallet wasn't happy, but I was.",
                     color: "#dbeafe",
                   },
                   {
-                    name: "Hengveasna H.",
-                    stars: 4,
-                    text: "Good value for money. Packaging was excellent.",
-                    color: "#fce7f3",
+                    name: "Chanvathana NOUN",
+                    stars: 5,
+                    text: "Finding products on this website was easier than finding my lecture notes before an exam.",
+                    color: "#dbf2fe",
                   },
                 ].map((r) => (
                   <div
