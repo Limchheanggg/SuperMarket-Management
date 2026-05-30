@@ -4,11 +4,9 @@ from sqlalchemy import text
 from ..core.database import get_db
 from ..models.product import Product as ProductModel
 from ..models.category import Category as CategoryModel
+from .stock import get_stock
 
 router = APIRouter()
-
-# Same in-memory stock store as inventory router
-from app.routers.inventory import get_stock
 
 def serialize(p, cat):
     stock = get_stock(p.Product_ID)
@@ -56,14 +54,10 @@ def create_product(data: dict, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=400, detail="Barcode already exists")
     product = ProductModel(
-        Barcode=data.get("Barcode"),
-        Name=data.get("Name"),
-        Description=data.get("Description"),
-        Category_ID=data.get("Category_ID"),
-        Brand=data.get("Brand"),
-        Unit=data.get("Unit"),
-        Unit_Price=data.get("Unit_Price"),
-        Unit_Mass_Kg=data.get("Unit_Mass_Kg"),
+        Barcode=data.get("Barcode"), Name=data.get("Name"),
+        Description=data.get("Description"), Category_ID=data.get("Category_ID"),
+        Brand=data.get("Brand"), Unit=data.get("Unit"),
+        Unit_Price=data.get("Unit_Price"), Unit_Mass_Kg=data.get("Unit_Mass_Kg"),
         Reorder_Level=data.get("Reorder_Level", 10),
         Is_Perishable=data.get("Is_Perishable", 0),
         Product_Image=data.get("Product_Image"),
@@ -93,9 +87,9 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Product not found")
     try:
         db.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
-        db.execute(text(f"DELETE FROM Inventory_Batch WHERE Product_ID = {product_id}"))
-        db.execute(text(f"DELETE FROM Sale_Item WHERE Product_ID = {product_id}"))
-        db.execute(text(f"DELETE FROM Stock_Adjustment WHERE Product_ID = {product_id}"))
+        for tbl in ["Inventory_Batch","Sale_Item","Stock_Adjustment"]:
+            try: db.execute(text(f"DELETE FROM {tbl} WHERE Product_ID = {product_id}"))
+            except: pass
         db.delete(p)
         db.commit()
         db.execute(text("SET FOREIGN_KEY_CHECKS = 1"))

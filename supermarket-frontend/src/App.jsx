@@ -23,7 +23,8 @@ import AdminUsers from "./pages/admin/AdminUsers"
 import AdminSales from "./pages/admin/AdminSales"
 import AdminMembership from "./pages/admin/AdminMembership"
 import AdminReports from "./pages/admin/AdminReports"
-import AdminRoute from "./components/common/AdminRoute"
+import AdminRoute from './components/common/AdminRoute'
+import AccessDenied from './pages/AccessDenied'
 
 export default function App() {
   return (
@@ -60,6 +61,7 @@ export default function App() {
         </Route>
       </Route>
 
+      <Route path="/access-denied" element={<AccessDenied />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   )

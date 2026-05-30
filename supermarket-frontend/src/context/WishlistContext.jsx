@@ -1,14 +1,15 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 
 const WishlistContext = createContext(null)
+
+// Global flag outside component to survive StrictMode double-invoke
+const pending = new Set()
 
 export function WishlistProvider({ children }) {
   const [wishlist, setWishlist] = useState(() => {
     try { return JSON.parse(localStorage.getItem('wishlist')) || [] } catch { return [] }
   })
-  // Debounce ref to prevent double toast from React StrictMode double-render
-  const toastRef = useRef({})
 
   useEffect(() => {
     localStorage.setItem('wishlist', JSON.stringify(wishlist))
@@ -16,28 +17,28 @@ export function WishlistProvider({ children }) {
 
   const addToWishlist = (product) => {
     const key = `add_${product.Product_ID}`
-    if (toastRef.current[key]) return
-    toastRef.current[key] = true
-    setTimeout(() => { toastRef.current[key] = false }, 600)
+    if (pending.has(key)) return
+    pending.add(key)
+    setTimeout(() => pending.delete(key), 800)
 
     setWishlist(prev => {
       if (prev.find(p => p.Product_ID === product.Product_ID)) {
-        toast('Already in wishlist!', { icon: '💛' })
+        toast('Already in wishlist!', { icon: '💛', id: `already_${product.Product_ID}` })
         return prev
       }
-      toast.success(`${product.Name} added to wishlist ❤️`)
+      toast.success(`${product.Name} added to wishlist ❤️`, { id: `add_${product.Product_ID}` })
       return [...prev, product]
     })
   }
 
   const removeFromWishlist = (id) => {
     const key = `remove_${id}`
-    if (toastRef.current[key]) return
-    toastRef.current[key] = true
-    setTimeout(() => { toastRef.current[key] = false }, 600)
+    if (pending.has(key)) return
+    pending.add(key)
+    setTimeout(() => pending.delete(key), 800)
 
     setWishlist(prev => prev.filter(p => p.Product_ID !== id))
-    toast('Removed from wishlist', { icon: '🗑️' })
+    toast('Removed from wishlist', { icon: '🗑️', id: `remove_${id}` })
   }
 
   const isInWishlist = (id) => wishlist.some(p => p.Product_ID === id)

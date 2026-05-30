@@ -2,14 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..core.database import get_db
 from ..models.product import Product
+from .stock import stock_store, get_stock
 
 router = APIRouter()
-
-# Shared in-memory stock — default 99 per product
-stock_store = {}
-
-def get_stock(product_id: int) -> int:
-    return stock_store.get(product_id, 99)
 
 @router.get("/")
 def get_inventory(db: Session = Depends(get_db)):
@@ -46,8 +41,7 @@ def get_inventory(db: Session = Depends(get_db)):
 def restock(data: dict):
     pid = data.get("product_id")
     qty = int(data.get("quantity", 0))
-    current = get_stock(pid)
-    stock_store[pid] = current + qty
+    stock_store[pid] = get_stock(pid) + qty
     return {"message": f"Restocked {qty} units", "new_stock": stock_store[pid]}
 
 @router.put("/{product_id}")

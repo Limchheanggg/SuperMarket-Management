@@ -3,10 +3,14 @@ import { useCart } from '../../context/CartContext'
 import { useWishlist } from '../../context/WishlistContext'
 
 const EMOJIS = {
-  Produce:'🥬', Dairy:'🥛', Meat:'🥩', Bakery:'🍞', Beverages:'🧴',
-  Snacks:'🍿', Frozen:'🧊', Cleaning:'🧹', 'Fruits & Vegetables':'🍎',
-  'Meat & Seafood':'🥩', 'Canned Goods':'🥫', 'Personal Care':'💊',
-  Household:'🧹', 'Frozen Foods':'🧊', Seafood:'🐟', Organic:'🌿',
+  'Produce':'🥬','Dairy':'🥛','Meat':'🥩','Bakery':'🍞','Beverages':'🧃',
+  'Snacks':'🍿','Frozen':'🧊','Cleaning':'🧹','Fruits & Vegetables':'🍎',
+  'Meat & Seafood':'🥩','Canned Goods':'🥫','Personal Care':'💊',
+  'Household':'🧹','Frozen Foods':'🧊','Seafood':'🐟','Organic':'🌿',
+  'Rice & Grains':'🍚','Instant Noodles':'🍜','Cooking Oil':'🫙',
+  'Sauces & Condiments':'🧄','Snacks & Biscuits':'🍪','Dairy & Eggs':'🥚',
+  'Fresh Produce':'🥦','Baby & Kids':'👶','Health & Wellness':'💊',
+  'Canned & Preserved':'🥫',
 }
 
 export default function ProductCard({ product }) {
@@ -16,20 +20,14 @@ export default function ProductCard({ product }) {
   const hasDiscount = product.old_price && product.old_price > product.Unit_Price
   const discount = hasDiscount ? Math.round((1 - product.Unit_Price / product.old_price) * 100) : 0
   const inWish = isInWishlist(product.Product_ID)
-
-  // Only show Out of Stock if stock is explicitly 0
-  // null/undefined/99 all mean in stock
   const stock = product.Current_Stock
   const isOutOfStock = stock !== null && stock !== undefined && Number(stock) === 0
 
   const handleWishlist = (e) => {
     e.preventDefault()
     e.stopPropagation()
-    if (inWish) {
-      removeFromWishlist(product.Product_ID)
-    } else {
-      addToWishlist(product)
-    }
+    if (inWish) removeFromWishlist(product.Product_ID)
+    else addToWishlist(product)
   }
 
   return (
@@ -43,7 +41,6 @@ export default function ProductCard({ product }) {
         </div>
       )}
 
-      {/* Wishlist button — toggles on/off */}
       <button onClick={handleWishlist}
         style={{ position:'absolute', top:10, right:10, zIndex:2, width:32, height:32, borderRadius:'50%', border:'none', background: inWish ? '#fee2e2' : 'rgba(255,255,255,.9)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, boxShadow:'0 2px 8px rgba(0,0,0,.1)', transition:'all .2s' }}>
         {inWish ? '❤️' : '🤍'}
@@ -64,7 +61,6 @@ export default function ProductCard({ product }) {
           <strong style={{ color:'#16a34a', fontSize:17, fontWeight:700 }}>${Number(product.Unit_Price).toFixed(2)}</strong>
           {hasDiscount && <del style={{ color:'#9ca3af', fontSize:13 }}>${Number(product.old_price).toFixed(2)}</del>}
         </div>
-
         {isOutOfStock
           ? <div style={{ textAlign:'center', padding:9, fontSize:13, color:'#9ca3af', background:'#f5f5f5', borderRadius:8, marginTop:'auto', fontWeight:600 }}>Out of Stock</div>
           : <button onClick={() => addItem(product)}

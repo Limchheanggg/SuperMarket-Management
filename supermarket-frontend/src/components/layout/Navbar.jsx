@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { getCategories } from "../../services/api";
 
 export default function Navbar() {
-  const { totalItems } = useCart();
+  const { totalItems, totalQty } = useCart();
   const { user, logoutUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();

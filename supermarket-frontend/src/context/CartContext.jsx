@@ -1,39 +1,41 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 
 const CartContext = createContext(null)
+const cartPending = new Set()
 
 export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState(() => {
     try { return JSON.parse(localStorage.getItem('cart')) || [] } catch { return [] }
   })
-  const toastRef = useRef({})
 
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cartItems))
   }, [cartItems])
 
   const addItem = (product, qty = 1) => {
-    // Deduplicate toast — prevent double toast from double render
-    const key = product.Product_ID
-    if (toastRef.current[key]) return
-    toastRef.current[key] = true
-    setTimeout(() => { toastRef.current[key] = false }, 500)
+    const key = `cart_${product.Product_ID}`
+    if (cartPending.has(key)) return
+    cartPending.add(key)
+    setTimeout(() => cartPending.delete(key), 500)
 
     setCartItems(prev => {
       const existing = prev.find(i => i.Product_ID === product.Product_ID)
       if (existing) {
-        toast.success(`${product.Name} quantity updated`)
-        return prev.map(i => i.Product_ID === product.Product_ID ? { ...i, qty: i.qty + qty } : i)
+        toast.success(`${product.Name} quantity updated`, { id: `cart_update_${product.Product_ID}` })
+        return prev.map(i => i.Product_ID === product.Product_ID
+          ? { ...i, qty: i.qty + qty }
+          : i
+        )
       }
-      toast.success(`${product.Name} added to cart!`)
+      toast.success(`${product.Name} added to cart!`, { id: `cart_add_${product.Product_ID}` })
       return [...prev, { ...product, qty }]
     })
   }
 
   const removeItem = (id) => {
     setCartItems(prev => prev.filter(i => i.Product_ID !== id))
-    toast('Item removed from cart')
+    toast('Item removed', { icon: '🗑️' })
   }
 
   const updateQty = (id, qty) => {
@@ -43,11 +45,16 @@ export function CartProvider({ children }) {
 
   const clearCart = () => setCartItems([])
 
-  const totalItems = cartItems.reduce((s, i) => s + i.qty, 0)
+  // totalItems = number of UNIQUE products (for cart icon badge)
+  const totalItems = cartItems.length
+
+  // totalQty = total quantity across all items
+  const totalQty = cartItems.reduce((s, i) => s + i.qty, 0)
+
   const totalPrice = cartItems.reduce((s, i) => s + (Number(i.Unit_Price) || 0) * i.qty, 0)
 
   return (
-    <CartContext.Provider value={{ cartItems, addItem, removeItem, updateQty, clearCart, totalItems, totalPrice }}>
+    <CartContext.Provider value={{ cartItems, addItem, removeItem, updateQty, clearCart, totalItems, totalQty, totalPrice }}>
       {children}
     </CartContext.Provider>
   )
