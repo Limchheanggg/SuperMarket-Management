@@ -171,7 +171,7 @@ export default function AdminSales() {
             🛒 Sales Management
           </h2>
           <p style={{ color: "#64748b", fontSize: 14 }}>
-            {sales.length} total transactions
+            Showing {sales.length} of 9,900+ total transactions
           </p>
         </div>
       </div>

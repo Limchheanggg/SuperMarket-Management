@@ -62,7 +62,7 @@ export default function AdminMembership() {
     if (!selectedUser) { toast.error('Please select a customer'); return }
     setSaving(true)
     try {
-      await API.post('/api/membership/register', { user_id: parseInt(selectedUser) })
+      await API.post('/api/membership/register', { customer_id: parseInt(selectedUser) })
       toast.success('Membership registered!')
       setShowModal(false)
       setSelectedUser('')
@@ -253,7 +253,7 @@ export default function AdminMembership() {
                     : 'No customers match your search.'}
                 </div>
               ) : filteredCustomers.map(c => (
-                <div key={c.id} onClick={() => setSelectedUser(String(c.id))}
+                <div key={c.id} onClick={() => setSelectedUser(String(c.id || c.Customer_ID))}
                   style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', cursor:'pointer', borderBottom:'1px solid #f3f4f6',
                     background: selectedUser===String(c.id) ? '#f0fdf4' : '#fff',
                     transition:'background .15s' }}
