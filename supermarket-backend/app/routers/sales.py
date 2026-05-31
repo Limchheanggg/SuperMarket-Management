@@ -62,13 +62,13 @@ def get_sales(db: Session = Depends(get_db)):
         SELECT
             s.Sale_ID, s.Sale_Day, s.Sale_Month, s.Sale_Year,
             s.Total_Amount, s.Payment_Method, s.Discount, s.Tax,
-            u.full_name as cashier_name,
+            CONCAT(e.First_Name," ",e.Last_Name) as cashier_name,
             COUNT(si.Item_ID) as item_count
         FROM Sale s
-        LEFT JOIN users u ON u.id = s.Employee_ID
+        LEFT JOIN Employee e ON e.Employee_ID = s.Employee_ID
         LEFT JOIN SaleItem si ON si.Sale_ID = s.Sale_ID
         GROUP BY s.Sale_ID, s.Sale_Day, s.Sale_Month, s.Sale_Year,
-                 s.Total_Amount, s.Payment_Method, s.Discount, s.Tax, u.full_name
+                 s.Total_Amount, s.Payment_Method, s.Discount, s.Tax, e.First_Name, e.Last_Name
         ORDER BY s.Sale_ID DESC
         LIMIT 200
     """)).fetchall()
@@ -90,8 +90,11 @@ def get_sales(db: Session = Depends(get_db)):
 def get_sale(sale_id: int, db: Session = Depends(get_db)):
     sale = db.execute(text("""
         SELECT s.Sale_ID, s.Total_Amount, s.Payment_Method,
-               s.Discount, s.Tax, s.Sale_Day, s.Sale_Month, s.Sale_Year
-        FROM Sale s WHERE s.Sale_ID = :id
+               s.Discount, s.Tax, s.Sale_Day, s.Sale_Month, s.Sale_Year,
+               CONCAT(e.First_Name,' ',e.Last_Name) as cashier_name
+        FROM Sale s
+        LEFT JOIN Employee e ON e.Employee_ID = s.Employee_ID
+        WHERE s.Sale_ID = :id
     """), {"id": sale_id}).fetchone()
     if not sale:
         raise HTTPException(status_code=404, detail="Sale not found")
@@ -110,6 +113,7 @@ def get_sale(sale_id: int, db: Session = Depends(get_db)):
         "Tax":          float(sale.Tax or 0),
         "date":         f"{sale.Sale_Day}/{sale.Sale_Month}/{sale.Sale_Year}",
         "method":       sale.Payment_Method,
+        "cashier":      getattr(sale, 'cashier_name', 'Staff') or 'Staff',
         "items": [{
             "Name":       r.Name,
             "Quantity":   r.Quantity,
