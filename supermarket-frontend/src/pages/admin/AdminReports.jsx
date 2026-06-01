@@ -1,59 +1,177 @@
 import { useState, useEffect } from "react";
 import API from "../../services/api";
 
-function BarChart({ data, color, height = 120 }) {
-  const max = Math.max(...data.map((d) => d.value), 1);
+function LineChart({ data, color = "#6366f1", height = 180 }) {
+  const values = data.map((d) => d.value);
+  const max = Math.max(...values, 1);
+  const w = 700,
+    padL = 48,
+    padR = 16,
+    padT = 20,
+    padB = 30;
+  const chartW = w - padL - padR;
+  const chartH = height - padT - padB;
+
+  const points = data.map((d, i) => ({
+    x: padL + (i / (data.length - 1)) * chartW,
+    y: padT + chartH - (d.value / max) * chartH,
+    ...d,
+  }));
+
+  const pathD = points
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
+    .join(" ");
+  const areaD = `${pathD} L ${points[points.length - 1].x} ${padT + chartH} L ${points[0].x} ${padT + chartH} Z`;
+
+  const gridLines = [0, 0.25, 0.5, 0.75, 1].map((pct) => ({
+    y: padT + chartH - pct * chartH,
+    label:
+      max >= 1000
+        ? `$${((max * pct) / 1000).toFixed(1)}k`
+        : `$${(max * pct).toFixed(0)}`,
+  }));
+
+  const currentMonth = new Date().getMonth();
+
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "flex-end",
-        gap: 6,
-        height,
-        paddingTop: 10,
-      }}
+    <svg
+      viewBox={`0 0 ${w} ${height}`}
+      style={{ width: "100%", height, overflow: "visible" }}
     >
-      {data.map((d, i) => (
-        <div
-          key={i}
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 4,
-          }}
-        >
-          <div style={{ fontSize: 9, color: "#64748b", fontWeight: 600 }}>
-            {d.value > 0
-              ? `$${d.value >= 1000 ? (d.value / 1000).toFixed(1) + "k" : d.value.toFixed(0)}`
-              : ""}
-          </div>
-          <div
-            style={{
-              width: "100%",
-              background: `linear-gradient(180deg,${color},${color}88)`,
-              borderRadius: "6px 6px 0 0",
-              height: `${Math.max((d.value / max) * 100, d.value > 0 ? 4 : 1)}%`,
-              minHeight: d.value > 0 ? 4 : 1,
-              transition: "height .5s ease",
-              opacity: d.value > 0 ? 1 : 0.2,
-            }}
-            title={`${d.label}: $${d.value}`}
+      <defs>
+        <linearGradient id="lineAreaGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+        </linearGradient>
+        <filter id="lineglow">
+          <feGaussianBlur stdDeviation="2.5" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* Grid lines */}
+      {gridLines.map((g, i) => (
+        <g key={i}>
+          <line
+            x1={padL}
+            y1={g.y}
+            x2={w - padR}
+            y2={g.y}
+            stroke={i === 0 ? "#e2e8f0" : "#f1f5f9"}
+            strokeWidth={i === 0 ? 1.5 : 1}
+            strokeDasharray={i === 0 ? "none" : "4,4"}
           />
-          <span
+          <text
+            x={padL - 8}
+            y={g.y + 4}
+            textAnchor="end"
             style={{
-              fontFamily: "'Plus Jakarta Sans',sans-serif",
               fontSize: 10,
-              color: "#94a3b8",
-              textAlign: "center",
+              fill: "#94a3b8",
+              fontFamily: "'Plus Jakarta Sans',sans-serif",
+              fontWeight: 500,
             }}
           >
-            {d.label}
-          </span>
-        </div>
+            {g.label}
+          </text>
+        </g>
       ))}
-    </div>
+
+      {/* Area fill */}
+      <path d={areaD} fill="url(#lineAreaGrad)" />
+
+      {/* Smooth line using cubic bezier */}
+      <path
+        d={(() => {
+          let d = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+          for (let i = 1; i < points.length; i++) {
+            const cp1x = (points[i - 1].x + points[i].x) / 2;
+            const cp2x = (points[i - 1].x + points[i].x) / 2;
+            d += ` C ${cp1x.toFixed(1)} ${points[i - 1].y.toFixed(1)}, ${cp2x.toFixed(1)} ${points[i].y.toFixed(1)}, ${points[i].x.toFixed(1)} ${points[i].y.toFixed(1)}`;
+          }
+          return d;
+        })()}
+        fill="none"
+        stroke={color}
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        filter="url(#lineglow)"
+      />
+
+      {/* Current month vertical highlight */}
+      {points[currentMonth]?.value > 0 && (
+        <line
+          x1={points[currentMonth].x}
+          y1={padT}
+          x2={points[currentMonth].x}
+          y2={padT + chartH}
+          stroke={color}
+          strokeWidth="1"
+          strokeOpacity="0.15"
+          strokeDasharray="4,3"
+        />
+      )}
+
+      {/* Data points */}
+      {points.map((p, i) => (
+        <g key={i}>
+          {/* Value label */}
+          {p.value > 0 && (
+            <text
+              x={p.x}
+              y={p.y - 12}
+              textAnchor="middle"
+              style={{
+                fontSize: 9,
+                fill: color,
+                fontWeight: 700,
+                fontFamily: "'Plus Jakarta Sans',sans-serif",
+              }}
+            >
+              {p.value >= 1000
+                ? `$${(p.value / 1000).toFixed(1)}k`
+                : `$${p.value.toFixed(0)}`}
+            </text>
+          )}
+          {/* Outer glow for current month */}
+          {i === currentMonth && p.value > 0 && (
+            <circle cx={p.x} cy={p.y} r={9} fill={color} fillOpacity="0.15" />
+          )}
+          {/* Dot */}
+          <circle
+            cx={p.x}
+            cy={p.y}
+            r={i === currentMonth && p.value > 0 ? 5 : 3.5}
+            fill={p.value > 0 ? "#fff" : "#f1f5f9"}
+            stroke={p.value > 0 ? color : "#cbd5e1"}
+            strokeWidth="2"
+          />
+          {/* X label */}
+          <text
+            x={p.x}
+            y={padT + chartH + 18}
+            textAnchor="middle"
+            style={{
+              fontSize: 10,
+              fill:
+                i === currentMonth
+                  ? color
+                  : p.value > 0
+                    ? "#64748b"
+                    : "#cbd5e1",
+              fontWeight: i === currentMonth ? 800 : p.value > 0 ? 600 : 400,
+              fontFamily: "'Plus Jakarta Sans',sans-serif",
+            }}
+          >
+            {p.label}
+          </text>
+        </g>
+      ))}
+    </svg>
   );
 }
 
@@ -136,7 +254,6 @@ export default function AdminReports() {
   const [bestSellers, setBestSellers] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [payChart, setPayChart] = useState("monthly"); // 'monthly' | 'payment'
 
   useEffect(() => {
     fetchAll();
@@ -163,11 +280,9 @@ export default function AdminReports() {
   };
 
   const lowStock = inventory.filter((i) => i.Status !== "In Stock");
-
-  // Payment method chart data
   const paymentData = summary?.by_method
     ? Object.entries(summary.by_method).map(([k, v]) => ({
-        label: k.replace(" ", ""),
+        label: k,
         value: v,
       }))
     : [];
@@ -375,14 +490,14 @@ export default function AdminReports() {
           marginBottom: 20,
         }}
       >
-        {/* Monthly Revenue Chart — REAL DATA */}
+        {/* Line Chart — Monthly Revenue */}
         <div className="rp-card">
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              marginBottom: 6,
+              marginBottom: 4,
             }}
           >
             <h3
@@ -414,18 +529,17 @@ export default function AdminReports() {
               fontFamily: "'Plus Jakarta Sans',sans-serif",
               fontSize: 12,
               color: "#94a3b8",
-              marginBottom: 16,
+              marginBottom: 12,
             }}
           >
-            Revenue breakdown by month
+            Revenue trend by month
           </p>
           {monthly.length > 0 ? (
             <>
-              <BarChart data={monthly} color="#6366f1" height={140} />
-              {/* Total label */}
+              <LineChart data={monthly} color="#6366f1" height={180} />
               <div
                 style={{
-                  marginTop: 12,
+                  marginTop: 10,
                   padding: "10px 14px",
                   background: "#f8fafc",
                   borderRadius: 10,
@@ -447,7 +561,7 @@ export default function AdminReports() {
           )}
         </div>
 
-        {/* Best Selling Products — REAL DATA */}
+        {/* Best Selling Products */}
         <div className="rp-card">
           <div
             style={{
@@ -483,14 +597,14 @@ export default function AdminReports() {
           </div>
           {bestSellers.length === 0 ? (
             <div style={{ textAlign: "center", padding: 30, color: "#94a3b8" }}>
-              <div style={{ fontSize: 40, marginBottom: 10 }}>📦</div>
-              No sales data yet
+              <div style={{ fontSize: 40, marginBottom: 10 }}>📦</div>No sales
+              data yet
             </div>
           ) : (
             <div style={{ overflowY: "auto", maxHeight: 340 }}>
               {bestSellers.map((p, i) => {
                 const c = RANK_COLORS[i] || "#6366f1";
-                const max = bestSellers[0].total_qty;
+                const maxQty = bestSellers[0].total_qty;
                 return (
                   <div
                     key={i}
@@ -546,7 +660,7 @@ export default function AdminReports() {
                         <div
                           style={{
                             height: "100%",
-                            width: `${(p.total_qty / max) * 100}%`,
+                            width: `${(p.total_qty / maxQty) * 100}%`,
                             background: `linear-gradient(90deg,${c},${c}88)`,
                             borderRadius: 99,
                             transition: "width .5s",
@@ -583,7 +697,7 @@ export default function AdminReports() {
         </div>
       </div>
 
-      {/* Payment Method Breakdown */}
+      {/* Payment Method + All-Time Summary */}
       <div
         style={{
           display: "grid",
@@ -614,7 +728,7 @@ export default function AdminReports() {
               const total = paymentData.reduce((s, x) => s + x.value, 0);
               const pct = total > 0 ? ((p.value / total) * 100).toFixed(1) : 0;
               return (
-                <div key={i} style={{ marginBottom: 14 }}>
+                <div key={i} style={{ marginBottom: 16 }}>
                   <div
                     style={{
                       display: "flex",
@@ -623,9 +737,21 @@ export default function AdminReports() {
                       fontSize: 13,
                     }}
                   >
-                    <span style={{ fontWeight: 700, color: "#374151" }}>
-                      {p.label}
-                    </span>
+                    <div
+                      style={{ display: "flex", alignItems: "center", gap: 8 }}
+                    >
+                      <div
+                        style={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: "50%",
+                          background: colors[i % 4],
+                        }}
+                      />
+                      <span style={{ fontWeight: 700, color: "#374151" }}>
+                        {p.label}
+                      </span>
+                    </div>
                     <span style={{ fontWeight: 800, color: colors[i % 4] }}>
                       ${p.value.toFixed(2)}{" "}
                       <span style={{ color: "#94a3b8", fontWeight: 400 }}>
@@ -635,7 +761,7 @@ export default function AdminReports() {
                   </div>
                   <div
                     style={{
-                      height: 8,
+                      height: 10,
                       background: "#f1f5f9",
                       borderRadius: 99,
                       overflow: "hidden",
@@ -647,7 +773,7 @@ export default function AdminReports() {
                         width: `${pct}%`,
                         background: `linear-gradient(90deg,${colors[i % 4]},${colors[i % 4]}88)`,
                         borderRadius: 99,
-                        transition: "width .5s",
+                        transition: "width .6s ease",
                       }}
                     />
                   </div>
@@ -657,7 +783,6 @@ export default function AdminReports() {
           )}
         </div>
 
-        {/* Total Stats Summary */}
         <div className="rp-card">
           <h3
             style={{

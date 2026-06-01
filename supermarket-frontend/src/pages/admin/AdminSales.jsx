@@ -1,927 +1,360 @@
-import { useState, useEffect } from "react";
-import API from "../../services/api";
-import toast from "react-hot-toast";
+import { useState, useEffect, useCallback } from 'react'
+import API from '../../services/api'
+import toast from 'react-hot-toast'
+
+const METHOD_COLORS = {
+  Cash:     { bg:'#f0fdf4', color:'#16a34a', border:'#86efac' },
+  Card:     { bg:'#dbeafe', color:'#1d4ed8', border:'#93c5fd' },
+  'QR Code':{ bg:'#f5f3ff', color:'#7c3aed', border:'#c4b5fd' },
+  ABA:      { bg:'#fff7ed', color:'#ea580c', border:'#fed7aa' },
+  Wing:     { bg:'#fef9c3', color:'#ca8a04', border:'#fde047' },
+}
 
 export default function AdminSales() {
-  const [tab, setTab] = useState("transactions");
-  const [sales, setSales] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [detail, setDetail] = useState(null);
-  const [detailLoading, setDetailLoading] = useState(false);
+  const [sales, setSales]           = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [summary, setSummary]       = useState(null)
+  const [cashiers, setCashiers]     = useState([])
+  const [methods, setMethods]       = useState([])
+  const [selectedSale, setSelected] = useState(null)
+  const [detailItems, setDetailItems] = useState([])
+  const [detailLoading, setDetailLoading] = useState(false)
 
-  // New sale state
-  const [cart, setCart] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState("");
-  const [qty, setQty] = useState(1);
-  const [paymentMethod, setPaymentMethod] = useState("Cash");
-  const [selectedCustomer, setSelectedCustomer] = useState("");
-  const [discount, setDiscount] = useState(0);
-  const [saleSuccess, setSaleSuccess] = useState(null);
+  // Filters
+  const [dateFrom,   setDateFrom]   = useState('')
+  const [dateTo,     setDateTo]     = useState('')
+  const [method,     setMethod]     = useState('')
+  const [cashier,    setCashier]    = useState('')
+  const [minAmount,  setMinAmount]  = useState('')
+  const [maxAmount,  setMaxAmount]  = useState('')
+  const [search,     setSearch]     = useState('')
+
+  const today = new Date().toISOString().split('T')[0]
 
   useEffect(() => {
-    fetchAll();
-  }, []);
+    fetchSummary()
+    fetchMeta()
+    fetchSales()
+  }, [])
 
-  const fetchAll = async () => {
-    setLoading(true);
+  const fetchSummary = async () => {
     try {
-      const [salesRes, prodRes, custRes] = await Promise.all([
-        API.get("/api/sales/"),
-        API.get("/api/products/"),
-        API.get("/api/users/customers"),
-      ]);
-      setSales(salesRes.data || []);
-      setProducts(prodRes.data || []);
-      setCustomers(custRes.data || []);
-    } catch {
-      setSales([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+      const r = await API.get('/api/sales/reports/summary')
+      setSummary(r.data)
+    } catch {}
+  }
 
-  const addToCart = () => {
-    if (!selectedProduct) return toast.error("Select a product");
-    const product = products.find(
-      (p) => p.Product_ID === parseInt(selectedProduct),
-    );
-    if (!product) return;
-    const existing = cart.find((c) => c.product_id === product.Product_ID);
-    if (existing) {
-      setCart(
-        cart.map((c) =>
-          c.product_id === product.Product_ID
-            ? { ...c, quantity: c.quantity + parseInt(qty) }
-            : c,
-        ),
-      );
-    } else {
-      setCart([
-        ...cart,
-        {
-          product_id: product.Product_ID,
-          name: product.Name,
-          unit_price: product.Unit_Price,
-          quantity: parseInt(qty),
-        },
-      ]);
-    }
-    setSelectedProduct("");
-    setQty(1);
-  };
-
-  const removeFromCart = (id) =>
-    setCart(cart.filter((c) => c.product_id !== id));
-
-  const subtotal = cart.reduce((s, c) => s + c.unit_price * c.quantity, 0);
-  const tax = (subtotal - parseFloat(discount || 0)) * 0.1;
-  const total = subtotal - parseFloat(discount || 0) + tax;
-
-  const processSale = async () => {
-    if (cart.length === 0) return toast.error("Add products first!");
+  const fetchMeta = async () => {
     try {
-      const res = await API.post("/api/sales/", {
-        items: cart.map((c) => ({
-          Product_ID: c.product_id,
-          qty: c.quantity,
-          Unit_Price: c.unit_price,
-        })),
-        discount: parseFloat(discount || 0),
-        tax: parseFloat(tax.toFixed(2)),
-        total: parseFloat(total.toFixed(2)),
-        payment_method: paymentMethod,
-        customer_id: selectedCustomer ? parseInt(selectedCustomer) : null,
-        cashier_id: null,
-      });
-      setSaleSuccess(res.data);
-      setCart([]);
-      setDiscount(0);
-      setSelectedCustomer("");
-      toast.success(`Sale ${res.data.Sale_ID} completed!`);
-      fetchAll();
-    } catch {
-      toast.error("Error processing sale");
-    }
-  };
+      const [cRes, mRes] = await Promise.all([
+        API.get('/api/sales/cashiers'),
+        API.get('/api/sales/methods'),
+      ])
+      setCashiers(cRes.data || [])
+      setMethods(mRes.data || [])
+    } catch {}
+  }
 
-  const viewDetail = async (saleId) => {
-    // Extract numeric ID from "S001" format
-    const numericId = String(saleId).replace(/\D/g, "");
-    if (!numericId) return toast.error("Invalid sale ID");
-    setDetailLoading(true);
+  const fetchSales = useCallback(async (params = {}) => {
+    setLoading(true)
     try {
-      const res = await API.get(`/api/sales/${numericId}`);
-      setDetail(res.data);
-    } catch {
-      toast.error("Could not load sale details");
-    } finally {
-      setDetailLoading(false);
-    }
-  };
+      const query = new URLSearchParams()
+      if (params.dateFrom  || dateFrom)   query.set('date_from',  params.dateFrom  ?? dateFrom)
+      if (params.dateTo    || dateTo)     query.set('date_to',    params.dateTo    ?? dateTo)
+      if (params.method    !== undefined ? params.method    : method)   query.set('method',     params.method    !== undefined ? params.method    : method)
+      if (params.cashier   !== undefined ? params.cashier   : cashier)  query.set('cashier',    params.cashier   !== undefined ? params.cashier   : cashier)
+      if (params.minAmount || minAmount)  query.set('min_amount', params.minAmount ?? minAmount)
+      if (params.maxAmount || maxAmount)  query.set('max_amount', params.maxAmount ?? maxAmount)
+      if (params.search    || search)     query.set('search',     params.search    ?? search)
+      const res = await API.get(`/api/sales/?${query.toString()}`)
+      setSales(res.data || [])
+    } catch { setSales([]) }
+    finally { setLoading(false) }
+  }, [dateFrom, dateTo, method, cashier, minAmount, maxAmount, search])
 
-  // Format date from "D/M/YYYY" to readable string
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "—";
-    // Handle "D/M/YYYY" format from our backend
-    const parts = dateStr.split("/");
-    if (parts.length === 3) {
-      const [d, m, y] = parts;
-      const months = [
-        "",
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ];
-      return `${d} ${months[parseInt(m)] || m} ${y}`;
-    }
-    return dateStr;
-  };
+  const handleApplyFilters = () => fetchSales()
+
+  const handleClearFilters = () => {
+    setDateFrom(''); setDateTo(''); setMethod(''); setCashier('')
+    setMinAmount(''); setMaxAmount(''); setSearch('')
+    fetchSales({ dateFrom:'', dateTo:'', method:'', cashier:'', minAmount:'', maxAmount:'', search:'' })
+  }
+
+  const openDetail = async (sale) => {
+    setSelected(sale)
+    setDetailItems([])
+    setDetailLoading(true)
+    try {
+      const res = await API.get(`/api/sales/${sale.Sale_ID}`)
+      setDetailItems(res.data.items || [])
+    } catch { setDetailItems([]) }
+    finally { setDetailLoading(false) }
+  }
+
+  const totalFiltered = sales.reduce((s, o) => s + Number(o.Total_Amount||0), 0)
+
+  const activeFilters = [dateFrom, dateTo, method, cashier, minAmount, maxAmount, search].filter(Boolean).length
 
   return (
-    <div style={{ padding: 28, fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 24,
-        }}
-      >
+    <div style={{ padding:28, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+
+      {/* Header */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24 }}>
         <div>
-          <h2
-            style={{
-              fontFamily: "'Plus Jakarta Sans',sans-serif",
-              fontSize: 24,
-              fontWeight: 800,
-              color: "#0f172a",
-              marginBottom: 4,
-            }}
-          >
-            🛒 Sales Management
-          </h2>
-          <p style={{ color: "#64748b", fontSize: 14 }}>
-            Showing {sales.length} of 9,900+ total transactions
-          </p>
+          <h2 style={{ fontSize:24, fontWeight:800, color:'#0f172a', marginBottom:4 }}>🛒 Sales Management</h2>
+          <p style={{ color:'#64748b', fontSize:14 }}>View, filter and analyse all transactions</p>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+      {/* KPI Row */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14, marginBottom:24 }}>
         {[
-          ["transactions", "📋 Transactions"],
-          ["new_sale", "+ New Sale"],
-        ].map(([t, label]) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            style={{
-              padding: "10px 22px",
-              borderRadius: 10,
-              border: "none",
-              cursor: "pointer",
-              fontWeight: 700,
-              fontSize: 13,
-              background:
-                tab === t
-                  ? "linear-gradient(135deg,#15803d,#22c55e)"
-                  : "#f1f5f9",
-              color: tab === t ? "#fff" : "#374151",
-              fontFamily: "'Plus Jakarta Sans',sans-serif",
-            }}
-          >
-            {label}
-          </button>
+          ['Total Transactions', summary?.total_transactions||0,                          '#6366f1','linear-gradient(135deg,#eef2ff,#e0e7ff)','🧾'],
+          ['Monthly Revenue',   `$${(summary?.monthly_revenue||0).toFixed(2)}`,           '#16a34a','linear-gradient(135deg,#f0fdf4,#dcfce7)','💰'],
+          ['Monthly Sales',      summary?.monthly_sales||0,                               '#d97706','linear-gradient(135deg,#fffbeb,#fef3c7)','📊'],
+          ['Avg Transaction',   `$${(summary?.average_transaction||0).toFixed(2)}`,       '#db2777','linear-gradient(135deg,#fdf2f8,#fce7f3)','📈'],
+        ].map(([l,v,c,bg,icon]) => (
+          <div key={l} style={{ background:bg, borderRadius:14, padding:'18px 20px', border:`1.5px solid ${c}22` }}>
+            <div style={{ fontSize:11, color:'#64748b', marginBottom:4, fontWeight:600 }}>{icon} {l}</div>
+            <div style={{ fontSize:26, fontWeight:800, color:c }}>{v}</div>
+          </div>
         ))}
       </div>
 
-      {/* Transactions Tab */}
-      {tab === "transactions" && (
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: 14,
-            overflow: "hidden",
-            border: "1.5px solid #e5e7eb",
-            boxShadow: "0 2px 10px rgba(0,0,0,.04)",
-          }}
-        >
-          <table
-            style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}
-          >
-            <thead>
-              <tr
-                style={{
-                  background: "#f8fafc",
-                  borderBottom: "2px solid #e5e7eb",
-                }}
-              >
-                {[
-                  "Sale ID",
-                  "Customer",
-                  "Items",
-                  "Total",
-                  "Payment",
-                  "Status",
-                  "Date",
-                  "Actions",
-                ].map((h) => (
-                  <th
-                    key={h}
-                    style={{
-                      padding: "13px 16px",
-                      textAlign: "left",
-                      fontWeight: 700,
-                      color: "#374151",
-                      fontFamily: "'Plus Jakarta Sans',sans-serif",
-                    }}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td
-                    colSpan={8}
-                    style={{
-                      padding: 40,
-                      textAlign: "center",
-                      color: "#94a3b8",
-                    }}
-                  >
-                    Loading...
-                  </td>
-                </tr>
-              ) : sales.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={8}
-                    style={{
-                      padding: 40,
-                      textAlign: "center",
-                      color: "#94a3b8",
-                    }}
-                  >
-                    <div style={{ fontSize: 40, marginBottom: 10 }}>🧾</div>
-                    <p>
-                      No sales yet.{" "}
-                      <button
-                        onClick={() => setTab("new_sale")}
-                        style={{
-                          color: "#16a34a",
-                          fontWeight: 700,
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Create first sale →
-                      </button>
-                    </p>
-                  </td>
-                </tr>
-              ) : (
-                sales.map((s) => (
-                  <tr
-                    key={s.Sale_ID}
-                    style={{ borderBottom: "1px solid #f5f5f5" }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.background = "#fafafa")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.background = "transparent")
-                    }
-                  >
-                    <td
-                      style={{
-                        padding: "13px 16px",
-                        color: "#16a34a",
-                        fontWeight: 700,
-                      }}
-                    >
-                      #{s.Sale_ID}
-                    </td>
-                    <td style={{ padding: "13px 16px" }}>
-                      {s.Customer || "Walk-in"}
-                    </td>
-                    <td style={{ padding: "13px 16px", color: "#64748b" }}>
-                      {s.items} items
-                    </td>
-                    <td style={{ padding: "13px 16px", fontWeight: 700 }}>
-                      ${Number(s.Total_Amount || 0).toFixed(2)}
-                    </td>
-                    <td style={{ padding: "13px 16px", color: "#374151" }}>
-                      <span
-                        style={{
-                          padding: "3px 10px",
-                          borderRadius: 99,
-                          fontSize: 11,
-                          fontWeight: 700,
-                          background: "#f0fdf4",
-                          color: "#16a34a",
-                          border: "1px solid #86efac",
-                        }}
-                      >
-                        {s.method || "—"}
-                      </span>
-                    </td>
-                    <td style={{ padding: "13px 16px" }}>
-                      <span
-                        style={{
-                          padding: "3px 10px",
-                          borderRadius: 99,
-                          fontSize: 11,
-                          fontWeight: 700,
-                          background: "#dcfce7",
-                          color: "#15803d",
-                        }}
-                      >
-                        {s.status || "completed"}
-                      </span>
-                    </td>
-                    <td
-                      style={{
-                        padding: "13px 16px",
-                        color: "#64748b",
-                        fontSize: 12,
-                      }}
-                    >
-                      {formatDate(s.date)}
-                    </td>
-                    <td style={{ padding: "13px 16px" }}>
-                      <button
-                        onClick={() => viewDetail(s.Sale_ID)}
-                        disabled={detailLoading}
-                        style={{
-                          padding: "6px 14px",
-                          borderRadius: 8,
-                          border: "1.5px solid #93c5fd",
-                          background: "#dbeafe",
-                          color: "#1d4ed8",
-                          cursor: "pointer",
-                          fontSize: 12,
-                          fontWeight: 700,
-                          fontFamily: "'Plus Jakarta Sans',sans-serif",
-                        }}
-                      >
-                        {detailLoading ? "…" : "View"}
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* New Sale Tab */}
-      {tab === "new_sale" && (
-        <div
-          style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 20 }}
-        >
-          <div>
-            {/* Add Product */}
-            <div
-              style={{
-                background: "#fff",
-                borderRadius: 14,
-                padding: 20,
-                border: "1.5px solid #e5e7eb",
-                marginBottom: 16,
-              }}
-            >
-              <h3
-                style={{
-                  fontFamily: "'Plus Jakarta Sans',sans-serif",
-                  fontSize: 15,
-                  fontWeight: 800,
-                  marginBottom: 14,
-                  color: "#0f172a",
-                }}
-              >
-                Add Products
-              </h3>
-              <div style={{ display: "flex", gap: 10 }}>
-                <select
-                  value={selectedProduct}
-                  onChange={(e) => setSelectedProduct(e.target.value)}
-                  style={{
-                    flex: 1,
-                    padding: "10px 14px",
-                    borderRadius: 9,
-                    border: "1.5px solid #e5e7eb",
-                    fontSize: 13,
-                    fontFamily: "'Plus Jakarta Sans',sans-serif",
-                    outline: "none",
-                  }}
-                >
-                  <option value="">Select product...</option>
-                  {products.map((p) => (
-                    <option key={p.Product_ID} value={p.Product_ID}>
-                      {p.Name} — ${p.Unit_Price} ({p.Current_Stock} in stock)
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  value={qty}
-                  onChange={(e) => setQty(e.target.value)}
-                  min="1"
-                  style={{
-                    width: 70,
-                    padding: "10px 14px",
-                    borderRadius: 9,
-                    border: "1.5px solid #e5e7eb",
-                    fontSize: 13,
-                    outline: "none",
-                  }}
-                />
-                <button
-                  onClick={addToCart}
-                  style={{
-                    padding: "10px 18px",
-                    borderRadius: 9,
-                    border: "none",
-                    background: "linear-gradient(135deg,#15803d,#22c55e)",
-                    color: "#fff",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    fontFamily: "'Plus Jakarta Sans',sans-serif",
-                  }}
-                >
-                  Add
-                </button>
-              </div>
-            </div>
-
-            {/* Cart Items */}
-            <div
-              style={{
-                background: "#fff",
-                borderRadius: 14,
-                padding: 20,
-                border: "1.5px solid #e5e7eb",
-              }}
-            >
-              <h3
-                style={{
-                  fontFamily: "'Plus Jakarta Sans',sans-serif",
-                  fontSize: 15,
-                  fontWeight: 800,
-                  marginBottom: 14,
-                  color: "#0f172a",
-                }}
-              >
-                Cart Items{" "}
-                {cart.length > 0 && (
-                  <span style={{ color: "#16a34a" }}>({cart.length})</span>
-                )}
-              </h3>
-              {cart.length === 0 ? (
-                <div
-                  style={{
-                    textAlign: "center",
-                    color: "#94a3b8",
-                    padding: 30,
-                    fontSize: 13,
-                  }}
-                >
-                  No items added yet
-                </div>
-              ) : (
-                cart.map((item) => (
-                  <div
-                    key={item.product_id}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "12px 0",
-                      borderBottom: "1px solid #f5f5f5",
-                    }}
-                  >
-                    <div>
-                      <div
-                        style={{
-                          fontWeight: 700,
-                          fontSize: 13,
-                          color: "#0f172a",
-                        }}
-                      >
-                        {item.name}
-                      </div>
-                      <div style={{ color: "#94a3b8", fontSize: 12 }}>
-                        ${item.unit_price} × {item.quantity}
-                      </div>
-                    </div>
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: 12 }}
-                    >
-                      <span
-                        style={{
-                          fontWeight: 800,
-                          color: "#16a34a",
-                          fontSize: 14,
-                        }}
-                      >
-                        ${(item.unit_price * item.quantity).toFixed(2)}
-                      </span>
-                      <button
-                        onClick={() => removeFromCart(item.product_id)}
-                        style={{
-                          border: "none",
-                          background: "#fee2e2",
-                          color: "#dc2626",
-                          cursor: "pointer",
-                          fontSize: 16,
-                          width: 28,
-                          height: 28,
-                          borderRadius: "50%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Summary */}
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 14,
-              padding: 20,
-              border: "1.5px solid #e5e7eb",
-              height: "fit-content",
-            }}
-          >
-            <h3
-              style={{
-                fontFamily: "'Plus Jakarta Sans',sans-serif",
-                fontSize: 15,
-                fontWeight: 800,
-                marginBottom: 16,
-                color: "#0f172a",
-              }}
-            >
-              Sale Summary
-            </h3>
-
-            <div style={{ marginBottom: 14 }}>
-              <label
-                style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  display: "block",
-                  marginBottom: 6,
-                  color: "#374151",
-                }}
-              >
-                Customer (optional)
-              </label>
-              <select
-                value={selectedCustomer}
-                onChange={(e) => setSelectedCustomer(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: 9,
-                  border: "1.5px solid #e5e7eb",
-                  fontSize: 13,
-                  fontFamily: "'Plus Jakarta Sans',sans-serif",
-                  outline: "none",
-                }}
-              >
-                <option value="">Walk-in Customer</option>
-                {customers.map((c) => (
-                  <option key={c.Customer_ID} value={c.Customer_ID}>
-                    {c.First_Name} {c.Last_Name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ marginBottom: 14 }}>
-              <label
-                style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  display: "block",
-                  marginBottom: 6,
-                  color: "#374151",
-                }}
-              >
-                Payment Method
-              </label>
-              <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: 9,
-                  border: "1.5px solid #e5e7eb",
-                  fontSize: 13,
-                  fontFamily: "'Plus Jakarta Sans',sans-serif",
-                  outline: "none",
-                }}
-              >
-                {["Cash", "Card", "QR Code", "Bank Transfer"].map((m) => (
-                  <option key={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ marginBottom: 20 }}>
-              <label
-                style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  display: "block",
-                  marginBottom: 6,
-                  color: "#374151",
-                }}
-              >
-                Discount ($)
-              </label>
-              <input
-                type="number"
-                value={discount}
-                onChange={(e) => setDiscount(e.target.value)}
-                min="0"
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: 9,
-                  border: "1.5px solid #e5e7eb",
-                  fontSize: 13,
-                  boxSizing: "border-box",
-                  outline: "none",
-                }}
-              />
-            </div>
-
-            <div
-              style={{
-                borderTop: "2px solid #f1f5f9",
-                paddingTop: 14,
-                marginBottom: 16,
-              }}
-            >
-              {[
-                ["Subtotal", `$${subtotal.toFixed(2)}`],
-                ["Discount", `-$${parseFloat(discount || 0).toFixed(2)}`],
-                ["Tax (10%)", `$${tax.toFixed(2)}`],
-              ].map(([l, v]) => (
-                <div
-                  key={l}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: 13,
-                    color: "#64748b",
-                    marginBottom: 6,
-                  }}
-                >
-                  <span>{l}</span>
-                  <span>{v}</span>
-                </div>
-              ))}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: 18,
-                  fontWeight: 800,
-                  marginTop: 10,
-                  color: "#0f172a",
-                }}
-              >
-                <span>Total</span>
-                <span style={{ color: "#16a34a" }}>${total.toFixed(2)}</span>
-              </div>
-            </div>
-
-            <button
-              onClick={processSale}
-              style={{
-                width: "100%",
-                padding: 13,
-                borderRadius: 10,
-                border: "none",
-                background: "linear-gradient(135deg,#15803d,#22c55e)",
-                color: "#fff",
-                fontWeight: 700,
-                cursor: "pointer",
-                fontSize: 15,
-                fontFamily: "'Plus Jakarta Sans',sans-serif",
-                boxShadow: "0 4px 12px rgba(21,128,61,.3)",
-              }}
-            >
-              ✓ Process Sale
+      {/* ── FILTERS ── */}
+      <div style={{ background:'#fff', borderRadius:16, padding:20, border:'1.5px solid #e5e7eb', marginBottom:20, boxShadow:'0 2px 8px rgba(0,0,0,.04)' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+          <h3 style={{ fontSize:15, fontWeight:800, color:'#0f172a' }}>🔍 Filters</h3>
+          {activeFilters > 0 && (
+            <button onClick={handleClearFilters}
+              style={{ fontSize:12, color:'#dc2626', fontWeight:700, background:'#fef2f2', border:'1px solid #fecaca', borderRadius:8, padding:'4px 12px', cursor:'pointer' }}>
+              Clear all ({activeFilters})
             </button>
+          )}
+        </div>
 
-            {saleSuccess && (
-              <div
-                style={{
-                  marginTop: 14,
-                  padding: 14,
-                  background: "#f0fdf4",
-                  borderRadius: 10,
-                  textAlign: "center",
-                  border: "1px solid #86efac",
-                }}
-              >
-                <div
-                  style={{ color: "#16a34a", fontWeight: 800, fontSize: 14 }}
-                >
-                  ✅ Sale {saleSuccess.Sale_ID} Complete!
-                </div>
-                <div style={{ color: "#374151", fontSize: 13, marginTop: 4 }}>
-                  Total: ${saleSuccess.Total_Amount?.toFixed(2)}
-                </div>
-                <button
-                  onClick={() => setSaleSuccess(null)}
-                  style={{
-                    marginTop: 8,
-                    border: "none",
-                    background: "none",
-                    color: "#16a34a",
-                    cursor: "pointer",
-                    fontWeight: 700,
-                    fontFamily: "'Plus Jakarta Sans',sans-serif",
-                  }}
-                >
-                  + New Sale →
-                </button>
-              </div>
-            )}
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:12 }}>
+          {/* Date From */}
+          <div>
+            <label style={{ fontSize:12, fontWeight:700, color:'#374151', display:'block', marginBottom:5 }}>From Date</label>
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+              style={{ width:'100%', padding:'9px 12px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:13, outline:'none', boxSizing:'border-box' }} />
+          </div>
+          {/* Date To */}
+          <div>
+            <label style={{ fontSize:12, fontWeight:700, color:'#374151', display:'block', marginBottom:5 }}>To Date</label>
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+              style={{ width:'100%', padding:'9px 12px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:13, outline:'none', boxSizing:'border-box' }} />
+          </div>
+          {/* Payment Method */}
+          <div>
+            <label style={{ fontSize:12, fontWeight:700, color:'#374151', display:'block', marginBottom:5 }}>Payment Method</label>
+            <select value={method} onChange={e => setMethod(e.target.value)}
+              style={{ width:'100%', padding:'9px 12px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:13, outline:'none', background:'#fff' }}>
+              <option value="">All Methods</option>
+              {methods.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+          {/* Cashier */}
+          <div>
+            <label style={{ fontSize:12, fontWeight:700, color:'#374151', display:'block', marginBottom:5 }}>Cashier</label>
+            <select value={cashier} onChange={e => setCashier(e.target.value)}
+              style={{ width:'100%', padding:'9px 12px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:13, outline:'none', background:'#fff' }}>
+              <option value="">All Cashiers</option>
+              {cashiers.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          {/* Min Amount */}
+          <div>
+            <label style={{ fontSize:12, fontWeight:700, color:'#374151', display:'block', marginBottom:5 }}>Min Amount ($)</label>
+            <input type="number" min="0" step="0.01" value={minAmount} onChange={e => setMinAmount(e.target.value)}
+              placeholder="e.g. 5.00"
+              style={{ width:'100%', padding:'9px 12px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:13, outline:'none', boxSizing:'border-box' }} />
+          </div>
+          {/* Max Amount */}
+          <div>
+            <label style={{ fontSize:12, fontWeight:700, color:'#374151', display:'block', marginBottom:5 }}>Max Amount ($)</label>
+            <input type="number" min="0" step="0.01" value={maxAmount} onChange={e => setMaxAmount(e.target.value)}
+              placeholder="e.g. 100.00"
+              style={{ width:'100%', padding:'9px 12px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:13, outline:'none', boxSizing:'border-box' }} />
           </div>
         </div>
-      )}
 
-      {/* Detail Modal */}
-      {detail && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            padding: 20,
-          }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setDetail(null);
-          }}
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 16,
-              padding: 28,
-              width: "100%",
-              maxWidth: 460,
-              boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
-              maxHeight: "90vh",
-              overflowY: "auto",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 18,
-              }}
-            >
-              <h3
-                style={{
-                  fontFamily: "'Plus Jakarta Sans',sans-serif",
-                  fontSize: 18,
-                  fontWeight: 800,
-                  color: "#0f172a",
-                }}
-              >
-                Receipt — Sale #{detail.Sale_ID}
-              </h3>
-              <button
-                onClick={() => setDetail(null)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: 22,
-                  cursor: "pointer",
-                  color: "#94a3b8",
-                }}
-              >
-                ✕
-              </button>
+        {/* Quick date shortcuts */}
+        <div style={{ display:'flex', gap:8, marginBottom:12, flexWrap:'wrap' }}>
+          <span style={{ fontSize:12, color:'#64748b', alignSelf:'center', fontWeight:600 }}>Quick:</span>
+          {[
+            ['Today',      today,                    today],
+            ['This Week',  (() => { const d=new Date(); d.setDate(d.getDate()-d.getDay()); return d.toISOString().split('T')[0] })(), today],
+            ['This Month', today.slice(0,7)+'-01',   today],
+            ['This Year',  today.slice(0,4)+'-01-01',today],
+          ].map(([label, from, to]) => (
+            <button key={label} onClick={() => { setDateFrom(from); setDateTo(to) }}
+              style={{ padding:'5px 12px', borderRadius:8, border:'1.5px solid #e5e7eb', background: dateFrom===from&&dateTo===to ? '#f0fdf4' : '#fff', color: dateFrom===from&&dateTo===to ? '#16a34a' : '#374151', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <button onClick={handleApplyFilters}
+          style={{ padding:'10px 28px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#15803d,#22c55e)', color:'#fff', fontWeight:700, fontSize:14, cursor:'pointer', boxShadow:'0 4px 12px rgba(21,128,61,.3)' }}>
+          Apply Filters
+        </button>
+      </div>
+
+      {/* Results summary */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, padding:'12px 16px', background:'#f8fafc', borderRadius:10, border:'1px solid #e5e7eb', fontSize:13 }}>
+        <span style={{ color:'#374151' }}>
+          Showing <strong style={{ color:'#0f172a' }}>{sales.length}</strong> transactions
+          {activeFilters > 0 && <span style={{ color:'#6366f1' }}> (filtered)</span>}
+        </span>
+        <span style={{ fontWeight:800, color:'#16a34a', fontSize:15 }}>
+          Total: ${totalFiltered.toFixed(2)}
+        </span>
+      </div>
+
+      {/* ── TABLE ── */}
+      <div style={{ background:'#fff', borderRadius:16, overflow:'hidden', border:'1.5px solid #e5e7eb', boxShadow:'0 2px 10px rgba(0,0,0,.04)' }}>
+        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+          <thead>
+            <tr style={{ background:'#f8fafc', borderBottom:'2px solid #e5e7eb' }}>
+              {['Sale ID','Date','Time','Customer','Cashier','Items','Amount','Payment','Actions'].map(h => (
+                <th key={h} style={{ padding:'13px 14px', textAlign:'left', fontWeight:700, color:'#374151', whiteSpace:'nowrap' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={9} style={{ padding:48, textAlign:'center', color:'#94a3b8' }}>
+                <div style={{ fontSize:36, marginBottom:10 }}>⏳</div>
+                <p>Loading sales...</p>
+              </td></tr>
+            ) : sales.length === 0 ? (
+              <tr><td colSpan={9} style={{ padding:48, textAlign:'center', color:'#94a3b8' }}>
+                <div style={{ fontSize:40, marginBottom:10 }}>🔍</div>
+                <p>No sales found for the selected filters.</p>
+              </td></tr>
+            ) : sales.map(s => {
+              const mc = METHOD_COLORS[s.Payment_Method] || { bg:'#f3f4f6', color:'#374151', border:'#e5e7eb' }
+              return (
+                <tr key={s.Sale_ID} style={{ borderBottom:'1px solid #f8fafc' }}
+                  onMouseEnter={e=>e.currentTarget.style.background='#fafafa'}
+                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                  <td style={{ padding:'12px 14px', fontWeight:700, color:'#6366f1' }}>{s.Sale_ID_fmt}</td>
+                  <td style={{ padding:'12px 14px', color:'#374151', fontWeight:500, whiteSpace:'nowrap' }}>{s.date}</td>
+                  <td style={{ padding:'12px 14px', color:'#94a3b8', fontSize:12 }}>{s.time}</td>
+                  <td style={{ padding:'12px 14px' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+                      <div style={{ width:28, height:28, borderRadius:9, background:'#f0fdf4', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, color:'#16a34a', flexShrink:0 }}>
+                        {s.customer === 'Walk-in' ? '👤' : s.customer[0].toUpperCase()}
+                      </div>
+                      <span style={{ color: s.customer==='Walk-in' ? '#94a3b8' : '#0f172a', fontStyle: s.customer==='Walk-in' ? 'italic' : 'normal', fontSize:13 }}>
+                        {s.customer}
+                      </span>
+                    </div>
+                  </td>
+                  <td style={{ padding:'12px 14px', color:'#374151', fontSize:13 }}>{s.cashier}</td>
+                  <td style={{ padding:'12px 14px', textAlign:'center' }}>
+                    <span style={{ background:'#f1f5f9', color:'#475569', padding:'3px 10px', borderRadius:99, fontSize:12, fontWeight:700 }}>
+                      {s.item_count}
+                    </span>
+                  </td>
+                  <td style={{ padding:'12px 14px', fontWeight:800, color:'#0f172a', fontSize:14 }}>
+                    ${s.Total_Amount.toFixed(2)}
+                  </td>
+                  <td style={{ padding:'12px 14px' }}>
+                    <span style={{ padding:'4px 10px', borderRadius:99, fontSize:11, fontWeight:700, background:mc.bg, color:mc.color, border:`1px solid ${mc.border}`, whiteSpace:'nowrap' }}>
+                      {s.Payment_Method}
+                    </span>
+                  </td>
+                  <td style={{ padding:'12px 14px' }}>
+                    <button onClick={() => openDetail(s)}
+                      style={{ padding:'5px 14px', borderRadius:8, border:'1.5px solid #c4b5fd', background:'#f5f3ff', color:'#7c3aed', cursor:'pointer', fontSize:12, fontWeight:700 }}>
+                      Details
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ── DETAIL MODAL ── */}
+      {selectedSale && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }}
+          onClick={e => { if(e.target===e.currentTarget) setSelected(null) }}>
+          <div style={{ background:'#fff', borderRadius:18, padding:32, width:'100%', maxWidth:560, boxShadow:'0 8px 40px rgba(0,0,0,.15)', maxHeight:'90vh', overflowY:'auto' }}>
+
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+              <h3 style={{ fontSize:20, fontWeight:800, color:'#0f172a' }}>🧾 Sale {selectedSale.Sale_ID_fmt}</h3>
+              <button onClick={() => setSelected(null)} style={{ background:'none', border:'none', fontSize:22, cursor:'pointer', color:'#94a3b8' }}>✕</button>
             </div>
 
-            {detail.items?.length > 0 ? (
-              detail.items.map((item, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: 13,
-                    padding: "8px 0",
-                    borderBottom: "1px solid #f5f5f5",
-                  }}
-                >
-                  <span style={{ color: "#374151" }}>
-                    {item.Name} × {item.Quantity}
-                  </span>
-                  <span style={{ fontWeight: 700 }}>
-                    ${Number(item.Subtotal || 0).toFixed(2)}
-                  </span>
-                </div>
-              ))
+            {/* Sale info grid */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:20 }}>
+              {[
+                ['📅 Date',       selectedSale.date],
+                ['⏰ Time',       selectedSale.time],
+                ['👤 Customer',   selectedSale.customer],
+                ['👨‍💼 Cashier',    selectedSale.cashier],
+                ['💳 Payment',    selectedSale.Payment_Method],
+                ['📦 Items',      `${selectedSale.item_count} item${selectedSale.item_count!==1?'s':''}`],
+              ].map(([label, value]) => {
+                const mc = label.includes('Payment') ? (METHOD_COLORS[value] || {}) : {}
+                return (
+                  <div key={label} style={{ padding:'10px 14px', background:'#f8fafc', borderRadius:10, border:'1px solid #e5e7eb' }}>
+                    <div style={{ fontSize:11, color:'#94a3b8', marginBottom:3, fontWeight:600 }}>{label}</div>
+                    <strong style={{ fontSize:14, color: mc.color || '#0f172a' }}>{value}</strong>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Items */}
+            <h4 style={{ fontSize:14, fontWeight:800, color:'#0f172a', marginBottom:10 }}>🛒 Items Purchased</h4>
+            {detailLoading ? (
+              <div style={{ textAlign:'center', padding:24, color:'#94a3b8' }}>⏳ Loading items...</div>
+            ) : detailItems.length === 0 ? (
+              <div style={{ textAlign:'center', padding:20, color:'#94a3b8', background:'#f8fafc', borderRadius:10, fontSize:13 }}>No item details available</div>
             ) : (
-              <div
-                style={{
-                  textAlign: "center",
-                  color: "#94a3b8",
-                  padding: "20px 0",
-                  fontSize: 13,
-                }}
-              >
-                No item details available
+              <div style={{ border:'1.5px solid #e5e7eb', borderRadius:12, overflow:'hidden', marginBottom:20 }}>
+                <div style={{ background:'#f8fafc', padding:'9px 14px', display:'grid', gridTemplateColumns:'1fr auto auto', gap:12, fontSize:12, fontWeight:700, color:'#374151', borderBottom:'1px solid #e5e7eb' }}>
+                  <span>Product</span><span style={{ textAlign:'right' }}>Qty × Price</span><span style={{ textAlign:'right' }}>Subtotal</span>
+                </div>
+                {detailItems.map((item, i) => (
+                  <div key={i} style={{ display:'grid', gridTemplateColumns:'1fr auto auto', gap:12, padding:'11px 14px', borderBottom: i<detailItems.length-1?'1px solid #f3f4f6':'none', background: i%2===0?'#fff':'#fafafa', fontSize:13 }}>
+                    <span style={{ fontWeight:600, color:'#0f172a' }}>{item.Name}</span>
+                    <span style={{ color:'#64748b', textAlign:'right', whiteSpace:'nowrap' }}>{item.Quantity} × ${item.Unit_Price.toFixed(2)}</span>
+                    <strong style={{ color:'#16a34a', textAlign:'right' }}>${item.Subtotal.toFixed(2)}</strong>
+                  </div>
+                ))}
               </div>
             )}
 
-            <div
-              style={{
-                marginTop: 14,
-                paddingTop: 14,
-                borderTop: "2px solid #e5e7eb",
-              }}
-            >
+            {/* Totals */}
+            <div style={{ borderTop:'2px solid #e5e7eb', paddingTop:14 }}>
               {[
-                [
-                  "Total Amount",
-                  `$${Number(detail.Total_Amount || 0).toFixed(2)}`,
-                ],
-              ].map(([l, v]) => (
-                <div
-                  key={l}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: 15,
-                    fontWeight: 700,
-                    color: "#16a34a",
-                  }}
-                >
-                  <span>{l}</span>
-                  <span>{v}</span>
+                ['Subtotal', `$${(selectedSale.Total_Amount - (selectedSale.Tax||0)).toFixed(2)}`],
+                ['Tax',      `$${(selectedSale.Tax||0).toFixed(2)}`],
+                ...(selectedSale.Discount > 0 ? [['Discount', `-$${selectedSale.Discount.toFixed(2)}`]] : []),
+              ].map(([l,v]) => (
+                <div key={l} style={{ display:'flex', justifyContent:'space-between', fontSize:13, color:'#64748b', marginBottom:6 }}>
+                  <span>{l}</span><span>{v}</span>
                 </div>
               ))}
+              <div style={{ display:'flex', justifyContent:'space-between', fontWeight:800, fontSize:18, color:'#16a34a', marginTop:10, paddingTop:10, borderTop:'1px solid #e5e7eb' }}>
+                <span>Total</span><span>${selectedSale.Total_Amount.toFixed(2)}</span>
+              </div>
             </div>
 
-            <button
-              onClick={() => setDetail(null)}
-              style={{
-                width: "100%",
-                marginTop: 18,
-                padding: 11,
-                borderRadius: 10,
-                border: "1.5px solid #e5e7eb",
-                background: "#f8fafc",
-                fontWeight: 700,
-                cursor: "pointer",
-                fontFamily: "'Plus Jakarta Sans',sans-serif",
-              }}
-            >
+            <button onClick={() => setSelected(null)}
+              style={{ width:'100%', marginTop:20, padding:'12px', borderRadius:12, border:'none', background:'linear-gradient(135deg,#15803d,#22c55e)', color:'#fff', fontWeight:700, fontSize:14, cursor:'pointer' }}>
               Close
             </button>
           </div>
         </div>
       )}
     </div>
-  );
+  )
 }
