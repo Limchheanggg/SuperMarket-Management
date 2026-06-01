@@ -1,168 +1,161 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from ..core.database import get_db
-from ..models.sales import Sale, SaleItem
-from ..models.inventory import Inventory
 from datetime import datetime, date
+from typing import Optional
 
 router = APIRouter()
+
+@router.get("/")
+def get_sales(
+    db: Session = Depends(get_db),
+    date_from:   Optional[str] = Query(None),
+    date_to:     Optional[str] = Query(None),
+    method:      Optional[str] = Query(None),
+    cashier:     Optional[str] = Query(None),
+    min_amount:  Optional[float] = Query(None),
+    max_amount:  Optional[float] = Query(None),
+    search:      Optional[str] = Query(None),
+):
+    where = ["1=1"]
+    params = {}
+
+    if date_from:
+        where.append("(s.Sale_Year*10000 + s.Sale_Month*100 + s.Sale_Day) >= :dfrom")
+        d = datetime.strptime(date_from, "%Y-%m-%d")
+        params["dfrom"] = d.year*10000 + d.month*100 + d.day
+    if date_to:
+        where.append("(s.Sale_Year*10000 + s.Sale_Month*100 + s.Sale_Day) <= :dto")
+        d = datetime.strptime(date_to, "%Y-%m-%d")
+        params["dto"] = d.year*10000 + d.month*100 + d.day
+    if method:
+        where.append("s.Payment_Method = :method")
+        params["method"] = method
+    if cashier:
+        where.append("CONCAT(e.First_Name,' ',e.Last_Name) LIKE :cashier")
+        params["cashier"] = f"%{cashier}%"
+    if min_amount is not None:
+        where.append("s.Total_Amount >= :min_a")
+        params["min_a"] = min_amount
+    if max_amount is not None:
+        where.append("s.Total_Amount <= :max_a")
+        params["max_a"] = max_amount
+    if search:
+        where.append("(CONCAT(e.First_Name,' ',e.Last_Name) LIKE :search OR s.Payment_Method LIKE :search)")
+        params["search"] = f"%{search}%"
+
+    where_clause = " AND ".join(where)
+    rows = db.execute(text(f"""
+        SELECT
+            s.Sale_ID,
+            s.Sale_Day, s.Sale_Month, s.Sale_Year,
+            s.Sale_Time,
+            s.Total_Amount,
+            s.Payment_Method,
+            s.Discount,
+            s.Tax,
+            COALESCE(CONCAT(c.First_Name,' ',c.Last_Name), 'Walk-in') as customer,
+            COALESCE(CONCAT(e.First_Name,' ',e.Last_Name), 'Staff') as cashier,
+            (SELECT COUNT(*) FROM SaleItem si WHERE si.Sale_ID = s.Sale_ID) as item_count
+        FROM Sale s
+        LEFT JOIN Customer c ON c.Customer_ID = s.Customer_ID
+        LEFT JOIN Employee e ON e.Employee_ID = s.Employee_ID
+        WHERE {where_clause}
+        ORDER BY s.Sale_Year DESC, s.Sale_Month DESC, s.Sale_Day DESC, s.Sale_Time DESC
+        LIMIT 500
+    """), params).fetchall()
+
+    result = []
+    for r in rows:
+        d = dict(r._mapping)
+        d['Total_Amount'] = float(d['Total_Amount'] or 0)
+        d['Discount']     = float(d['Discount'] or 0)
+        d['Tax']          = float(d['Tax'] or 0)
+        d['date']         = f"{d['Sale_Year']}-{str(d['Sale_Month']).zfill(2)}-{str(d['Sale_Day']).zfill(2)}"
+        d['time']         = str(d['Sale_Time'])[:5] if d['Sale_Time'] else '—'
+        d['Sale_ID_fmt']  = f"S{str(d['Sale_ID']).zfill(4)}"
+        result.append(d)
+    return result
+
+@router.get("/cashiers")
+def get_cashiers(db: Session = Depends(get_db)):
+    rows = db.execute(text("""
+        SELECT DISTINCT CONCAT(e.First_Name,' ',e.Last_Name) as name
+        FROM Sale s
+        JOIN Employee e ON e.Employee_ID = s.Employee_ID
+        ORDER BY name
+    """)).fetchall()
+    return [r.name for r in rows]
+
+@router.get("/methods")
+def get_methods(db: Session = Depends(get_db)):
+    rows = db.execute(text("SELECT DISTINCT Payment_Method FROM Sale ORDER BY Payment_Method")).fetchall()
+    return [r.Payment_Method for r in rows]
 
 @router.get("/reports/summary")
 def get_summary(db: Session = Depends(get_db)):
     today = date.today()
-    r = db.execute(text("""
+    row = db.execute(text("""
         SELECT
-            COALESCE(SUM(Total_Amount),0) as total,
-            COUNT(*) as total_count,
-            COALESCE(SUM(CASE WHEN Sale_Month=:m AND Sale_Year=:y THEN Total_Amount ELSE 0 END),0) as monthly,
-            COALESCE(SUM(CASE WHEN Sale_Year=:y THEN Total_Amount ELSE 0 END),0) as yearly,
-            COUNT(CASE WHEN Sale_Month=:m AND Sale_Year=:y THEN 1 END) as monthly_count,
-            COUNT(CASE WHEN Sale_Year=:y THEN 1 END) as yearly_count
+            COUNT(*) as total_transactions,
+            ROUND(SUM(Total_Amount),2) as total_revenue,
+            ROUND(AVG(Total_Amount),2) as average_transaction,
+            SUM(CASE WHEN Sale_Month=:m AND Sale_Year=:y THEN 1 ELSE 0 END) as monthly_sales,
+            ROUND(SUM(CASE WHEN Sale_Month=:m AND Sale_Year=:y THEN Total_Amount ELSE 0 END),2) as monthly_revenue,
+            SUM(CASE WHEN Sale_Year=:y THEN 1 ELSE 0 END) as yearly_sales,
+            ROUND(SUM(CASE WHEN Sale_Year=:y THEN Total_Amount ELSE 0 END),2) as yearly_revenue
         FROM Sale
     """), {"m": today.month, "y": today.year}).fetchone()
 
-    by_method = db.execute(text("""
+    methods = db.execute(text("""
         SELECT Payment_Method, ROUND(SUM(Total_Amount),2) as total
         FROM Sale GROUP BY Payment_Method
     """)).fetchall()
 
     return {
-        "total_revenue":       round(float(r.total), 2),
-        "monthly_revenue":     round(float(r.monthly), 2),
-        "yearly_revenue":      round(float(r.yearly), 2),
-        "total_transactions":  r.total_count,
-        "monthly_sales":       r.monthly_count,
-        "yearly_sales":        r.yearly_count,
-        "average_transaction": round(float(r.total) / r.total_count, 2) if r.total_count else 0,
-        "by_method":           {row.Payment_Method: float(row.total) for row in by_method},
+        "total_transactions":  row.total_transactions or 0,
+        "total_revenue":       float(row.total_revenue or 0),
+        "average_transaction": float(row.average_transaction or 0),
+        "monthly_sales":       row.monthly_sales or 0,
+        "monthly_revenue":     float(row.monthly_revenue or 0),
+        "yearly_sales":        row.yearly_sales or 0,
+        "yearly_revenue":      float(row.yearly_revenue or 0),
+        "by_method":           {r.Payment_Method: float(r.total) for r in methods},
     }
 
 @router.get("/reports/daily")
 def get_daily(db: Session = Depends(get_db)):
     today = date.today()
-    r = db.execute(text("""
-        SELECT COALESCE(SUM(Total_Amount),0) as total, COUNT(*) as cnt
+    row = db.execute(text("""
+        SELECT COUNT(*) as total_sales,
+               ROUND(SUM(Total_Amount),2) as total_revenue,
+               ROUND(AVG(Total_Amount),2) as avg_transaction
         FROM Sale
         WHERE Sale_Day=:d AND Sale_Month=:m AND Sale_Year=:y
     """), {"d": today.day, "m": today.month, "y": today.year}).fetchone()
-    total = float(r.total)
-    cnt   = r.cnt
     return {
-        "date":              today.strftime("%Y-%m-%d"),
-        "total_revenue":     round(total, 2),
-        "total_sales":       cnt,
-        "avg_transaction":   round(total / cnt, 2) if cnt else 0,
+        "date": str(today),
+        "total_sales":      row.total_sales or 0,
+        "total_revenue":    float(row.total_revenue or 0),
+        "avg_transaction":  float(row.avg_transaction or 0),
     }
 
-@router.get("/")
-def get_sales(db: Session = Depends(get_db)):
-    # Single SQL join — no Python loops over 10k rows
+@router.get("/reports/monthly")
+def get_monthly(db: Session = Depends(get_db)):
+    today = date.today()
     rows = db.execute(text("""
-        SELECT
-            s.Sale_ID, s.Sale_Day, s.Sale_Month, s.Sale_Year,
-            s.Total_Amount, s.Payment_Method, s.Discount, s.Tax,
-            CONCAT(e.First_Name," ",e.Last_Name) as cashier_name,
-            COUNT(si.Item_ID) as item_count
-        FROM Sale s
-        LEFT JOIN Employee e ON e.Employee_ID = s.Employee_ID
-        LEFT JOIN SaleItem si ON si.Sale_ID = s.Sale_ID
-        GROUP BY s.Sale_ID, s.Sale_Day, s.Sale_Month, s.Sale_Year,
-                 s.Total_Amount, s.Payment_Method, s.Discount, s.Tax, e.First_Name, e.Last_Name
-        ORDER BY s.Sale_ID DESC
-        LIMIT 200
-    """)).fetchall()
-
-    return [{
-        "Sale_ID":      f"S{r.Sale_ID:03d}",
-        "date":         f"{r.Sale_Day}/{r.Sale_Month}/{r.Sale_Year}",
-        "Customer":     "Walk-in",
-        "cashier":      r.cashier_name or "Staff",
-        "items":        r.item_count,
-        "Total_Amount": float(r.Total_Amount),
-        "method":       r.Payment_Method,
-        "status":       "completed",
-        "Discount":     float(r.Discount or 0),
-        "Tax":          float(r.Tax or 0),
-    } for r in rows]
-
-@router.get("/{sale_id}")
-def get_sale(sale_id: int, db: Session = Depends(get_db)):
-    sale = db.execute(text("""
-        SELECT s.Sale_ID, s.Total_Amount, s.Payment_Method,
-               s.Discount, s.Tax, s.Sale_Day, s.Sale_Month, s.Sale_Year,
-               CONCAT(e.First_Name,' ',e.Last_Name) as cashier_name
-        FROM Sale s
-        LEFT JOIN Employee e ON e.Employee_ID = s.Employee_ID
-        WHERE s.Sale_ID = :id
-    """), {"id": sale_id}).fetchone()
-    if not sale:
-        raise HTTPException(status_code=404, detail="Sale not found")
-
-    items = db.execute(text("""
-        SELECT p.Name, si.Quantity, si.Unit_Price, si.Subtotal
-        FROM SaleItem si
-        JOIN Product p ON p.Product_ID = si.Product_ID
-        WHERE si.Sale_ID = :id
-    """), {"id": sale_id}).fetchall()
-
-    return {
-        "Sale_ID":      sale.Sale_ID,
-        "Total_Amount": float(sale.Total_Amount),
-        "Discount":     float(sale.Discount or 0),
-        "Tax":          float(sale.Tax or 0),
-        "date":         f"{sale.Sale_Day}/{sale.Sale_Month}/{sale.Sale_Year}",
-        "method":       sale.Payment_Method,
-        "cashier":      getattr(sale, 'cashier_name', 'Staff') or 'Staff',
-        "items": [{
-            "Name":       r.Name,
-            "Quantity":   r.Quantity,
-            "Unit_Price": r.Unit_Price,
-            "Subtotal":   r.Subtotal,
-        } for r in items],
-    }
-
-@router.post("/")
-def create_sale(data: dict, db: Session = Depends(get_db)):
-    now = datetime.now()
-    sale = Sale(
-        Sale_Day       = now.day,
-        Sale_Month     = now.month,
-        Sale_Year      = now.year,
-        Sale_Time      = now.time(),
-        Employee_ID    = data.get("cashier_id") or 2,
-        Customer_ID    = data.get("customer_id"),
-        Total_Amount   = data.get("total", 0),
-        Discount       = data.get("discount", 0),
-        Tax            = data.get("tax", 0),
-        Payment_Method = data.get("payment_method", "Cash"),
-    )
-    db.add(sale)
-    db.flush()
-
-    for item in data.get("items", []):
-        db.add(SaleItem(
-            Sale_ID    = sale.Sale_ID,
-            Product_ID = item["Product_ID"],
-            Quantity   = item["qty"],
-            Unit_Price = item["Unit_Price"],
-            Subtotal   = item["Unit_Price"] * item["qty"],
-        ))
-        inv = db.query(Inventory).filter(Inventory.Product_ID == item["Product_ID"]).first()
-        if inv:
-            inv.Quantity = max(0, inv.Quantity - item["qty"])
-    db.commit()
-    db.refresh(sale)
-    return {"Sale_ID": f"S{sale.Sale_ID:03d}", "Total_Amount": float(sale.Total_Amount), "status": "completed"}
-
-@router.delete("/clear")
-def clear_all_sales(db: Session = Depends(get_db)):
-    db.execute(text("SET FOREIGN_KEY_CHECKS=0"))
-    db.execute(text("DELETE FROM SaleItem"))
-    db.execute(text("DELETE FROM Sale"))
-    db.execute(text("SET FOREIGN_KEY_CHECKS=1"))
-    db.commit()
-    return {"message": "All sales cleared"}
+        SELECT Sale_Month as month,
+               COUNT(*) as sales,
+               ROUND(SUM(Total_Amount),2) as revenue
+        FROM Sale WHERE Sale_Year=:y
+        GROUP BY Sale_Month ORDER BY Sale_Month
+    """), {"y": today.year}).fetchall()
+    data = {r.month: {"sales": r.sales, "revenue": float(r.revenue)} for r in rows}
+    months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+    return [{"label": months[i], "month": i+1,
+             "sales": data.get(i+1,{}).get("sales",0),
+             "value": data.get(i+1,{}).get("revenue",0)} for i in range(12)]
 
 @router.get("/reports/best-sellers")
 def get_best_sellers(db: Session = Depends(get_db)):
@@ -173,29 +166,71 @@ def get_best_sellers(db: Session = Depends(get_db)):
         FROM SaleItem si
         JOIN Product p ON p.Product_ID = si.Product_ID
         GROUP BY p.Product_ID, p.Name, p.Unit_Price
-        ORDER BY total_qty DESC
-        LIMIT 10
+        ORDER BY total_qty DESC LIMIT 10
     """)).fetchall()
     return [{"name": r.name, "price": float(r.price),
              "total_qty": int(r.total_qty),
              "total_revenue": float(r.total_revenue)} for r in rows]
 
-@router.get("/reports/monthly")
-def get_monthly(db: Session = Depends(get_db)):
-    from datetime import date
-    year = date.today().year
-    rows = db.execute(text("""
-        SELECT Sale_Month as month,
-               COUNT(*) as sales,
-               ROUND(SUM(Total_Amount),2) as revenue
-        FROM Sale
-        WHERE Sale_Year = :year
-        GROUP BY Sale_Month
-        ORDER BY Sale_Month
-    """), {"year": year}).fetchall()
-    # Fill all 12 months (0 for missing)
-    data = {r.month: {"sales": r.sales, "revenue": float(r.revenue)} for r in rows}
-    months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-    return [{"label": months[i], "month": i+1,
-             "sales": data.get(i+1, {}).get("sales", 0),
-             "value": data.get(i+1, {}).get("revenue", 0)} for i in range(12)]
+@router.get("/{sale_id}")
+def get_sale(sale_id: int, db: Session = Depends(get_db)):
+    sale = db.execute(text("""
+        SELECT s.Sale_ID, s.Total_Amount, s.Payment_Method,
+               s.Discount, s.Tax, s.Sale_Day, s.Sale_Month, s.Sale_Year,
+               s.Sale_Time,
+               COALESCE(CONCAT(c.First_Name,' ',c.Last_Name),'Walk-in') as customer,
+               COALESCE(CONCAT(e.First_Name,' ',e.Last_Name),'Staff') as cashier
+        FROM Sale s
+        LEFT JOIN Customer c ON c.Customer_ID = s.Customer_ID
+        LEFT JOIN Employee e ON e.Employee_ID = s.Employee_ID
+        WHERE s.Sale_ID = :id
+    """), {"id": sale_id}).fetchone()
+    if not sale:
+        raise HTTPException(status_code=404, detail="Sale not found")
+    items = db.execute(text("""
+        SELECT p.Name, p.Product_ID, si.Quantity, si.Unit_Price, si.Subtotal
+        FROM SaleItem si JOIN Product p ON p.Product_ID = si.Product_ID
+        WHERE si.Sale_ID = :id
+    """), {"id": sale_id}).fetchall()
+    return {
+        "Sale_ID":        sale.Sale_ID,
+        "date":           f"{sale.Sale_Day}/{sale.Sale_Month}/{sale.Sale_Year}",
+        "time":           str(sale.Sale_Time)[:5] if sale.Sale_Time else '—',
+        "Total_Amount":   float(sale.Total_Amount),
+        "Payment_Method": sale.Payment_Method,
+        "Discount":       float(sale.Discount or 0),
+        "Tax":            float(sale.Tax or 0),
+        "customer":       sale.customer,
+        "cashier":        sale.cashier,
+        "items":          [{"Name": i.Name, "Quantity": i.Quantity,
+                            "Unit_Price": float(i.Unit_Price),
+                            "Subtotal": float(i.Subtotal)} for i in items],
+    }
+
+@router.post("/")
+def create_sale(data: dict, db: Session = Depends(get_db)):
+    now = datetime.now()
+    result = db.execute(text("""
+        INSERT INTO Sale (Sale_Day, Sale_Month, Sale_Year, Sale_Time,
+                          Employee_ID, Customer_ID, Total_Amount, Discount, Tax, Payment_Method)
+        VALUES (:d,:m,:y,:t,:eid,:cid,:total,:disc,:tax,:method)
+    """), {
+        "d": now.day, "m": now.month, "y": now.year, "t": now.strftime("%H:%M:%S"),
+        "eid":    data.get("cashier_id") or 1,
+        "cid":    data.get("customer_id"),
+        "total":  data.get("total", 0),
+        "disc":   data.get("discount", 0),
+        "tax":    data.get("tax", 0),
+        "method": data.get("payment_method", "Cash"),
+    })
+    db.commit()
+    sale_id = result.lastrowid
+    for item in data.get("items", []):
+        db.execute(text("""
+            INSERT INTO SaleItem (Sale_ID, Product_ID, Quantity, Unit_Price, Subtotal)
+            VALUES (:sid,:pid,:qty,:price,:sub)
+        """), {"sid": sale_id, "pid": item["Product_ID"],
+               "qty": item["qty"], "price": item["Unit_Price"],
+               "sub": item["Unit_Price"] * item["qty"]})
+    db.commit()
+    return {"Sale_ID": f"S{str(sale_id).zfill(4)}", "Total_Amount": data.get("total",0)}
