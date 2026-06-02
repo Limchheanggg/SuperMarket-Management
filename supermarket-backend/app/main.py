@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import Base, engine
-from app.routers import auth, products, cart, orders, inventory, users, sales, membership, shifts
+from app.routers import auth, products, cart, orders, inventory, users, sales, membership, shifts, coupons
 
 Base.metadata.create_all(bind=engine)
 
@@ -24,6 +24,7 @@ app.include_router(users.router,      prefix="/api/users",      tags=["Users"])
 app.include_router(sales.router,      prefix="/api/sales",      tags=["Sales"])
 app.include_router(membership.router, prefix="/api/membership", tags=["Membership"])
 app.include_router(shifts.router,     prefix="/api/shifts",     tags=["Shifts"])
+app.include_router(coupons.router,    prefix="/api/coupons",    tags=["Coupons"])
 
 @app.get("/")
 def root():
