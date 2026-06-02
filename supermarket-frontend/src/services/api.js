@@ -73,3 +73,11 @@ export const addPoints = (id, data) =>
   API.put(`/api/membership/add-points/${id}`, data);
 
 export default API;
+
+// Coupons
+export const getCoupons       = ()       => API.get('/api/coupons/')
+export const getActiveCoupons = ()       => API.get('/api/coupons/active')
+export const createCoupon     = (data)   => API.post('/api/coupons/', data)
+export const updateCoupon     = (id, data) => API.put(`/api/coupons/${id}`, data)
+export const deleteCoupon     = (id)     => API.delete(`/api/coupons/${id}`)
+export const validateCoupon   = (data)   => API.post('/api/coupons/validate', data)
