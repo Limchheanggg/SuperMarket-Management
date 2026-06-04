@@ -1,1406 +1,456 @@
-import { useState, useEffect, useRef } from "react";
-import API from "../../services/api";
-import toast from "react-hot-toast";
+import { useState, useEffect, useRef } from 'react'
+import API from '../../services/api'
+import toast from 'react-hot-toast'
 
-const statusColor = {
-  "In Stock": "#16a34a",
-  "Low Stock": "#d97706",
-  "Out of Stock": "#dc2626",
-};
+const STATUS_CFG = {
+  'In Stock':     { bg:'#dcfce7', color:'#15803d', border:'#86efac', dot:'#22c55e' },
+  'Low Stock':    { bg:'#fef9c3', color:'#a16207', border:'#fde047', dot:'#eab308' },
+  'Out of Stock': { bg:'#fee2e2', color:'#dc2626', border:'#fca5a5', dot:'#ef4444' },
+}
+
+const UNITS = ['piece','pack','kg','g','bottle','can','box','bag','bunch','tray','roll','sachet','tube','jar','carton']
 
 const EMOJIS = {
-  Beverages: "💧",
-  Dairy: "🥛",
-  Snacks: "🍿",
-  Bakery: "🍞",
-  "Meat & Seafood": "🥩",
-  "Fruits & Vegetables": "🍎",
-  "Frozen Foods": "🧊",
-  "Personal Care": "💊",
-  Household: "🧹",
-  "Canned Goods": "🥫",
-  Produce: "🥬",
-  Meat: "🥩",
-  Frozen: "🧊",
-  Seafood: "🐟",
-  Organic: "🌿",
-};
-
-// Unit enum options — select instead of free-type
-const UNIT_OPTIONS = [
-  "Bottle",
-  "Can",
-  "Pack",
-  "Bag",
-  "Box",
-  "Carton",
-  "Loaf",
-  "Piece",
-  "kg",
-  "g",
-  "L",
-  "ml",
-  "Dozen",
-  "Bundle",
-  "Tray",
-  "Jar",
-  "Tube",
-  "Sachet",
-  "Roll",
-  "Bar",
-];
-
-const EMPTY_PRODUCT = {
-  Barcode: "",
-  Name: "",
-  Description: "",
-  Category_ID: "",
-  Brand: "",
-  Unit: "",
-  Unit_Price: "",
-  Unit_Mass_Kg: "",
-  Reorder_Level: "10",
-  Is_Perishable: "0",
-  Product_Image: "",
-};
-
-function resizeImage(file, maxSize = 400) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        let w = img.width,
-          h = img.height;
-        if (w > h) {
-          if (w > maxSize) {
-            h = Math.round((h * maxSize) / w);
-            w = maxSize;
-          }
-        } else {
-          if (h > maxSize) {
-            w = Math.round((w * maxSize) / h);
-            h = maxSize;
-          }
-        }
-        canvas.width = w;
-        canvas.height = h;
-        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL("image/jpeg", 0.75));
-      };
-      img.onerror = reject;
-      img.src = ev.target.result;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+  'Rice & Grains':'🍚','Instant Noodles':'🍜','Cooking Oil':'🫙',
+  'Sauces & Condiments':'🧄','Canned & Preserved':'🥫','Snacks & Biscuits':'🍪',
+  'Beverages':'🧃','Dairy & Eggs':'🥚','Frozen Foods':'🧊','Fresh Produce':'🥦',
+  'Meat & Seafood':'🥩','Personal Care':'💊','Household':'🏠',
+  'Baby & Kids':'👶','Health & Wellness':'💉',
 }
 
-// ── Product Form Modal — defined OUTSIDE so React never remounts it ──
-function ProductFormModal({
-  title,
-  productForm,
-  setProductForm,
-  imagePreview,
-  setImagePreview,
-  onConfirm,
-  onClose,
-  saving,
-  categories,
-}) {
-  const fileRef = useRef();
-  const set = (field) => (e) =>
-    setProductForm((f) => ({ ...f, [field]: e.target.value }));
-
-  const handleImageChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be under 5MB");
-      return;
-    }
-    try {
-      const resized = await resizeImage(file, 400);
-      setImagePreview(resized);
-      setProductForm((f) => ({ ...f, Product_Image: resized }));
-    } catch {
-      toast.error("Failed to process image");
-    }
-  };
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.5)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-        padding: 20,
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: 16,
-          padding: 28,
-          width: "100%",
-          maxWidth: 600,
-          maxHeight: "90vh",
-          overflowY: "auto",
-          boxShadow: "0 8px 40px rgba(0,0,0,0.2)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 20,
-          }}
-        >
-          <h3
-            style={{
-              fontFamily: "'Plus Jakarta Sans',sans-serif",
-              fontSize: 18,
-              fontWeight: 700,
-            }}
-          >
-            {title}
-          </h3>
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              fontSize: 22,
-              cursor: "pointer",
-              color: "#888",
-            }}
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Image Upload */}
-        <div style={{ marginBottom: 20, textAlign: "center" }}>
-          <div
-            onClick={() => fileRef.current?.click()}
-            style={{
-              width: 120,
-              height: 120,
-              borderRadius: 12,
-              border: "2px dashed #ddd",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              margin: "0 auto 10px",
-              overflow: "hidden",
-              background: "#f9f9f9",
-              fontSize: 48,
-              transition: "border-color 0.2s",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.borderColor = "#16a34a")
-            }
-            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#ddd")}
-          >
-            {imagePreview ? (
-              <img
-                src={imagePreview}
-                alt="preview"
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            ) : (
-              EMOJIS[
-                categories.find((c) => c.Category_ID == productForm.Category_ID)
-                  ?.Category_Name
-              ] || "📷"
-            )}
-          </div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            style={{ display: "none" }}
-            onChange={handleImageChange}
-          />
-          <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-            <button
-              onClick={() => fileRef.current?.click()}
-              style={{
-                fontSize: 12,
-                color: "#16a34a",
-                fontWeight: 700,
-                background: "none",
-                border: "1px solid #16a34a",
-                borderRadius: 6,
-                padding: "4px 12px",
-                cursor: "pointer",
-              }}
-            >
-              {imagePreview ? "Change Photo" : "Upload Photo"}
-            </button>
-            {imagePreview && (
-              <button
-                onClick={() => {
-                  setImagePreview(null);
-                  setProductForm((f) => ({ ...f, Product_Image: "" }));
-                }}
-                style={{
-                  fontSize: 12,
-                  color: "#dc2626",
-                  fontWeight: 700,
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                }}
-              >
-                Remove
-              </button>
-            )}
-          </div>
-          <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 6 }}>
-            Auto-resized to 400×400px
-          </p>
-        </div>
-
-        {/* Form Fields */}
-        <div
-          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}
-        >
-          <div>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                display: "block",
-                marginBottom: 5,
-              }}
-            >
-              Barcode *
-            </label>
-            <input
-              className="form-input"
-              placeholder="e.g. 8991000000001"
-              value={productForm.Barcode}
-              onChange={set("Barcode")}
-            />
-          </div>
-          <div>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                display: "block",
-                marginBottom: 5,
-              }}
-            >
-              Product Name *
-            </label>
-            <input
-              className="form-input"
-              placeholder="e.g. Fresh Milk 1L"
-              value={productForm.Name}
-              onChange={set("Name")}
-            />
-          </div>
-          <div>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                display: "block",
-                marginBottom: 5,
-              }}
-            >
-              Category *
-            </label>
-            <select
-              className="form-input"
-              value={productForm.Category_ID}
-              onChange={set("Category_ID")}
-            >
-              <option value="">Select category</option>
-              {categories.map((c) => (
-                <option key={c.Category_ID} value={c.Category_ID}>
-                  {c.Category_Name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                display: "block",
-                marginBottom: 5,
-              }}
-            >
-              Brand
-            </label>
-            <input
-              className="form-input"
-              placeholder="e.g. DairyBest"
-              value={productForm.Brand}
-              onChange={set("Brand")}
-            />
-          </div>
-          <div>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                display: "block",
-                marginBottom: 5,
-              }}
-            >
-              Unit Price ($) *
-              {productForm.Unit_Price &&
-                isNaN(Number(productForm.Unit_Price)) && (
-                  <span
-                    style={{ color: "#dc2626", fontSize: 11, marginLeft: 6 }}
-                  >
-                    ⚠ must be a number
-                  </span>
-                )}
-            </label>
-            <input
-              className="form-input"
-              placeholder="e.g. 1.99"
-              value={productForm.Unit_Price}
-              onChange={set("Unit_Price")}
-              style={{
-                borderColor:
-                  productForm.Unit_Price &&
-                  isNaN(Number(productForm.Unit_Price))
-                    ? "#dc2626"
-                    : undefined,
-              }}
-            />
-          </div>
-          <div>
-            {/* Unit is now a SELECT dropdown — no more free typing */}
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                display: "block",
-                marginBottom: 5,
-              }}
-            >
-              Unit *
-            </label>
-            <select
-              className="form-input"
-              value={productForm.Unit}
-              onChange={set("Unit")}
-            >
-              <option value="">Select unit...</option>
-              {UNIT_OPTIONS.map((u) => (
-                <option key={u} value={u}>
-                  {u}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                display: "block",
-                marginBottom: 5,
-              }}
-            >
-              Weight (kg)
-              {productForm.Unit_Mass_Kg &&
-                isNaN(Number(productForm.Unit_Mass_Kg)) && (
-                  <span
-                    style={{ color: "#dc2626", fontSize: 11, marginLeft: 6 }}
-                  >
-                    ⚠ must be a number
-                  </span>
-                )}
-            </label>
-            <input
-              className="form-input"
-              placeholder="e.g. 0.600"
-              value={productForm.Unit_Mass_Kg}
-              onChange={set("Unit_Mass_Kg")}
-              style={{
-                borderColor:
-                  productForm.Unit_Mass_Kg &&
-                  isNaN(Number(productForm.Unit_Mass_Kg))
-                    ? "#dc2626"
-                    : undefined,
-              }}
-            />
-          </div>
-          <div>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                display: "block",
-                marginBottom: 5,
-              }}
-            >
-              Reorder Level
-            </label>
-            <input
-              className="form-input"
-              placeholder="e.g. 10"
-              value={productForm.Reorder_Level}
-              onChange={set("Reorder_Level")}
-            />
-          </div>
-          <div style={{ gridColumn: "1/-1" }}>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                display: "block",
-                marginBottom: 5,
-              }}
-            >
-              Description
-            </label>
-            <textarea
-              className="form-input"
-              rows={3}
-              placeholder="Product description…"
-              value={productForm.Description}
-              onChange={set("Description")}
-              style={{ resize: "vertical" }}
-            />
-          </div>
-          <div>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                display: "block",
-                marginBottom: 5,
-              }}
-            >
-              Perishable?
-            </label>
-            <select
-              className="form-input"
-              value={productForm.Is_Perishable}
-              onChange={set("Is_Perishable")}
-            >
-              <option value="0">No</option>
-              <option value="1">Yes</option>
-            </select>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-          <button
-            onClick={onConfirm}
-            disabled={saving}
-            style={{
-              flex: 1,
-              padding: "12px",
-              borderRadius: 8,
-              border: "none",
-              background: "linear-gradient(135deg,#15803d,#22c55e)",
-              color: "#fff",
-              fontWeight: 700,
-              cursor: saving ? "not-allowed" : "pointer",
-              fontSize: 14,
-              opacity: saving ? 0.7 : 1,
-            }}
-          >
-            {saving ? "⏳ Saving…" : "✅ Confirm"}
-          </button>
-          <button
-            onClick={onClose}
-            style={{
-              flex: 1,
-              padding: "12px",
-              borderRadius: 8,
-              border: "1px solid #ddd",
-              background: "#fff",
-              fontWeight: 700,
-              cursor: "pointer",
-              fontSize: 14,
-            }}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Delete Confirm Modal — replaces window.confirm ──
-function DeleteModal({ item, onConfirm, onClose }) {
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.5)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-        padding: 20,
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: 16,
-          padding: 28,
-          width: "100%",
-          maxWidth: 400,
-          boxShadow: "0 8px 40px rgba(0,0,0,0.2)",
-          textAlign: "center",
-        }}
-      >
-        <div style={{ fontSize: 56, marginBottom: 12 }}>🗑️</div>
-        <h3
-          style={{
-            fontFamily: "'Plus Jakarta Sans',sans-serif",
-            fontSize: 18,
-            fontWeight: 800,
-            color: "#0f172a",
-            marginBottom: 8,
-          }}
-        >
-          Delete Product?
-        </h3>
-        <p style={{ color: "#64748b", fontSize: 14, marginBottom: 6 }}>
-          You are about to delete:
-        </p>
-        <p
-          style={{
-            fontWeight: 700,
-            color: "#0f172a",
-            fontSize: 15,
-            marginBottom: 6,
-          }}
-        >
-          "{item.Name}"
-        </p>
-        <p style={{ color: "#ef4444", fontSize: 13, marginBottom: 24 }}>
-          ⚠️ This action cannot be undone. The product and all its inventory
-          records will be permanently removed.
-        </p>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button
-            onClick={onClose}
-            style={{
-              flex: 1,
-              padding: "12px",
-              borderRadius: 10,
-              border: "1.5px solid #e5e7eb",
-              background: "#f8fafc",
-              fontWeight: 700,
-              cursor: "pointer",
-              fontSize: 14,
-              fontFamily: "'Plus Jakarta Sans',sans-serif",
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            style={{
-              flex: 1,
-              padding: "12px",
-              borderRadius: 10,
-              border: "none",
-              background: "linear-gradient(135deg,#dc2626,#ef4444)",
-              color: "#fff",
-              fontWeight: 700,
-              cursor: "pointer",
-              fontSize: 14,
-              fontFamily: "'Plus Jakarta Sans',sans-serif",
-            }}
-          >
-            Yes, Delete
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+const EMPTY = {
+  Name:'', Barcode:'', Category_ID:'', Brand:'', Unit:'piece',
+  Unit_Price:'', Unit_Mass_Kg:'', Reorder_Level:10,
+  Is_Perishable:0, Description:'', Product_Image:'', Quantity:99
 }
 
 export default function AdminInventory() {
-  const [inventory, setInventory] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("All");
-  const [modal, setModal] = useState(null);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null); // item to delete
-  const [qty, setQty] = useState("");
-  const [note, setNote] = useState("");
-  const [productForm, setProductForm] = useState(EMPTY_PRODUCT);
-  const [imagePreview, setImagePreview] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [items, setItems]         = useState([])
+  const [cats, setCats]           = useState([])
+  const [loading, setLoading]     = useState(true)
+  const [search, setSearch]       = useState('')
+  const [statusF, setStatusF]     = useState('All')
+  const [catF, setCatF]           = useState('All')
+  const [modal, setModal]         = useState(null)  // null | 'add' | 'edit' | 'restock' | 'view'
+  const [form, setForm]           = useState(EMPTY)
+  const [saving, setSaving]       = useState(false)
+  const [restockQty, setRestockQty] = useState(0)
+  const [restockItem, setRestockItem] = useState(null)
+  const imgRef = useRef()
 
-  useEffect(() => {
-    fetchInventory();
-    API.get("/api/products/categories")
-      .then((r) => setCategories(r.data || []))
-      .catch(() => {});
-  }, []);
+  useEffect(() => { fetchAll() }, [])
 
-  const fetchInventory = async () => {
+  const fetchAll = async () => {
+    setLoading(true)
     try {
-      const res = await API.get("/api/inventory/");
-      setInventory(res.data);
-    } catch {
-      setInventory([]);
-    } finally {
-      setLoading(false);
+      const [iRes, cRes] = await Promise.all([
+        API.get('/api/inventory/'),
+        API.get('/api/products/categories'),
+      ])
+      setItems(iRes.data  || [])
+      setCats(cRes.data   || [])
+    } catch(e) {
+      toast.error('Failed to load: ' + (e.response?.data?.detail || e.message))
     }
-  };
+    setLoading(false)
+  }
 
-  const validateProductForm = () => {
-    if (!productForm.Barcode.trim()) {
-      toast.error("Barcode is required");
-      return false;
+  // ── Image compress ──────────────────────────────────────────────────
+  const handleImage = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return }
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const MAX = 400
+        let w = img.width, h = img.height
+        if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX } }
+        else { if (h > MAX) { w = w * MAX / h; h = MAX } }
+        canvas.width = w; canvas.height = h
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+        setForm(f => ({ ...f, Product_Image: canvas.toDataURL('image/jpeg', 0.82) }))
+        toast.success('Image ready!')
+      }
+      img.src = ev.target.result
     }
-    if (!productForm.Name.trim()) {
-      toast.error("Product Name is required");
-      return false;
-    }
-    if (!productForm.Category_ID) {
-      toast.error("Category is required");
-      return false;
-    }
-    if (!productForm.Unit) {
-      toast.error("Unit is required");
-      return false;
-    }
-    if (
-      !productForm.Unit_Price ||
-      isNaN(Number(productForm.Unit_Price)) ||
-      Number(productForm.Unit_Price) <= 0
-    ) {
-      toast.error("Unit Price must be a valid number greater than 0");
-      return false;
-    }
-    if (productForm.Unit_Mass_Kg && isNaN(Number(productForm.Unit_Mass_Kg))) {
-      toast.error("Weight must be a valid number");
-      return false;
-    }
-    return true;
-  };
+    reader.readAsDataURL(file)
+  }
 
-  const handleAddProduct = async () => {
-    if (!validateProductForm()) return;
-    setSaving(true);
+  // ── Save product ────────────────────────────────────────────────────
+  const handleSave = async () => {
+    if (!form.Name.trim())       { toast.error('Product name required'); return }
+    if (!form.Barcode.trim())    { toast.error('Barcode required'); return }
+    if (!form.Unit_Price)        { toast.error('Price required'); return }
+    if (!form.Category_ID)       { toast.error('Category required'); return }
+    setSaving(true)
     try {
-      await API.post("/api/products/", {
-        ...productForm,
-        Category_ID: parseInt(productForm.Category_ID),
-        Unit_Price: parseFloat(productForm.Unit_Price),
-        Unit_Mass_Kg: productForm.Unit_Mass_Kg
-          ? parseFloat(productForm.Unit_Mass_Kg)
-          : null,
-        Reorder_Level: parseInt(productForm.Reorder_Level) || 10,
-        Is_Perishable: parseInt(productForm.Is_Perishable) || 0,
-      });
-      toast.success("✅ Product added!");
-      setModal(null);
-      setProductForm(EMPTY_PRODUCT);
-      setImagePreview(null);
-      fetchInventory();
-    } catch (err) {
-      toast.error(err.response?.data?.detail || "Failed to add product");
-    } finally {
-      setSaving(false);
-    }
-  };
+      const payload = {
+        ...form,
+        Unit_Price:    parseFloat(form.Unit_Price),
+        Unit_Mass_Kg:  parseFloat(form.Unit_Mass_Kg) || null,
+        Reorder_Level: parseInt(form.Reorder_Level)  || 10,
+        Category_ID:   parseInt(form.Category_ID),
+      }
+      if (modal === 'add') await API.post('/api/products/', payload)
+      else                 await API.put(`/api/products/${form.Product_ID}`, payload)
+      toast.success(modal === 'add' ? 'Product added!' : 'Product updated!')
+      setModal(null); fetchAll()
+    } catch(e) { toast.error(e.response?.data?.detail || 'Save failed') }
+    finally { setSaving(false) }
+  }
 
-  const handleEditProduct = async () => {
-    if (!validateProductForm()) return;
-    setSaving(true);
+  // ── Delete ──────────────────────────────────────────────────────────
+  const handleDelete = async (id, name) => {
+    if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return
     try {
-      await API.put(`/api/products/${selectedItem.Product_ID}`, {
-        ...productForm,
-        Category_ID: parseInt(productForm.Category_ID),
-        Unit_Price: parseFloat(productForm.Unit_Price),
-        Unit_Mass_Kg: productForm.Unit_Mass_Kg
-          ? parseFloat(productForm.Unit_Mass_Kg)
-          : null,
-        Reorder_Level: parseInt(productForm.Reorder_Level) || 10,
-        Is_Perishable: parseInt(productForm.Is_Perishable) || 0,
-      });
-      toast.success("✅ Product updated!");
-      setModal(null);
-      fetchInventory();
-    } catch (err) {
-      toast.error(err.response?.data?.detail || "Failed to update product");
-    } finally {
-      setSaving(false);
-    }
-  };
+      await API.delete(`/api/products/${id}`)
+      toast.success(`"${name}" deleted`)
+      fetchAll()
+    } catch(e) { toast.error(e.response?.data?.detail || 'Delete failed') }
+  }
 
-  // Replaces window.confirm — opens a proper modal instead
-  const handleDeleteProduct = async () => {
-    if (!deleteTarget) return;
-    try {
-      await API.delete(`/api/products/${deleteTarget.Product_ID}`);
-      toast.success(`"${deleteTarget.Name}" deleted`);
-      setDeleteTarget(null);
-      fetchInventory();
-    } catch (err) {
-      toast.error(err.response?.data?.detail || "Failed to delete");
-    }
-  };
-
+  // ── Restock ──────────────────────────────────────────────────────────
   const handleRestock = async () => {
-    if (!qty || isNaN(Number(qty)) || Number(qty) <= 0) {
-      toast.error("Enter a valid quantity");
-      return;
-    }
+    if (restockQty <= 0) { toast.error('Enter quantity > 0'); return }
     try {
-      await API.post("/api/inventory/restock", {
-        product_id: selectedItem.Product_ID,
-        quantity: parseInt(qty),
-        note,
-      });
-      toast.success(`Restocked ${qty} units!`);
-      setModal(null);
-      setQty("");
-      setNote("");
-      fetchInventory();
-    } catch {
-      toast.error("Restock failed");
-    }
-  };
+      await API.post('/api/inventory/restock', {
+        product_id: restockItem.Product_ID,
+        quantity: restockQty
+      })
+      toast.success(`Restocked ${restockQty} units!`)
+      setModal(null); setRestockQty(0); fetchAll()
+    } catch { toast.error('Restock failed') }
+  }
 
-  const handleAdjust = async () => {
-    if (qty === "" || isNaN(Number(qty)) || Number(qty) < 0) {
-      toast.error("Enter a valid quantity");
-      return;
-    }
-    try {
-      await API.put(`/api/inventory/${selectedItem.Product_ID}`, {
-        quantity: parseInt(qty),
-        note,
-      });
-      toast.success("Stock adjusted!");
-      setModal(null);
-      setQty("");
-      setNote("");
-      fetchInventory();
-    } catch {
-      toast.error("Adjustment failed");
-    }
-  };
-
-  const openEdit = (item) => {
-    setSelectedItem(item);
-    setProductForm({
-      Barcode: item.Barcode || "",
-      Name: item.Name || "",
-      Description: item.Description || "",
-      Category_ID: item.Category_ID || "",
-      Brand: item.Brand || "",
-      Unit: item.Unit || "",
-      Unit_Price: String(item.Unit_Price || ""),
-      Unit_Mass_Kg: String(item.Unit_Mass_Kg || ""),
-      Reorder_Level: String(item.Reorder_Level || "10"),
-      Is_Perishable: String(item.Is_Perishable || "0"),
-      Product_Image: item.Product_Image || "",
-    });
-    setImagePreview(item.Product_Image || null);
-    setModal("edit");
-  };
-
-  const filtered = inventory.filter((i) => {
-    const s = search.toLowerCase().trim();
-    const matchSearch =
-      !s ||
-      i.Name.toLowerCase().includes(s) ||
-      (i.Barcode || "").toLowerCase().includes(s) ||
-      (i.Category_Name || "").toLowerCase().includes(s) ||
-      (i.Brand || "").toLowerCase().includes(s);
-    return matchSearch && (filter === "All" || i.Status === filter);
-  });
+  // ── Filter ───────────────────────────────────────────────────────────
+  const filtered = items.filter(i => {
+    const q = search.toLowerCase()
+    const matchQ = !q || i.Name?.toLowerCase().includes(q) ||
+                   i.Barcode?.toLowerCase().includes(q) ||
+                   i.Brand?.toLowerCase().includes(q)
+    const matchS = statusF === 'All' || i.Status === statusF
+    const matchC = catF    === 'All' || i.Category_Name === catF
+    return matchQ && matchS && matchC
+  })
 
   const stats = {
-    total: inventory.length,
-    inStock: inventory.filter((i) => i.Status === "In Stock").length,
-    low: inventory.filter((i) => i.Status === "Low Stock").length,
-    out: inventory.filter((i) => i.Status === "Out of Stock").length,
-  };
+    total:    items.length,
+    inStock:  items.filter(i => i.Status === 'In Stock').length,
+    low:      items.filter(i => i.Status === 'Low Stock').length,
+    out:      items.filter(i => i.Status === 'Out of Stock').length,
+  }
+
+  const openEdit = (item) => {
+    setForm({ ...item, Unit_Price: item.Unit_Price, Quantity: item.Quantity })
+    setModal('edit')
+  }
+
+  const openAdd = () => {
+    setForm(EMPTY)
+    setModal('add')
+  }
 
   return (
-    <div style={{ padding: 28, fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 20,
-        }}
-      >
+    <div style={{ padding:24, fontFamily:"'Plus Jakarta Sans',sans-serif", background:'#f8fafc', minHeight:'100vh' }}>
+      <style>{`
+        .inv-btn { font-family:'Plus Jakarta Sans',sans-serif; cursor:pointer; transition:all .18s; }
+        .inv-btn:hover { opacity:.85; transform:translateY(-1px); }
+        .inv-row:hover { background:#f0fdf4 !important; }
+        .inv-input { width:100%; padding:10px 13px; border-radius:9px; border:1.5px solid #e2e8f0; font-size:13px; font-family:'Plus Jakarta Sans',sans-serif; outline:none; box-sizing:border-box; transition:border-color .2s; }
+        .inv-input:focus { border-color:#16a34a; box-shadow:0 0 0 3px rgba(22,163,74,.1); }
+        .inv-label { font-size:12px; font-weight:700; color:#475569; display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:.4px; }
+      `}</style>
+
+      {/* ── HEADER ── */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:24 }}>
         <div>
-          <h2
-            style={{
-              fontFamily: "'Plus Jakarta Sans',sans-serif",
-              fontSize: 22,
-              fontWeight: 800,
-              color: "#0f172a",
-              marginBottom: 4,
-            }}
-          >
-            📦 Inventory Management
-          </h2>
-          <p style={{ color: "#64748b", fontSize: 13 }}>
-            {stats.total} products total
-          </p>
+          <h1 style={{ fontSize:26, fontWeight:800, color:'#0f172a', marginBottom:3 }}>📦 Inventory Management</h1>
+          <p style={{ color:'#64748b', fontSize:14 }}>Manage products, stock levels and reorders</p>
         </div>
-        <button
-          onClick={() => {
-            setProductForm(EMPTY_PRODUCT);
-            setImagePreview(null);
-            setModal("add");
-          }}
-          style={{
-            padding: "10px 20px",
-            borderRadius: 10,
-            border: "none",
-            background: "linear-gradient(135deg,#15803d,#22c55e)",
-            color: "#fff",
-            fontWeight: 700,
-            cursor: "pointer",
-            fontSize: 14,
-            fontFamily: "'Plus Jakarta Sans',sans-serif",
-            boxShadow: "0 4px 12px rgba(21,128,61,.3)",
-          }}
-        >
+        <button onClick={openAdd} className="inv-btn"
+          style={{ padding:'11px 22px', borderRadius:11, border:'none', background:'linear-gradient(135deg,#15803d,#22c55e)', color:'#fff', fontWeight:700, fontSize:14, boxShadow:'0 4px 14px rgba(21,128,61,.3)' }}>
           + Add Product
         </button>
       </div>
 
-      {/* Stats */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4,1fr)",
-          gap: 14,
-          marginBottom: 24,
-        }}
-      >
+      {/* ── STATS ── */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14, marginBottom:22 }}>
         {[
-          [
-            "Total Products",
-            stats.total,
-            "#6366f1",
-            "linear-gradient(135deg,#eef2ff,#e0e7ff)",
-          ],
-          [
-            "In Stock",
-            stats.inStock,
-            "#16a34a",
-            "linear-gradient(135deg,#f0fdf4,#dcfce7)",
-          ],
-          [
-            "Low Stock",
-            stats.low,
-            "#d97706",
-            "linear-gradient(135deg,#fffbeb,#fef3c7)",
-          ],
-          [
-            "Out of Stock",
-            stats.out,
-            "#dc2626",
-            "linear-gradient(135deg,#fef2f2,#fee2e2)",
-          ],
-        ].map(([l, v, c, bg]) => (
-          <div
-            key={l}
-            style={{
-              background: bg,
-              borderRadius: 14,
-              padding: "16px 20px",
-              border: `1.5px solid ${c}22`,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 12,
-                color: "#64748b",
-                marginBottom: 4,
-                fontWeight: 600,
-              }}
-            >
-              {l}
+          ['Total Products', stats.total,   '#6366f1', '📦', 'linear-gradient(135deg,#eef2ff,#e0e7ff)'],
+          ['In Stock',       stats.inStock, '#16a34a', '✅', 'linear-gradient(135deg,#f0fdf4,#dcfce7)'],
+          ['Low Stock',      stats.low,     '#d97706', '⚠️', 'linear-gradient(135deg,#fffbeb,#fef3c7)'],
+          ['Out of Stock',   stats.out,     '#dc2626', '❌', 'linear-gradient(135deg,#fef2f2,#fee2e2)'],
+        ].map(([l,v,c,icon,bg]) => (
+          <div key={l} style={{ background:bg, borderRadius:14, padding:'18px 20px', border:`1.5px solid ${c}22`, cursor:'pointer' }}
+            onClick={() => setStatusF(l === 'Total Products' ? 'All' : l)}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+              <span style={{ fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:.5 }}>{l}</span>
+              <span style={{ fontSize:18 }}>{icon}</span>
             </div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: c }}>{v}</div>
+            <div style={{ fontSize:32, fontWeight:800, color:c }}>{v}</div>
           </div>
         ))}
       </div>
 
-      {/* Search + Filter */}
-      <div
-        style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}
-      >
-        <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="🔍 Search name, barcode, category, brand..."
-            style={{
-              width: "100%",
-              padding: "9px 14px",
-              paddingRight: search ? 36 : 14,
-              borderRadius: 10,
-              border: "1.5px solid #e5e7eb",
-              fontSize: 13,
-              boxSizing: "border-box",
-              outline: "none",
-              fontFamily: "'Plus Jakarta Sans',sans-serif",
-            }}
-          />
-          {search && (
-            <button
-              onClick={() => setSearch("")}
-              style={{
-                position: "absolute",
-                right: 10,
-                top: "50%",
-                transform: "translateY(-50%)",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "#9ca3af",
-                fontSize: 18,
-                lineHeight: 1,
-                padding: 0,
-              }}
-            >
-              ✕
-            </button>
-          )}
+      {/* ── FILTERS ── */}
+      <div style={{ background:'#fff', borderRadius:14, padding:'16px 18px', marginBottom:18, border:'1.5px solid #e2e8f0', display:'flex', gap:12, flexWrap:'wrap', alignItems:'center', boxShadow:'0 2px 8px rgba(0,0,0,.03)' }}>
+        {/* Search */}
+        <div style={{ position:'relative', flex:1, minWidth:220 }}>
+          <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:15, color:'#94a3b8' }}>🔍</span>
+          <input value={search} onChange={e=>setSearch(e.target.value)}
+            placeholder="Search product, barcode, brand..."
+            style={{ width:'100%', paddingLeft:38, padding:'10px 14px 10px 38px', borderRadius:10, border:'1.5px solid #e2e8f0', fontSize:13, outline:'none', boxSizing:'border-box', fontFamily:"'Plus Jakarta Sans',sans-serif" }} />
         </div>
-        {["All", "In Stock", "Low Stock", "Out of Stock"].map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            style={{
-              padding: "9px 16px",
-              borderRadius: 9,
-              border: "none",
-              cursor: "pointer",
-              fontSize: 12,
-              fontWeight: 700,
-              fontFamily: "'Plus Jakarta Sans',sans-serif",
-              background: filter === f ? "#15803d" : "#f1f5f9",
-              color: filter === f ? "#fff" : "#374151",
-            }}
-          >
-            {f}
+        {/* Status filter */}
+        <select value={statusF} onChange={e=>setStatusF(e.target.value)}
+          style={{ padding:'10px 14px', borderRadius:10, border:'1.5px solid #e2e8f0', fontSize:13, outline:'none', background:'#fff', fontFamily:"'Plus Jakarta Sans',sans-serif", cursor:'pointer' }}>
+          <option value="All">All Status</option>
+          <option>In Stock</option><option>Low Stock</option><option>Out of Stock</option>
+        </select>
+        {/* Category filter */}
+        <select value={catF} onChange={e=>setCatF(e.target.value)}
+          style={{ padding:'10px 14px', borderRadius:10, border:'1.5px solid #e2e8f0', fontSize:13, outline:'none', background:'#fff', fontFamily:"'Plus Jakarta Sans',sans-serif", cursor:'pointer' }}>
+          <option value="All">All Categories</option>
+          {cats.map(c => <option key={c.Category_ID}>{c.Category_Name}</option>)}
+        </select>
+        {/* Clear */}
+        {(search || statusF !== 'All' || catF !== 'All') && (
+          <button onClick={() => { setSearch(''); setStatusF('All'); setCatF('All') }} className="inv-btn"
+            style={{ padding:'10px 16px', borderRadius:10, border:'1.5px solid #fecaca', background:'#fef2f2', color:'#dc2626', fontSize:12, fontWeight:700 }}>
+            ✕ Clear
           </button>
-        ))}
+        )}
+        <span style={{ marginLeft:'auto', fontSize:13, color:'#64748b', fontWeight:600 }}>
+          {filtered.length} of {items.length} products
+        </span>
       </div>
 
-      {search && (
-        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 10 }}>
-          Found <strong style={{ color: "#111827" }}>{filtered.length}</strong>{" "}
-          result{filtered.length !== 1 ? "s" : ""} for "
-          <strong style={{ color: "#16a34a" }}>{search}</strong>"
-        </div>
-      )}
-
-      {/* Table */}
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: 14,
-          overflow: "hidden",
-          border: "1.5px solid #e5e7eb",
-          boxShadow: "0 2px 10px rgba(0,0,0,.04)",
-        }}
-      >
-        <table
-          style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}
-        >
-          <thead>
-            <tr
-              style={{
-                background: "#f8fafc",
-                borderBottom: "2px solid #e5e7eb",
-              }}
-            >
-              {[
-                "Product",
-                "Category",
-                "Price",
-                "Stock",
-                "Reorder",
-                "Status",
-                "Actions",
-              ].map((h) => (
-                <th
-                  key={h}
-                  style={{
-                    padding: "13px 16px",
-                    textAlign: "left",
-                    fontWeight: 700,
-                    color: "#374151",
-                    fontFamily: "'Plus Jakarta Sans',sans-serif",
-                  }}
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td
-                  colSpan={7}
-                  style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}
-                >
-                  Loading...
-                </td>
+      {/* ── TABLE ── */}
+      <div style={{ background:'#fff', borderRadius:16, overflow:'hidden', border:'1.5px solid #e2e8f0', boxShadow:'0 2px 12px rgba(0,0,0,.04)' }}>
+        {loading ? (
+          <div style={{ padding:60, textAlign:'center', color:'#94a3b8' }}>
+            <div style={{ fontSize:40, marginBottom:12 }}>⏳</div>
+            <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif" }}>Loading inventory...</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding:60, textAlign:'center', color:'#94a3b8' }}>
+            <div style={{ fontSize:48, marginBottom:12 }}>📦</div>
+            <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:15, fontWeight:600, marginBottom:6 }}>
+              {items.length === 0 ? 'No products yet' : 'No products match your filters'}
+            </p>
+            <p style={{ fontSize:13 }}>
+              {items.length === 0 ? 'Click "+ Add Product" to get started' : 'Try clearing your filters'}
+            </p>
+          </div>
+        ) : (
+          <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+            <thead>
+              <tr style={{ background:'linear-gradient(135deg,#0f172a,#1e293b)' }}>
+                {['Product','Category','Price','Stock','Reorder','Status','Actions'].map(h => (
+                  <th key={h} style={{ padding:'13px 16px', textAlign:'left', fontWeight:700, color:'rgba(255,255,255,.85)', fontSize:12, textTransform:'uppercase', letterSpacing:.5 }}>{h}</th>
+                ))}
               </tr>
-            ) : filtered.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={7}
-                  style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}
-                >
-                  <div style={{ fontSize: 40 }}>🔍</div>
-                  <p style={{ marginTop: 10 }}>
-                    {search
-                      ? `No results for "${search}"`
-                      : "No products found"}
-                  </p>
-                </td>
-              </tr>
-            ) : (
-              filtered.map((item) => (
-                <tr
-                  key={item.Product_ID}
-                  style={{ borderBottom: "1px solid #f5f5f5" }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.background = "#fafafa")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = "transparent")
-                  }
-                >
-                  <td style={{ padding: "12px 16px" }}>
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: 10 }}
-                    >
-                      <div
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: 8,
-                          background: "#f0fdf4",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: 20,
-                          flexShrink: 0,
-                          overflow: "hidden",
-                        }}
-                      >
-                        {item.Product_Image ? (
-                          <img
-                            src={item.Product_Image}
-                            alt=""
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                            }}
-                          />
-                        ) : (
-                          EMOJIS[item.Category_Name] || "📦"
-                        )}
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 700, color: "#0f172a" }}>
-                          {item.Name}
+            </thead>
+            <tbody>
+              {filtered.map((item, idx) => {
+                const sc  = STATUS_CFG[item.Status] || STATUS_CFG['In Stock']
+                const emoji = EMOJIS[item.Category_Name] || '📦'
+                return (
+                  <tr key={item.Product_ID} className="inv-row"
+                    style={{ borderBottom:'1px solid #f1f5f9', background: idx%2===0 ? '#fff' : '#fafbfc', transition:'background .15s' }}>
+                    {/* Product */}
+                    <td style={{ padding:'13px 16px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:11 }}>
+                        <div style={{ width:44, height:44, borderRadius:11, overflow:'hidden', flexShrink:0, background:'#f0fdf4', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, border:'1.5px solid #e2e8f0' }}>
+                          {item.Product_Image
+                            ? <img src={item.Product_Image} alt={item.Name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                            : emoji}
                         </div>
-                        <div style={{ fontSize: 11, color: "#9ca3af" }}>
-                          {item.Barcode}
+                        <div>
+                          <div style={{ fontWeight:700, color:'#0f172a', fontSize:13, marginBottom:2 }}>{item.Name}</div>
+                          <div style={{ fontSize:11, color:'#94a3b8' }}>{item.Barcode} · {item.Brand || '—'}</div>
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td style={{ padding: "12px 16px", color: "#64748b" }}>
-                    {item.Category_Name}
-                  </td>
-                  <td
-                    style={{
-                      padding: "12px 16px",
-                      color: "#16a34a",
-                      fontWeight: 700,
-                    }}
-                  >
-                    ${Number(item.Unit_Price).toFixed(2)}
-                  </td>
-                  <td style={{ padding: "12px 16px", fontWeight: 700 }}>
-                    {item.Quantity}{" "}
-                    <span
-                      style={{
-                        color: "#9ca3af",
-                        fontWeight: 400,
-                        fontSize: 12,
-                      }}
-                    >
-                      {item.Unit}
-                    </span>
-                  </td>
-                  <td style={{ padding: "12px 16px", color: "#9ca3af" }}>
-                    {item.Reorder_Level}
-                  </td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <span
-                      style={{
-                        padding: "4px 10px",
-                        borderRadius: 99,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        background: statusColor[item.Status] + "20",
-                        color: statusColor[item.Status],
-                      }}
-                    >
-                      {item.Status}
-                    </span>
-                  </td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                      <button
-                        onClick={() => {
-                          setSelectedItem(item);
-                          setQty("");
-                          setNote("");
-                          setModal("restock");
-                        }}
-                        style={{
-                          padding: "5px 10px",
-                          borderRadius: 7,
-                          border: "none",
-                          background: "#16a34a",
-                          color: "#fff",
-                          cursor: "pointer",
-                          fontSize: 11,
-                          fontWeight: 700,
-                        }}
-                      >
-                        + Stock
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedItem(item);
-                          setQty(String(item.Quantity));
-                          setNote("");
-                          setModal("adjust");
-                        }}
-                        style={{
-                          padding: "5px 10px",
-                          borderRadius: 7,
-                          border: "1.5px solid #e5e7eb",
-                          background: "#fff",
-                          cursor: "pointer",
-                          fontSize: 11,
-                          fontWeight: 700,
-                        }}
-                      >
-                        Adjust
-                      </button>
-                      <button
-                        onClick={() => openEdit(item)}
-                        style={{
-                          padding: "5px 10px",
-                          borderRadius: 7,
-                          border: "1.5px solid #93c5fd",
-                          background: "#dbeafe",
-                          color: "#1d4ed8",
-                          cursor: "pointer",
-                          fontSize: 11,
-                          fontWeight: 700,
-                        }}
-                      >
-                        Edit
-                      </button>
-                      {/* Del button now opens a proper modal instead of window.confirm */}
-                      <button
-                        onClick={() => setDeleteTarget(item)}
-                        style={{
-                          padding: "5px 10px",
-                          borderRadius: 7,
-                          border: "1.5px solid #fca5a5",
-                          background: "#fee2e2",
-                          color: "#dc2626",
-                          cursor: "pointer",
-                          fontSize: 11,
-                          fontWeight: 700,
-                        }}
-                      >
-                        Del
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                    </td>
+                    {/* Category */}
+                    <td style={{ padding:'13px 16px' }}>
+                      <span style={{ padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:600, background:'#f0fdf4', color:'#16a34a', border:'1px solid #bbf7d0' }}>
+                        {emoji} {item.Category_Name}
+                      </span>
+                    </td>
+                    {/* Price */}
+                    <td style={{ padding:'13px 16px', fontWeight:800, color:'#0f172a', fontSize:14 }}>
+                      ${Number(item.Unit_Price).toFixed(2)}
+                      <div style={{ fontSize:11, color:'#94a3b8', fontWeight:400 }}>{item.Unit}</div>
+                    </td>
+                    {/* Stock */}
+                    <td style={{ padding:'13px 16px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+                        <div style={{ width:8, height:8, borderRadius:'50%', background:sc.dot, flexShrink:0 }} />
+                        <span style={{ fontWeight:800, fontSize:16, color: item.Quantity <= 0 ? '#dc2626' : item.Quantity <= (item.Reorder_Level||10) ? '#d97706' : '#16a34a' }}>
+                          {item.Quantity}
+                        </span>
+                        <span style={{ fontSize:11, color:'#94a3b8' }}>{item.Unit}</span>
+                      </div>
+                    </td>
+                    {/* Reorder */}
+                    <td style={{ padding:'13px 16px', color:'#64748b', fontSize:13 }}>{item.Reorder_Level || 10}</td>
+                    {/* Status */}
+                    <td style={{ padding:'13px 16px' }}>
+                      <span style={{ padding:'5px 12px', borderRadius:99, fontSize:11, fontWeight:700, background:sc.bg, color:sc.color, border:`1px solid ${sc.border}` }}>
+                        {item.Status}
+                      </span>
+                    </td>
+                    {/* Actions */}
+                    <td style={{ padding:'13px 16px' }}>
+                      <div style={{ display:'flex', gap:6 }}>
+                        <button onClick={() => { setRestockItem(item); setRestockQty(0); setModal('restock') }} className="inv-btn"
+                          style={{ padding:'5px 11px', borderRadius:7, border:'1.5px solid #86efac', background:'#f0fdf4', color:'#15803d', fontSize:11, fontWeight:700 }}>
+                          +Stock
+                        </button>
+                        <button onClick={() => openEdit(item)} className="inv-btn"
+                          style={{ padding:'5px 11px', borderRadius:7, border:'1.5px solid #93c5fd', background:'#dbeafe', color:'#1d4ed8', fontSize:11, fontWeight:700 }}>
+                          Edit
+                        </button>
+                        <button onClick={() => handleDelete(item.Product_ID, item.Name)} className="inv-btn"
+                          style={{ padding:'5px 11px', borderRadius:7, border:'1.5px solid #fca5a5', background:'#fee2e2', color:'#dc2626', fontSize:11, fontWeight:700 }}>
+                          Del
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {/* Restock / Adjust Modal */}
-      {(modal === "restock" || modal === "adjust") && selectedItem && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.4)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-          }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setModal(null);
-          }}
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 16,
-              padding: 28,
-              width: 400,
-              boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
-            }}
-          >
-            <h3
-              style={{
-                fontFamily: "'Plus Jakarta Sans',sans-serif",
-                marginBottom: 16,
-              }}
-            >
-              {modal === "restock" ? "➕ Restock" : "⚙️ Adjust Stock"} —{" "}
-              {selectedItem.Name}
-            </h3>
-            <div
-              style={{
-                background: "#f0fdf4",
-                borderRadius: 8,
-                padding: "10px 14px",
-                marginBottom: 16,
-                fontSize: 13,
-              }}
-            >
-              Current stock:{" "}
-              <strong>
-                {selectedItem.Quantity} {selectedItem.Unit}
-              </strong>
+      {/* ── ADD / EDIT MODAL ── */}
+      {(modal === 'add' || modal === 'edit') && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.6)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }}
+          onClick={e => { if(e.target===e.currentTarget) setModal(null) }}>
+          <div style={{ background:'#fff', borderRadius:20, padding:32, width:'100%', maxWidth:620, boxShadow:'0 20px 60px rgba(0,0,0,.2)', maxHeight:'92vh', overflowY:'auto' }}>
+
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24 }}>
+              <div>
+                <h3 style={{ fontSize:20, fontWeight:800, color:'#0f172a', marginBottom:2 }}>
+                  {modal==='add' ? '+ Add New Product' : '✏️ Edit Product'}
+                </h3>
+                <p style={{ fontSize:13, color:'#64748b' }}>
+                  {modal==='add' ? 'Fill in product details below' : `Editing: ${form.Name}`}
+                </p>
+              </div>
+              <button onClick={() => setModal(null)} style={{ background:'#f1f5f9', border:'none', borderRadius:10, width:36, height:36, cursor:'pointer', fontSize:18, color:'#64748b' }}>✕</button>
             </div>
-            <div style={{ marginBottom: 14 }}>
-              <label
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  display: "block",
-                  marginBottom: 6,
-                }}
-              >
-                {modal === "restock" ? "Add Quantity" : "Set New Quantity"}
-              </label>
-              <input
-                value={qty}
-                onChange={(e) => setQty(e.target.value)}
-                placeholder="Enter number"
-                autoFocus
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: 8,
-                  border: "1px solid #ddd",
-                  fontSize: 14,
-                  boxSizing: "border-box",
-                  outline: "none",
-                }}
-              />
+
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+              {/* Name */}
+              <div style={{ gridColumn:'1/-1' }}>
+                <label className="inv-label">Product Name *</label>
+                <input className="inv-input" placeholder="e.g. Jasmine Rice 5kg" value={form.Name}
+                  onChange={e=>setForm({...form,Name:e.target.value})} />
+              </div>
+              {/* Barcode */}
+              <div>
+                <label className="inv-label">Barcode *</label>
+                <input className="inv-input" placeholder="e.g. KH-RG-001" value={form.Barcode}
+                  onChange={e=>setForm({...form,Barcode:e.target.value})} />
+              </div>
+              {/* Brand */}
+              <div>
+                <label className="inv-label">Brand</label>
+                <input className="inv-input" placeholder="e.g. Lucky Brand" value={form.Brand}
+                  onChange={e=>setForm({...form,Brand:e.target.value})} />
+              </div>
+              {/* Category */}
+              <div>
+                <label className="inv-label">Category *</label>
+                <select className="inv-input" value={form.Category_ID}
+                  onChange={e=>setForm({...form,Category_ID:e.target.value})}>
+                  <option value="">Select category…</option>
+                  {cats.map(c => <option key={c.Category_ID} value={c.Category_ID}>{c.Category_Name}</option>)}
+                </select>
+              </div>
+              {/* Unit */}
+              <div>
+                <label className="inv-label">Unit *</label>
+                <select className="inv-input" value={form.Unit}
+                  onChange={e=>setForm({...form,Unit:e.target.value})}>
+                  {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                </select>
+              </div>
+              {/* Price */}
+              <div>
+                <label className="inv-label">Price (USD) *</label>
+                <input className="inv-input" type="number" min="0" step="0.01" placeholder="0.00" value={form.Unit_Price}
+                  onChange={e=>setForm({...form,Unit_Price:e.target.value})} />
+              </div>
+              {/* Weight */}
+              <div>
+                <label className="inv-label">Weight (kg)</label>
+                <input className="inv-input" type="number" min="0" step="0.001" placeholder="0.000" value={form.Unit_Mass_Kg}
+                  onChange={e=>setForm({...form,Unit_Mass_Kg:e.target.value})} />
+              </div>
+              {/* Reorder Level */}
+              <div>
+                <label className="inv-label">Reorder Level</label>
+                <input className="inv-input" type="number" min="1" value={form.Reorder_Level}
+                  onChange={e=>setForm({...form,Reorder_Level:e.target.value})} />
+              </div>
+              {/* Perishable */}
+              <div style={{ display:'flex', alignItems:'center', gap:10, paddingTop:20 }}>
+                <input type="checkbox" id="perishable" checked={!!form.Is_Perishable}
+                  onChange={e=>setForm({...form,Is_Perishable:e.target.checked?1:0})}
+                  style={{ width:18, height:18, accentColor:'#16a34a', cursor:'pointer' }} />
+                <label htmlFor="perishable" style={{ fontSize:13, fontWeight:700, color:'#374151', cursor:'pointer' }}>
+                  🌡️ Perishable item
+                </label>
+              </div>
+              {/* Description */}
+              <div style={{ gridColumn:'1/-1' }}>
+                <label className="inv-label">Description</label>
+                <textarea className="inv-input" rows={2} placeholder="Optional product description..." value={form.Description}
+                  onChange={e=>setForm({...form,Description:e.target.value})}
+                  style={{ resize:'vertical', fontFamily:"'Plus Jakarta Sans',sans-serif" }} />
+              </div>
+              {/* Image */}
+              <div style={{ gridColumn:'1/-1' }}>
+                <label className="inv-label">Product Image</label>
+                <div style={{ display:'flex', gap:14, alignItems:'center' }}>
+                  <div style={{ width:80, height:80, borderRadius:12, border:'2px dashed #cbd5e1', background:'#f8fafc', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', flexShrink:0 }}>
+                    {form.Product_Image
+                      ? <img src={form.Product_Image} alt="preview" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                      : <span style={{ fontSize:30 }}>📷</span>}
+                  </div>
+                  <div>
+                    <input ref={imgRef} type="file" accept="image/*" onChange={handleImage} style={{ display:'none' }} />
+                    <button onClick={() => imgRef.current.click()} className="inv-btn"
+                      style={{ padding:'9px 18px', borderRadius:9, border:'1.5px solid #e2e8f0', background:'#f8fafc', color:'#374151', fontSize:13, fontWeight:600 }}>
+                      📁 Upload Image
+                    </button>
+                    {form.Product_Image && (
+                      <button onClick={() => setForm({...form,Product_Image:''})} className="inv-btn"
+                        style={{ marginLeft:8, padding:'9px 14px', borderRadius:9, border:'1.5px solid #fecaca', background:'#fef2f2', color:'#dc2626', fontSize:13, fontWeight:600 }}>
+                        Remove
+                      </button>
+                    )}
+                    <p style={{ fontSize:11, color:'#94a3b8', marginTop:6 }}>Max 5MB · Auto-resized to 400×400px</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div style={{ marginBottom: 20 }}>
-              <label
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  display: "block",
-                  marginBottom: 6,
-                }}
-              >
-                Note (optional)
-              </label>
-              <input
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="e.g. Delivery from supplier"
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: 8,
-                  border: "1px solid #ddd",
-                  fontSize: 14,
-                  boxSizing: "border-box",
-                  outline: "none",
-                }}
-              />
-            </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button
-                onClick={modal === "restock" ? handleRestock : handleAdjust}
-                style={{
-                  flex: 1,
-                  padding: "11px",
-                  borderRadius: 8,
-                  border: "none",
-                  background: "linear-gradient(135deg,#15803d,#22c55e)",
-                  color: "#fff",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                Confirm
+
+            <div style={{ display:'flex', gap:12, marginTop:24 }}>
+              <button onClick={handleSave} disabled={saving} className="inv-btn"
+                style={{ flex:1, padding:'13px', borderRadius:11, border:'none', background: saving?'#e2e8f0':'linear-gradient(135deg,#15803d,#22c55e)', color: saving?'#94a3b8':'#fff', fontWeight:700, fontSize:15, boxShadow: saving?'none':'0 4px 14px rgba(21,128,61,.3)' }}>
+                {saving ? '⏳ Saving…' : modal==='add' ? '✅ Add Product' : '✅ Save Changes'}
               </button>
-              <button
-                onClick={() => setModal(null)}
-                style={{
-                  flex: 1,
-                  padding: "11px",
-                  borderRadius: 8,
-                  border: "1px solid #ddd",
-                  background: "#fff",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
+              <button onClick={() => setModal(null)} className="inv-btn"
+                style={{ padding:'13px 24px', borderRadius:11, border:'1.5px solid #e2e8f0', background:'#f8fafc', fontWeight:700, fontSize:14, color:'#374151' }}>
                 Cancel
               </button>
             </div>
@@ -1408,33 +458,55 @@ export default function AdminInventory() {
         </div>
       )}
 
-      {/* Add / Edit Modal */}
-      {(modal === "add" || modal === "edit") && (
-        <ProductFormModal
-          title={
-            modal === "add"
-              ? "➕ Add New Product"
-              : `✏️ Edit — ${selectedItem?.Name}`
-          }
-          productForm={productForm}
-          setProductForm={setProductForm}
-          imagePreview={imagePreview}
-          setImagePreview={setImagePreview}
-          onConfirm={modal === "add" ? handleAddProduct : handleEditProduct}
-          onClose={() => setModal(null)}
-          saving={saving}
-          categories={categories}
-        />
-      )}
+      {/* ── RESTOCK MODAL ── */}
+      {modal === 'restock' && restockItem && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.6)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }}
+          onClick={e => { if(e.target===e.currentTarget) setModal(null) }}>
+          <div style={{ background:'#fff', borderRadius:20, padding:32, width:'100%', maxWidth:420, boxShadow:'0 20px 60px rgba(0,0,0,.2)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+              <h3 style={{ fontSize:18, fontWeight:800, color:'#0f172a' }}>📦 Restock Product</h3>
+              <button onClick={() => setModal(null)} style={{ background:'#f1f5f9', border:'none', borderRadius:10, width:36, height:36, cursor:'pointer', fontSize:18, color:'#64748b' }}>✕</button>
+            </div>
 
-      {/* Delete Confirmation Modal — replaces window.confirm */}
-      {deleteTarget && (
-        <DeleteModal
-          item={deleteTarget}
-          onConfirm={handleDeleteProduct}
-          onClose={() => setDeleteTarget(null)}
-        />
+            {/* Product info */}
+            <div style={{ background:'#f0fdf4', borderRadius:12, padding:'14px 16px', marginBottom:20, border:'1px solid #bbf7d0', display:'flex', alignItems:'center', gap:12 }}>
+              <div style={{ width:48, height:48, borderRadius:10, overflow:'hidden', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0, border:'1px solid #e2e8f0' }}>
+                {restockItem.Product_Image
+                  ? <img src={restockItem.Product_Image} alt={restockItem.Name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                  : (EMOJIS[restockItem.Category_Name] || '📦')}
+              </div>
+              <div>
+                <div style={{ fontWeight:700, color:'#0f172a', fontSize:14 }}>{restockItem.Name}</div>
+                <div style={{ fontSize:12, color:'#64748b' }}>
+                  Current stock: <strong style={{ color: restockItem.Quantity <= 0 ? '#dc2626' : '#16a34a' }}>{restockItem.Quantity}</strong> {restockItem.Unit}
+                </div>
+              </div>
+            </div>
+
+            <label className="inv-label">Quantity to Add</label>
+            <input type="number" min="1" value={restockQty} onChange={e=>setRestockQty(parseInt(e.target.value)||0)}
+              placeholder="Enter quantity..."
+              style={{ width:'100%', padding:'12px 14px', borderRadius:10, border:'2px solid #e2e8f0', fontSize:16, fontWeight:700, outline:'none', boxSizing:'border-box', marginBottom:8, fontFamily:"'Plus Jakarta Sans',sans-serif", textAlign:'center' }} />
+
+            {restockQty > 0 && (
+              <div style={{ padding:'10px 14px', background:'#f0fdf4', borderRadius:9, border:'1px solid #bbf7d0', fontSize:13, color:'#15803d', marginBottom:20, textAlign:'center', fontWeight:600 }}>
+                New stock will be: <strong style={{ fontSize:16 }}>{restockItem.Quantity + restockQty}</strong> {restockItem.Unit}
+              </div>
+            )}
+
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={handleRestock} disabled={restockQty <= 0} className="inv-btn"
+                style={{ flex:1, padding:'12px', borderRadius:11, border:'none', background: restockQty>0?'linear-gradient(135deg,#15803d,#22c55e)':'#e2e8f0', color: restockQty>0?'#fff':'#9ca3af', fontWeight:700, fontSize:14 }}>
+                ✅ Confirm Restock
+              </button>
+              <button onClick={() => setModal(null)} className="inv-btn"
+                style={{ padding:'12px 20px', borderRadius:11, border:'1.5px solid #e2e8f0', background:'#f8fafc', fontWeight:700, fontSize:14, color:'#374151' }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
-  );
+  )
 }

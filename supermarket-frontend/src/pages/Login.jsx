@@ -67,7 +67,7 @@ export default function Login() {
         <div style={{ textAlign:'center', marginBottom:28 }}>
           <div style={{ width:56, height:56, borderRadius:16, background:'linear-gradient(135deg,#15803d,#22c55e)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:26, margin:'0 auto 14px' }}>🌿</div>
           <h2 style={{ fontSize:24, fontWeight:800, color:'#111827', marginBottom:4 }}>Welcome Back 👋</h2>
-          <p style={{ color:'#6b7280', fontSize:14 }}>Sign in to your FreshMart account</p>
+          <p style={{ color:'#6b7280', fontSize:14 }}>Sign in to your AMS Mart account</p>
         </div>
 
         <form onSubmit={handleSubmit} noValidate>

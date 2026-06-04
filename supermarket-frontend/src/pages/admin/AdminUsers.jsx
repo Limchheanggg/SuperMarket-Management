@@ -18,42 +18,52 @@ const SHIFT_TEMPLATES = [
 ]
 
 const STATUS_COLORS = {
-  scheduled:  { bg:'#dbeafe', color:'#1d4ed8' },
+  scheduled: { bg:'#dbeafe', color:'#1d4ed8' },
   completed:  { bg:'#dcfce7', color:'#15803d' },
   absent:     { bg:'#fee2e2', color:'#dc2626' },
   cancelled:  { bg:'#f3f4f6', color:'#6b7280' },
 }
 
+const PAGE_SIZE = 20
+
 export default function AdminUsers() {
-  const [tab, setTab]             = useState('users')
-  const [users, setUsers]         = useState([])
-  const [shifts, setShifts]       = useState([])
-  const [loading, setLoading]     = useState(true)
-  const [search, setSearch]       = useState('')
+  const [tab, setTab]           = useState('users')
+  const [users, setUsers]       = useState([])
+  const [shifts, setShifts]     = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [search, setSearch]     = useState('')
   const [roleFilter, setRoleFilter] = useState('All')
-  const [userModal, setUserModal] = useState(null)
+  const [page, setPage]         = useState(1)
+  const [userModal, setUserModal]   = useState(null)
   const [shiftModal, setShiftModal] = useState(null)
-  const [form, setForm]           = useState({ full_name:'', email:'', phone:'', role:'employee', password:'' })
+  const [form, setForm]         = useState({ full_name:'', email:'', phone:'', role:'employee', password:'' })
   const [shiftForm, setShiftForm] = useState({ user_id:'', shift_name:'Morning', shift_date:'', start_time:'06:00', end_time:'14:00', status:'scheduled', note:'' })
-  const [saving, setSaving]       = useState(false)
+  const [saving, setSaving]     = useState(false)
+
+  const today = new Date().toISOString().split('T')[0]
 
   useEffect(() => { fetchAll() }, [])
+  useEffect(() => { setPage(1) }, [search, roleFilter, tab])
 
   const fetchAll = async () => {
     setLoading(true)
-    // Fetch users — critical
     try {
-      const uRes = await API.get('/api/users/employees')
-      setUsers(uRes.data || [])
-    } catch { setUsers([]) }
-    // Fetch shifts — optional, never clears users
-    try {
-      const sRes = await API.get('/api/shifts/')
-      setShifts(sRes.data || [])
-    } catch { setShifts([]) }
+      const [uRes, sRes] = await Promise.all([
+        API.get('/api/users/employees'),
+        API.get('/api/shifts/').catch(() => ({ data:[] })),
+      ])
+      setUsers(Array.isArray(uRes.data) ? uRes.data : [])
+      setShifts(Array.isArray(sRes.data) ? sRes.data : [])
+    } catch(e) {
+      console.error('fetch error', e)
+      setUsers([])
+      setShifts([])
+      toast.error('Failed to load users')
+    }
     setLoading(false)
   }
 
+  // ── User CRUD ──────────────────────────────────────────────
   const handleSaveUser = async () => {
     if (!form.full_name || !form.email) { toast.error('Name and email required'); return }
     if (userModal === 'add' && !form.password) { toast.error('Password required'); return }
@@ -64,7 +74,7 @@ export default function AdminUsers() {
       toast.success(userModal === 'add' ? 'User added!' : 'User updated!')
       setUserModal(null)
       fetchAll()
-    } catch (e) { toast.error(e.response?.data?.detail || 'Error') }
+    } catch(e) { toast.error(e.response?.data?.detail || 'Error') }
     finally { setSaving(false) }
   }
 
@@ -74,6 +84,7 @@ export default function AdminUsers() {
     catch { toast.error('Failed to delete') }
   }
 
+  // ── Shift CRUD ─────────────────────────────────────────────
   const handleSaveShift = async () => {
     if (!shiftForm.user_id || !shiftForm.shift_date) { toast.error('User and date required'); return }
     setSaving(true)
@@ -83,7 +94,7 @@ export default function AdminUsers() {
       toast.success(shiftModal === 'add' ? 'Shift created!' : 'Shift updated!')
       setShiftModal(null)
       fetchAll()
-    } catch (e) { toast.error(e.response?.data?.detail || 'Shifts API not ready yet') }
+    } catch(e) { toast.error(e.response?.data?.detail || 'Error') }
     finally { setSaving(false) }
   }
 
@@ -93,27 +104,29 @@ export default function AdminUsers() {
     catch { toast.error('Failed') }
   }
 
-  const applyTemplate = (t) => setShiftForm(f => ({ ...f, shift_name: t.name, start_time: t.start, end_time: t.end }))
+  const applyTemplate = (t) => setShiftForm(f => ({ ...f, shift_name:t.name, start_time:t.start, end_time:t.end }))
 
-  const shiftableUsers = users.filter(u => ['employee','cashier','manager'].includes(u.role))
-
+  // ── Filtering & Pagination ─────────────────────────────────
   const filtered = users.filter(u => {
     const matchSearch = !search ||
-      u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-      u.email?.toLowerCase().includes(search.toLowerCase())
+      (u.full_name||'').toLowerCase().includes(search.toLowerCase()) ||
+      (u.email||'').toLowerCase().includes(search.toLowerCase())
     const matchRole = roleFilter === 'All' || u.role === roleFilter
     return matchSearch && matchRole
   })
 
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated  = filtered.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE)
+
+  const shiftableUsers = users.filter(u => ['employee','cashier','manager'].includes(u.role))
+  const todayShifts    = shifts.filter(s => s.shift_date === today)
+
   const stats = {
     total:     users.length,
-    admins:    users.filter(u => u.role === 'admin').length,
-    staff:     users.filter(u => ['manager','cashier','employee'].includes(u.role)).length,
+    admins:    users.filter(u => ['admin','manager'].includes(u.role)).length,
+    staff:     users.filter(u => ['cashier','employee'].includes(u.role)).length,
     customers: users.filter(u => u.role === 'customer').length,
   }
-
-  const today = new Date().toISOString().split('T')[0]
-  const todayShifts = shifts.filter(s => s.shift_date === today)
 
   return (
     <div style={{ padding:28, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
@@ -122,7 +135,7 @@ export default function AdminUsers() {
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24 }}>
         <div>
           <h2 style={{ fontSize:24, fontWeight:800, color:'#0f172a', marginBottom:4 }}>👥 User Management</h2>
-          <p style={{ color:'#64748b', fontSize:14 }}>Manage users and employee shift schedules</p>
+          <p style={{ color:'#64748b', fontSize:14 }}>Manage all users and employee shifts</p>
         </div>
         <button onClick={() => { setForm({ full_name:'', email:'', phone:'', role:'employee', password:'' }); setUserModal('add') }}
           style={{ padding:'10px 20px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#15803d,#22c55e)', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:14, boxShadow:'0 4px 12px rgba(21,128,61,.3)' }}>
@@ -133,10 +146,10 @@ export default function AdminUsers() {
       {/* Stats */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14, marginBottom:24 }}>
         {[
-          ['Total Users',       stats.total,     '#6366f1', 'linear-gradient(135deg,#eef2ff,#e0e7ff)'],
-          ['Admins & Managers', stats.admins,    '#dc2626', 'linear-gradient(135deg,#fef2f2,#fee2e2)'],
-          ['Staff',             stats.staff,     '#16a34a', 'linear-gradient(135deg,#f0fdf4,#dcfce7)'],
-          ['Customers',         stats.customers, '#7c3aed', 'linear-gradient(135deg,#f5f3ff,#ede9fe)'],
+          ['Total Users',       stats.total,     '#6366f1','linear-gradient(135deg,#eef2ff,#e0e7ff)'],
+          ['Admins & Managers', stats.admins,    '#dc2626','linear-gradient(135deg,#fef2f2,#fee2e2)'],
+          ['Staff',             stats.staff,     '#16a34a','linear-gradient(135deg,#f0fdf4,#dcfce7)'],
+          ['Customers',         stats.customers, '#7c3aed','linear-gradient(135deg,#f5f3ff,#ede9fe)'],
         ].map(([l,v,c,bg]) => (
           <div key={l} style={{ background:bg, borderRadius:14, padding:'18px 20px', border:`1.5px solid ${c}22` }}>
             <div style={{ fontSize:12, color:'#64748b', marginBottom:6, fontWeight:600 }}>{l}</div>
@@ -147,7 +160,7 @@ export default function AdminUsers() {
 
       {/* Tabs */}
       <div style={{ display:'flex', gap:4, marginBottom:20, background:'#f1f5f9', borderRadius:12, padding:4, width:'fit-content' }}>
-        {[['users','👥 Users'],['shifts','📅 Shift Schedule']].map(([key,label]) => (
+        {[['users','👥 Users'],['shifts','📅 Shifts']].map(([key,label]) => (
           <button key={key} onClick={() => setTab(key)}
             style={{ padding:'9px 20px', borderRadius:9, border:'none', cursor:'pointer', fontSize:13, fontWeight:700,
               background: tab===key ? '#fff' : 'transparent',
@@ -161,91 +174,103 @@ export default function AdminUsers() {
       {/* ── USERS TAB ── */}
       {tab === 'users' && (
         <>
-          <div style={{ display:'flex', gap:10, marginBottom:18, flexWrap:'wrap' }}>
+          {/* Search + Role filters */}
+          <div style={{ display:'flex', gap:10, marginBottom:18, flexWrap:'wrap', alignItems:'center' }}>
             <input value={search} onChange={e=>setSearch(e.target.value)}
-              placeholder="🔍 Search by name, email or role..."
-              style={{ flex:1, minWidth:200, padding:'10px 14px', borderRadius:10, border:'1.5px solid #e5e7eb', fontSize:13, outline:'none', boxSizing:'border-box' }} />
+              placeholder="🔍 Search by name or email..."
+              style={{ flex:1, minWidth:220, padding:'10px 14px', borderRadius:10, border:'1.5px solid #e5e7eb', fontSize:13, outline:'none', boxSizing:'border-box' }} />
             {['All','admin','manager','cashier','employee','customer'].map(r => {
-              const rc = ROLE_COLORS[r] || {}
+              const rc = ROLE_COLORS[r] || { bg:'#f1f5f9', color:'#374151', border:'#e2e8f0' }
               return (
                 <button key={r} onClick={() => setRoleFilter(r)}
-                  style={{ padding:'9px 16px', borderRadius:9, cursor:'pointer', fontSize:12, fontWeight:700,
-                    border: `1.5px solid ${roleFilter===r ? (rc.border||'#0f172a') : '#e5e7eb'}`,
-                    background: roleFilter===r ? (rc.bg||'#0f172a') : '#fff',
-                    color: roleFilter===r ? (rc.color||'#fff') : '#374151' }}>
+                  style={{ padding:'8px 14px', borderRadius:9, cursor:'pointer', fontSize:12, fontWeight:700,
+                    border:`1.5px solid ${roleFilter===r ? rc.border : '#e5e7eb'}`,
+                    background: roleFilter===r ? rc.bg : '#fff',
+                    color: roleFilter===r ? rc.color : '#374151' }}>
                   {r}
                 </button>
               )
             })}
           </div>
 
+          {/* Result count */}
+          <div style={{ fontSize:13, color:'#64748b', marginBottom:12 }}>
+            Showing <strong style={{ color:'#0f172a' }}>{paginated.length}</strong> of <strong style={{ color:'#0f172a' }}>{filtered.length}</strong> users
+            {roleFilter !== 'All' && <span style={{ color:'#6366f1' }}> (filtered by: {roleFilter})</span>}
+          </div>
+
+          {/* Table */}
           <div style={{ background:'#fff', borderRadius:16, overflow:'hidden', border:'1.5px solid #e5e7eb', boxShadow:'0 2px 10px rgba(0,0,0,.04)' }}>
             <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
               <thead>
                 <tr style={{ background:'#f8fafc', borderBottom:'2px solid #e5e7eb' }}>
-                  {['User','Email','Phone','Role','Access','Actions'].map(h => (
-                    <th key={h} style={{ padding:'13px 16px', textAlign:'left', fontWeight:700, color:'#374151' }}>{h}</th>
+                  {['#','User','Email','Phone','Role','Access','Actions'].map(h => (
+                    <th key={h} style={{ padding:'12px 14px', textAlign:'left', fontWeight:700, color:'#374151' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={6} style={{ padding:40, textAlign:'center', color:'#94a3b8' }}>Loading...</td></tr>
-                ) : filtered.length === 0 ? (
-                  <tr><td colSpan={6} style={{ padding:40, textAlign:'center', color:'#94a3b8' }}>
-                    <div style={{ fontSize:36, marginBottom:10 }}>👤</div>
-                    <p>{users.length === 0 ? 'No users in database' : 'No users match search'}</p>
+                  <tr><td colSpan={7} style={{ padding:40, textAlign:'center', color:'#94a3b8' }}>
+                    <div style={{ fontSize:32, marginBottom:8 }}>⏳</div>Loading users...
                   </td></tr>
-                ) : filtered.map(u => {
-                  const rc = ROLE_COLORS[u.role] || ROLE_COLORS.employee
+                ) : paginated.length === 0 ? (
+                  <tr><td colSpan={7} style={{ padding:40, textAlign:'center', color:'#94a3b8' }}>
+                    <div style={{ fontSize:32, marginBottom:8 }}>🔍</div>No users match your search.
+                  </td></tr>
+                ) : paginated.map((u, idx) => {
+                  const rc = ROLE_COLORS[u.role] || ROLE_COLORS.customer
                   const canAdmin = ['admin','manager'].includes(u.role)
                   return (
                     <tr key={u.id} style={{ borderBottom:'1px solid #f8fafc' }}
                       onMouseEnter={e=>e.currentTarget.style.background='#fafafa'}
                       onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                      <td style={{ padding:'13px 16px' }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                          <div style={{ width:36, height:36, borderRadius:12, background:`linear-gradient(135deg,${rc.color}22,${rc.color}11)`, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:14, color:rc.color, flexShrink:0 }}>
+                      <td style={{ padding:'11px 14px', color:'#94a3b8', fontSize:12 }}>
+                        {(page-1)*PAGE_SIZE + idx + 1}
+                      </td>
+                      <td style={{ padding:'11px 14px' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:9 }}>
+                          <div style={{ width:32, height:32, borderRadius:10, background:`${rc.color}22`, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:13, color:rc.color, flexShrink:0 }}>
                             {(u.full_name||'U')[0].toUpperCase()}
                           </div>
                           <div>
-                            <strong style={{ color:'#0f172a' }}>{u.full_name}</strong>
+                            <strong style={{ color:'#0f172a', fontSize:13 }}>{u.full_name}</strong>
                             {['employee','cashier'].includes(u.role) && (
-                              <div style={{ fontSize:11, color:'#94a3b8', marginTop:2 }}>
-                                {shifts.filter(s=>s.user_id===u.id&&s.shift_date===today).length > 0 ? '🟢 On shift today' : '⚪ No shift today'}
+                              <div style={{ fontSize:10, color:'#94a3b8', marginTop:1 }}>
+                                {shifts.filter(s=>s.user_id===u.id&&s.shift_date===today).length > 0 ? '🟢 On shift' : '⚪ Off today'}
                               </div>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td style={{ padding:'13px 16px', color:'#64748b' }}>{u.email}</td>
-                      <td style={{ padding:'13px 16px', color:'#64748b' }}>{u.phone||'—'}</td>
-                      <td style={{ padding:'13px 16px' }}>
-                        <span style={{ padding:'4px 12px', borderRadius:99, fontSize:12, fontWeight:700, background:rc.bg, color:rc.color, border:`1px solid ${rc.border}` }}>
+                      <td style={{ padding:'11px 14px', color:'#64748b', fontSize:12 }}>{u.email}</td>
+                      <td style={{ padding:'11px 14px', color:'#64748b', fontSize:12 }}>{u.phone||'—'}</td>
+                      <td style={{ padding:'11px 14px' }}>
+                        <span style={{ padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:700, background:rc.bg, color:rc.color, border:`1px solid ${rc.border}` }}>
                           {u.role}
                         </span>
                       </td>
-                      <td style={{ padding:'13px 16px' }}>
+                      <td style={{ padding:'11px 14px' }}>
                         {canAdmin
-                          ? <span style={{ padding:'4px 10px', borderRadius:99, fontSize:11, fontWeight:700, background:'#fef3c7', color:'#d97706', border:'1px solid #fcd34d' }}>⚙️ Admin Panel</span>
-                          : <span style={{ padding:'4px 10px', borderRadius:99, fontSize:11, fontWeight:700, background:'#f0fdf4', color:'#16a34a', border:'1px solid #86efac' }}>🛒 Shop Only</span>
+                          ? <span style={{ padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:700, background:'#fef3c7', color:'#d97706', border:'1px solid #fcd34d' }}>⚙️ Admin</span>
+                          : <span style={{ padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:700, background:'#f0fdf4', color:'#16a34a', border:'1px solid #86efac' }}>🛒 Shop</span>
                         }
                       </td>
-                      <td style={{ padding:'13px 16px' }}>
-                        <div style={{ display:'flex', gap:6 }}>
+                      <td style={{ padding:'11px 14px' }}>
+                        <div style={{ display:'flex', gap:5 }}>
                           <button onClick={() => { setForm({...u, password:''}); setUserModal('edit') }}
-                            style={{ padding:'5px 12px', borderRadius:7, border:'1.5px solid #93c5fd', background:'#dbeafe', color:'#1d4ed8', cursor:'pointer', fontSize:12, fontWeight:700 }}>
+                            style={{ padding:'4px 10px', borderRadius:7, border:'1.5px solid #93c5fd', background:'#dbeafe', color:'#1d4ed8', cursor:'pointer', fontSize:11, fontWeight:700 }}>
                             Edit
                           </button>
                           {['employee','cashier'].includes(u.role) && (
                             <button onClick={() => { setShiftForm({user_id:u.id, shift_name:'Morning', shift_date:today, start_time:'06:00', end_time:'14:00', status:'scheduled', note:''}); setShiftModal('add') }}
-                              style={{ padding:'5px 12px', borderRadius:7, border:'1.5px solid #fcd34d', background:'#fef3c7', color:'#d97706', cursor:'pointer', fontSize:12, fontWeight:700 }}>
-                              + Shift
+                              style={{ padding:'4px 10px', borderRadius:7, border:'1.5px solid #fcd34d', background:'#fef3c7', color:'#d97706', cursor:'pointer', fontSize:11, fontWeight:700 }}>
+                              +Shift
                             </button>
                           )}
                           <button onClick={() => handleDeleteUser(u.id)}
-                            style={{ padding:'5px 12px', borderRadius:7, border:'1.5px solid #fca5a5', background:'#fee2e2', color:'#dc2626', cursor:'pointer', fontSize:12, fontWeight:700 }}>
-                            Delete
+                            style={{ padding:'4px 10px', borderRadius:7, border:'1.5px solid #fca5a5', background:'#fee2e2', color:'#dc2626', cursor:'pointer', fontSize:11, fontWeight:700 }}>
+                            Del
                           </button>
                         </div>
                       </td>
@@ -255,18 +280,45 @@ export default function AdminUsers() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:8, marginTop:16 }}>
+              <button onClick={() => setPage(p => Math.max(1,p-1))} disabled={page===1}
+                style={{ padding:'7px 16px', borderRadius:8, border:'1.5px solid #e5e7eb', background: page===1?'#f8fafc':'#fff', cursor: page===1?'not-allowed':'pointer', fontWeight:600, fontSize:13, color: page===1?'#94a3b8':'#374151' }}>
+                ← Prev
+              </button>
+              {Array.from({length: Math.min(totalPages,7)}, (_,i) => {
+                const p = totalPages <= 7 ? i+1 : (page <= 4 ? i+1 : page-3+i)
+                if (p < 1 || p > totalPages) return null
+                return (
+                  <button key={p} onClick={() => setPage(p)}
+                    style={{ width:36, height:36, borderRadius:8, border:`1.5px solid ${page===p?'#6366f1':'#e5e7eb'}`, background: page===p?'#6366f1':'#fff', color: page===p?'#fff':'#374151', cursor:'pointer', fontWeight:700, fontSize:13 }}>
+                    {p}
+                  </button>
+                )
+              })}
+              <button onClick={() => setPage(p => Math.min(totalPages,p+1))} disabled={page===totalPages}
+                style={{ padding:'7px 16px', borderRadius:8, border:'1.5px solid #e5e7eb', background: page===totalPages?'#f8fafc':'#fff', cursor: page===totalPages?'not-allowed':'pointer', fontWeight:600, fontSize:13, color: page===totalPages?'#94a3b8':'#374151' }}>
+                Next →
+              </button>
+              <span style={{ fontSize:12, color:'#94a3b8', marginLeft:4 }}>
+                Page {page} of {totalPages} ({filtered.length} users)
+              </span>
+            </div>
+          )}
         </>
       )}
 
       {/* ── SHIFTS TAB ── */}
       {tab === 'shifts' && (
         <>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
             <div style={{ display:'flex', gap:10 }}>
-              <div style={{ background:'linear-gradient(135deg,#f0fdf4,#dcfce7)', borderRadius:12, padding:'10px 18px', border:'1px solid #86efac', fontSize:13 }}>
+              <div style={{ background:'#f0fdf4', borderRadius:10, padding:'9px 16px', border:'1px solid #86efac', fontSize:13 }}>
                 📅 Today: <strong style={{ color:'#16a34a' }}>{todayShifts.length} shifts</strong>
               </div>
-              <div style={{ background:'linear-gradient(135deg,#eef2ff,#e0e7ff)', borderRadius:12, padding:'10px 18px', border:'1px solid #a5b4fc', fontSize:13 }}>
+              <div style={{ background:'#eef2ff', borderRadius:10, padding:'9px 16px', border:'1px solid #a5b4fc', fontSize:13 }}>
                 Total: <strong style={{ color:'#6366f1' }}>{shifts.length} shifts</strong>
               </div>
             </div>
@@ -276,11 +328,12 @@ export default function AdminUsers() {
             </button>
           </div>
 
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:20 }}>
+          {/* Shift templates */}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:18 }}>
             {SHIFT_TEMPLATES.map(t => (
-              <div key={t.name} style={{ background:'#fff', borderRadius:12, padding:'14px 16px', border:'1.5px solid #e5e7eb', textAlign:'center' }}>
-                <div style={{ width:10, height:10, borderRadius:'50%', background:t.color, margin:'0 auto 8px' }} />
-                <div style={{ fontWeight:700, color:'#0f172a', fontSize:14, marginBottom:4 }}>{t.name}</div>
+              <div key={t.name} style={{ background:'#fff', borderRadius:12, padding:'12px 16px', border:'1.5px solid #e5e7eb', textAlign:'center' }}>
+                <div style={{ width:10, height:10, borderRadius:'50%', background:t.color, margin:'0 auto 6px' }} />
+                <div style={{ fontWeight:700, color:'#0f172a', fontSize:14 }}>{t.name}</div>
                 <div style={{ fontSize:12, color:'#64748b' }}>{t.start} – {t.end}</div>
               </div>
             ))}
@@ -291,7 +344,7 @@ export default function AdminUsers() {
               <thead>
                 <tr style={{ background:'#f8fafc', borderBottom:'2px solid #e5e7eb' }}>
                   {['Employee','Role','Shift','Date','Time','Status','Note','Actions'].map(h => (
-                    <th key={h} style={{ padding:'13px 16px', textAlign:'left', fontWeight:700, color:'#374151' }}>{h}</th>
+                    <th key={h} style={{ padding:'12px 14px', textAlign:'left', fontWeight:700, color:'#374151' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -311,39 +364,37 @@ export default function AdminUsers() {
                     <tr key={s.id} style={{ borderBottom:'1px solid #f8fafc' }}
                       onMouseEnter={e=>e.currentTarget.style.background='#fafafa'}
                       onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                      <td style={{ padding:'12px 16px' }}>
+                      <td style={{ padding:'11px 14px' }}>
                         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                          <div style={{ width:30, height:30, borderRadius:9, background:`${rc.color}22`, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:12, color:rc.color }}>
+                          <div style={{ width:28, height:28, borderRadius:8, background:`${rc.color}22`, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:11, color:rc.color }}>
                             {(s.full_name||'?')[0].toUpperCase()}
                           </div>
-                          <strong style={{ color:'#0f172a' }}>{s.full_name}</strong>
+                          <strong style={{ color:'#0f172a', fontSize:13 }}>{s.full_name}</strong>
                         </div>
                       </td>
-                      <td style={{ padding:'12px 16px' }}>
-                        <span style={{ padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:700, background:rc.bg, color:rc.color }}>{s.role}</span>
+                      <td style={{ padding:'11px 14px' }}>
+                        <span style={{ padding:'3px 9px', borderRadius:99, fontSize:11, fontWeight:700, background:rc.bg, color:rc.color }}>{s.role}</span>
                       </td>
-                      <td style={{ padding:'12px 16px' }}>
+                      <td style={{ padding:'11px 14px' }}>
                         <div style={{ display:'flex', alignItems:'center', gap:6 }}>
                           <div style={{ width:8, height:8, borderRadius:'50%', background:tmpl?.color||'#94a3b8' }} />
                           <span style={{ fontWeight:600 }}>{s.shift_name}</span>
                         </div>
                       </td>
-                      <td style={{ padding:'12px 16px', color:'#64748b' }}>{s.shift_date}</td>
-                      <td style={{ padding:'12px 16px', fontWeight:600 }}>{String(s.start_time).slice(0,5)} – {String(s.end_time).slice(0,5)}</td>
-                      <td style={{ padding:'12px 16px' }}>
-                        <span style={{ padding:'4px 10px', borderRadius:99, fontSize:11, fontWeight:700, background:sc.bg, color:sc.color }}>{s.status}</span>
+                      <td style={{ padding:'11px 14px', color:'#64748b' }}>{s.shift_date}</td>
+                      <td style={{ padding:'11px 14px', fontWeight:600 }}>{String(s.start_time).slice(0,5)} – {String(s.end_time).slice(0,5)}</td>
+                      <td style={{ padding:'11px 14px' }}>
+                        <span style={{ padding:'3px 9px', borderRadius:99, fontSize:11, fontWeight:700, background:sc.bg, color:sc.color }}>{s.status}</span>
                       </td>
-                      <td style={{ padding:'12px 16px', color:'#94a3b8', fontSize:12 }}>{s.note||'—'}</td>
-                      <td style={{ padding:'12px 16px' }}>
-                        <div style={{ display:'flex', gap:6 }}>
-                          <button onClick={() => { setShiftForm({ user_id:s.user_id, shift_name:s.shift_name, shift_date:s.shift_date, start_time:String(s.start_time).slice(0,5), end_time:String(s.end_time).slice(0,5), status:s.status, note:s.note||'' }); setShiftModal(s.id) }}
-                            style={{ padding:'5px 10px', borderRadius:7, border:'1.5px solid #93c5fd', background:'#dbeafe', color:'#1d4ed8', cursor:'pointer', fontSize:11, fontWeight:700 }}>
-                            Edit
-                          </button>
+                      <td style={{ padding:'11px 14px', color:'#94a3b8', fontSize:12 }}>{s.note||'—'}</td>
+                      <td style={{ padding:'11px 14px' }}>
+                        <div style={{ display:'flex', gap:5 }}>
+                          <button onClick={() => {
+                            setShiftForm({ user_id:s.user_id, shift_name:s.shift_name, shift_date:s.shift_date, start_time:String(s.start_time).slice(0,5), end_time:String(s.end_time).slice(0,5), status:s.status, note:s.note||'' })
+                            setShiftModal(s.id)
+                          }} style={{ padding:'4px 9px', borderRadius:7, border:'1.5px solid #93c5fd', background:'#dbeafe', color:'#1d4ed8', cursor:'pointer', fontSize:11, fontWeight:700 }}>Edit</button>
                           <button onClick={() => handleDeleteShift(s.id)}
-                            style={{ padding:'5px 10px', borderRadius:7, border:'1.5px solid #fca5a5', background:'#fee2e2', color:'#dc2626', cursor:'pointer', fontSize:11, fontWeight:700 }}>
-                            Delete
-                          </button>
+                            style={{ padding:'4px 9px', borderRadius:7, border:'1.5px solid #fca5a5', background:'#fee2e2', color:'#dc2626', cursor:'pointer', fontSize:11, fontWeight:700 }}>Del</button>
                         </div>
                       </td>
                     </tr>
@@ -361,10 +412,10 @@ export default function AdminUsers() {
           onClick={e => { if(e.target===e.currentTarget) setUserModal(null) }}>
           <div style={{ background:'#fff', borderRadius:18, padding:32, width:'100%', maxWidth:460, boxShadow:'0 8px 40px rgba(0,0,0,.15)' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:22 }}>
-              <h3 style={{ fontSize:18, fontWeight:800, color:'#0f172a' }}>{userModal==='add' ? '+ Add New User' : '✏️ Edit User'}</h3>
+              <h3 style={{ fontSize:18, fontWeight:800, color:'#0f172a' }}>{userModal==='add'?'+ Add User':'✏️ Edit User'}</h3>
               <button onClick={() => setUserModal(null)} style={{ background:'none', border:'none', fontSize:20, cursor:'pointer', color:'#94a3b8' }}>✕</button>
             </div>
-            {[['full_name','Full Name','e.g. John Smith'],['email','Email','user@email.com'],['phone','Phone','+855 12 345 678']].map(([key,label,ph]) => (
+            {[['full_name','Full Name','e.g. Sophea CHAN'],['email','Email','user@email.com'],['phone','Phone','+855 12 345 678']].map(([key,label,ph]) => (
               <div key={key} style={{ marginBottom:14 }}>
                 <label style={{ fontSize:13, fontWeight:700, display:'block', marginBottom:6, color:'#374151' }}>{label}</label>
                 <input value={form[key]||''} onChange={e=>setForm({...form,[key]:e.target.value})} placeholder={ph}
@@ -375,17 +426,17 @@ export default function AdminUsers() {
               <label style={{ fontSize:13, fontWeight:700, display:'block', marginBottom:6, color:'#374151' }}>Role</label>
               <select value={form.role||'employee'} onChange={e=>setForm({...form,role:e.target.value})}
                 style={{ width:'100%', padding:'10px 14px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:14, outline:'none' }}>
-                {['admin','manager','cashier','employee','customer'].map(r => <option key={r} value={r}>{r}</option>)}
+                {['admin','manager','cashier','employee','customer'].map(r=><option key={r}>{r}</option>)}
               </select>
-              <div style={{ marginTop:8, padding:'8px 12px', borderRadius:8, fontSize:12,
-                background: ['admin','manager'].includes(form.role) ? '#fef3c7' : '#f0fdf4',
-                color: ['admin','manager'].includes(form.role) ? '#d97706' : '#15803d' }}>
-                {['admin','manager'].includes(form.role) ? '⚙️ Can access Admin Panel' : '🛒 Shop access only'}
+              <div style={{ marginTop:8, padding:'7px 12px', borderRadius:8, fontSize:12,
+                background: ['admin','manager'].includes(form.role)?'#fef3c7':'#f0fdf4',
+                color: ['admin','manager'].includes(form.role)?'#d97706':'#15803d' }}>
+                {['admin','manager'].includes(form.role)?'⚙️ Can access Admin Panel':'🛒 Shop access only'}
               </div>
             </div>
             <div style={{ marginBottom:22 }}>
               <label style={{ fontSize:13, fontWeight:700, display:'block', marginBottom:6, color:'#374151' }}>
-                Password {userModal==='edit' && <span style={{ color:'#94a3b8', fontWeight:400 }}>(leave blank to keep)</span>}
+                Password {userModal==='edit'&&<span style={{ color:'#94a3b8', fontWeight:400 }}>(leave blank to keep)</span>}
               </label>
               <input type="password" value={form.password||''} onChange={e=>setForm({...form,password:e.target.value})} placeholder="••••••••"
                 style={{ width:'100%', padding:'10px 14px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:14, outline:'none', boxSizing:'border-box' }} />
@@ -393,7 +444,7 @@ export default function AdminUsers() {
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={handleSaveUser} disabled={saving}
                 style={{ flex:1, padding:'12px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#15803d,#22c55e)', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:14, opacity:saving?0.7:1 }}>
-                {saving ? '⏳ Saving…' : '✅ Save'}
+                {saving?'⏳ Saving…':'✅ Save'}
               </button>
               <button onClick={() => setUserModal(null)}
                 style={{ flex:1, padding:'12px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#f8fafc', fontWeight:700, cursor:'pointer', fontSize:14 }}>
@@ -410,38 +461,43 @@ export default function AdminUsers() {
           onClick={e => { if(e.target===e.currentTarget) setShiftModal(null) }}>
           <div style={{ background:'#fff', borderRadius:18, padding:32, width:'100%', maxWidth:500, boxShadow:'0 8px 40px rgba(0,0,0,.15)', maxHeight:'90vh', overflowY:'auto' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:22 }}>
-              <h3 style={{ fontSize:18, fontWeight:800, color:'#0f172a' }}>{shiftModal==='add' ? '📅 New Shift' : '✏️ Edit Shift'}</h3>
+              <h3 style={{ fontSize:18, fontWeight:800, color:'#0f172a' }}>{shiftModal==='add'?'📅 New Shift':'✏️ Edit Shift'}</h3>
               <button onClick={() => setShiftModal(null)} style={{ background:'none', border:'none', fontSize:20, cursor:'pointer', color:'#94a3b8' }}>✕</button>
             </div>
+
+            {/* Templates */}
             <div style={{ marginBottom:18 }}>
               <label style={{ fontSize:13, fontWeight:700, display:'block', marginBottom:8, color:'#374151' }}>Quick Templates</label>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
                 {SHIFT_TEMPLATES.map(t => (
                   <button key={t.name} onClick={() => applyTemplate(t)}
-                    style={{ padding:'8px', borderRadius:8, cursor:'pointer', fontSize:12, fontWeight:700,
-                      border: `1.5px solid ${shiftForm.shift_name===t.name ? t.color : '#e5e7eb'}`,
-                      background: shiftForm.shift_name===t.name ? t.color+'22' : '#fff',
-                      color: shiftForm.shift_name===t.name ? t.color : '#374151' }}>
-                    {t.name}<br/><span style={{ fontWeight:400, fontSize:11 }}>{t.start}–{t.end}</span>
+                    style={{ padding:'8px', borderRadius:8, border:`1.5px solid ${shiftForm.shift_name===t.name?t.color:'#e5e7eb'}`, background: shiftForm.shift_name===t.name?t.color+'22':'#fff', cursor:'pointer', fontSize:12, fontWeight:700, color: shiftForm.shift_name===t.name?t.color:'#374151' }}>
+                    {t.name}<br/><span style={{ fontWeight:400, fontSize:10 }}>{t.start}–{t.end}</span>
                   </button>
                 ))}
               </div>
             </div>
+
+            {/* Employee */}
             <div style={{ marginBottom:14 }}>
               <label style={{ fontSize:13, fontWeight:700, display:'block', marginBottom:6, color:'#374151' }}>Employee *</label>
               <select value={shiftForm.user_id} onChange={e=>setShiftForm({...shiftForm,user_id:parseInt(e.target.value)})}
                 style={{ width:'100%', padding:'10px 14px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:14, outline:'none' }}>
                 <option value="">Select employee…</option>
-                {shiftableUsers.map(u => <option key={u.id} value={u.id}>{u.full_name} ({u.role})</option>)}
+                {shiftableUsers.map(u=><option key={u.id} value={u.id}>{u.full_name} ({u.role})</option>)}
               </select>
             </div>
+
+            {/* Date */}
             <div style={{ marginBottom:14 }}>
               <label style={{ fontSize:13, fontWeight:700, display:'block', marginBottom:6, color:'#374151' }}>Shift Date *</label>
               <input type="date" value={shiftForm.shift_date} onChange={e=>setShiftForm({...shiftForm,shift_date:e.target.value})}
                 style={{ width:'100%', padding:'10px 14px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:14, outline:'none', boxSizing:'border-box' }} />
             </div>
+
+            {/* Times */}
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
-              {[['start_time','Start Time'],['end_time','End Time']].map(([key,label]) => (
+              {[['Start Time','start_time'],['End Time','end_time']].map(([label,key]) => (
                 <div key={key}>
                   <label style={{ fontSize:13, fontWeight:700, display:'block', marginBottom:6, color:'#374151' }}>{label}</label>
                   <input type="time" value={shiftForm[key]} onChange={e=>setShiftForm({...shiftForm,[key]:e.target.value})}
@@ -449,22 +505,27 @@ export default function AdminUsers() {
                 </div>
               ))}
             </div>
+
+            {/* Status */}
             <div style={{ marginBottom:14 }}>
               <label style={{ fontSize:13, fontWeight:700, display:'block', marginBottom:6, color:'#374151' }}>Status</label>
               <select value={shiftForm.status} onChange={e=>setShiftForm({...shiftForm,status:e.target.value})}
                 style={{ width:'100%', padding:'10px 14px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:14, outline:'none' }}>
-                {['scheduled','completed','absent','cancelled'].map(s => <option key={s} value={s}>{s}</option>)}
+                {['scheduled','completed','absent','cancelled'].map(s=><option key={s}>{s}</option>)}
               </select>
             </div>
+
+            {/* Note */}
             <div style={{ marginBottom:22 }}>
               <label style={{ fontSize:13, fontWeight:700, display:'block', marginBottom:6, color:'#374151' }}>Note (optional)</label>
               <input value={shiftForm.note} onChange={e=>setShiftForm({...shiftForm,note:e.target.value})} placeholder="e.g. Cover for sick leave"
                 style={{ width:'100%', padding:'10px 14px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:14, outline:'none', boxSizing:'border-box' }} />
             </div>
+
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={handleSaveShift} disabled={saving}
                 style={{ flex:1, padding:'12px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:14, opacity:saving?0.7:1 }}>
-                {saving ? '⏳ Saving…' : '✅ Save Shift'}
+                {saving?'⏳ Saving…':'✅ Save Shift'}
               </button>
               <button onClick={() => setShiftModal(null)}
                 style={{ flex:1, padding:'12px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#f8fafc', fontWeight:700, cursor:'pointer', fontSize:14 }}>

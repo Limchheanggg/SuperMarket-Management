@@ -307,7 +307,7 @@ export default function ProductDetail() {
             <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 20 }}>
               by{" "}
               <strong style={{ color: "#374151" }}>
-                {product.Brand || "FreshMart"}
+                {product.Brand || "AMS Mart"}
               </strong>
               {product.Unit && (
                 <>
@@ -477,7 +477,7 @@ export default function ProductDetail() {
               }}
             >
               {[
-                ["🏷️", "Brand", product.Brand || "FreshMart"],
+                ["🏷️", "Brand", product.Brand || "AMS Mart"],
                 ["📦", "Barcode", product.Barcode],
                 [
                   "⚖️",
@@ -584,7 +584,7 @@ export default function ProductDetail() {
                   }}
                 >
                   {product.Description ||
-                    `${product.Name} is a premium quality product carefully sourced for FreshMart customers in Phnom Penh. Each item is inspected for freshness and quality before reaching your doorstep.`}
+                    `${product.Name} is a premium quality product carefully sourced for AMS Mart customers in Phnom Penh. Each item is inspected for freshness and quality before reaching your doorstep.`}
                 </p>
                 <div
                   style={{
@@ -636,7 +636,7 @@ export default function ProductDetail() {
               >
                 {[
                   ["Product Name", product.Name],
-                  ["Brand", product.Brand || "FreshMart"],
+                  ["Brand", product.Brand || "AMS Mart"],
                   ["Category", product.Category_Name],
                   ["Unit", product.Unit],
                   [

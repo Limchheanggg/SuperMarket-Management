@@ -3,7 +3,7 @@ export default function About() {
     <div className="page-enter">
       <div
         style={{
-          background: "#00B207",
+          background: "#c0272d",
           padding: "60px 0",
           textAlign: "center",
         }}
@@ -17,7 +17,7 @@ export default function About() {
             marginBottom: 10,
           }}
         >
-          About FreshMart
+          About AMS Mart
         </h1>
         <p style={{ color: "rgba(255,255,255,.8)", fontSize: 16 }}>
           Cambodia's leading organic grocery marketplace
@@ -45,7 +45,7 @@ export default function About() {
               Bringing Farm-Fresh Goodness to Your Table
             </h2>
             <p style={{ color: "#7e7e7e", lineHeight: 1.8, marginBottom: 14 }}>
-              FreshMart partners directly with Cambodian farmers to deliver
+              AMS Mart partners directly with Cambodian farmers to deliver
               fresher products at fairer prices. Our MySQL + FastAPI + React
               system tracks every batch from farm to checkout.
             </p>
@@ -75,7 +75,7 @@ export default function About() {
                   <strong
                     style={{
                       fontSize: 28,
-                      color: "#00B207",
+                      color: "#c0272d",
                       fontFamily: "'Josefin Sans',sans-serif",
                       display: "block",
                     }}
@@ -89,7 +89,7 @@ export default function About() {
           </div>
           <div
             style={{
-              background: "#00B207",
+              background: "#c0272d",
               borderRadius: 20,
               padding: 40,
               textAlign: "center",
@@ -121,7 +121,7 @@ export default function About() {
             marginBottom: 28,
           }}
         >
-          Meet the <span style={{ color: "#00B207" }}>Team</span>
+          Meet the <span style={{ color: "#c0272d" }}>Team</span>
         </h2>
         <div
           style={{
@@ -151,7 +151,7 @@ export default function About() {
                   width: 64,
                   height: 64,
                   borderRadius: "50%",
-                  background: "#00B207",
+                  background: "#c0272d",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -176,7 +176,7 @@ export default function About() {
               <p
                 style={{
                   fontSize: 13,
-                  color: "#00B207",
+                  color: "#c0272d",
                   fontWeight: 600,
                   marginBottom: 4,
                 }}

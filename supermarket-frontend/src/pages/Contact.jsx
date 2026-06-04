@@ -10,7 +10,7 @@ export default function Contact() {
           <div>
             <h2 style={{ fontFamily:"'Josefin Sans',sans-serif", fontSize:28, fontWeight:700, marginBottom:16 }}>We'd Love to Hear From You</h2>
             <p style={{ color:'#7e7e7e', lineHeight:1.8, marginBottom:28 }}>Our team is ready to help with any questions.</p>
-            {[['📍','Address','344 Street 271, Phnom Penh'],['📞','Phone','+855 12 345 678'],['✉️','Email','hello@freshmart.kh'],['🕐','Hours','Mon-Sat 7AM-9PM']].map(([i,t,v]) => (
+            {[['📍','Address','344 Street 271, Phnom Penh'],['📞','Phone','+855 12 345 678'],['✉️','Email','hello@amsmart.kh'],['🕐','Hours','Mon-Sat 7AM-9PM']].map(([i,t,v]) => (
               <div key={t} style={{ display:'flex', gap:14, marginBottom:18 }}>
                 <div style={{ width:42, height:42, background:'#F2FCF3', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0 }}>{i}</div>
                 <div><strong style={{ display:'block', marginBottom:2 }}>{t}</strong><p style={{ fontSize:13, color:'#7e7e7e' }}>{v}</p></div>

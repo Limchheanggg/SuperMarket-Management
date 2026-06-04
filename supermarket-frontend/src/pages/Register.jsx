@@ -18,7 +18,7 @@ export default function Register() {
     try {
       const res = await register({ name: form.name, email: form.email, password: form.password, phone: form.phone });
       loginUser(res.data.access_token, res.data.user);
-      toast.success("Account created! Welcome to FreshMart 🎉");
+      toast.success("Account created! Welcome to AMS Mart 🎉");
       navigate("/dashboard");
     } catch (err) {
       toast.error(err.response?.data?.detail || "Registration failed");
@@ -39,7 +39,7 @@ export default function Register() {
           Create Account 🌿
         </h2>
         <p style={{ color:"#7e7e7e", marginBottom:24, fontSize:14 }}>
-          Join FreshMart for fresh deals and loyalty points
+          Join AMS Mart for fresh deals and loyalty points
         </p>
         <form onSubmit={handleSubmit}>
           <div className="form-row">
@@ -106,8 +106,8 @@ export default function Register() {
             </div>
           </div>
           <div style={{ fontSize:13, color:"#7e7e7e", marginBottom:16, display:"flex", gap:6, alignItems:"center" }}>
-            <input type="checkbox" required style={{ accentColor:"#00B207" }} />
-            I agree to the <a href="#" style={{ color:"#00B207" }}>Terms & Conditions</a>
+            <input type="checkbox" required style={{ accentColor:"#c0272d" }} />
+            I agree to the <a href="#" style={{ color:"#c0272d" }}>Terms & Conditions</a>
           </div>
           <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
             {loading ? "⏳ Creating account…" : "Create Account"}
@@ -115,7 +115,7 @@ export default function Register() {
         </form>
         <p style={{ fontSize:13, textAlign:"center", color:"#7e7e7e", marginTop:20 }}>
           Already have an account?{" "}
-          <Link to="/login" style={{ color:"#00B207", fontWeight:700 }}>Sign In</Link>
+          <Link to="/login" style={{ color:"#c0272d", fontWeight:700 }}>Sign In</Link>
         </p>
       </div>
     </div>

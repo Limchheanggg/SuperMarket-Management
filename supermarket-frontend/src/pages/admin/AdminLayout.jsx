@@ -119,7 +119,7 @@ export default function AdminLayout() {
                     lineHeight: 1,
                   }}
                 >
-                  FreshMart
+                  AMS Mart
                 </div>
                 <div
                   style={{

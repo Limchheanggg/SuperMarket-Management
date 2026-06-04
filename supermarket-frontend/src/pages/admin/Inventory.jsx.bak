@@ -1,0 +1,236 @@
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit2, Search, Package, AlertTriangle } from 'lucide-react';
+import * as Dialog from '@radix-ui/react-dialog';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
+
+const API_BASE = 'http://localhost:8000'\;
+
+export default function InventoryManagement() {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+
+  const [isStockModalOpen, setIsStockModalOpen] = useState(false);
+  const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [stockAmount, setStockAmount] = useState(10);
+  const [adjustAmount, setAdjustAmount] = useState(0);
+
+  const fetchInventory = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(`${API_BASE}/api/inventory`);
+      setProducts(res.data || []);
+    } catch (error) {
+      toast.error('Failed to load inventory');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInventory();
+  }, []);
+
+  const stats = React.useMemo(() => {
+    const total = products.length;
+    const inStock = products.filter(p => p.Status === 'In Stock').length;
+    const lowStock = products.filter(p => p.Status === 'Low Stock').length;
+    const outOfStock = products.filter(p => p.Status === 'Out of Stock').length;
+    return { total, inStock, lowStock, outOfStock };
+  }, [products]);
+
+  const filteredProducts = React.useMemo(() => {
+    return products
+      .filter(p => 
+        (p.Name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+         p.Barcode?.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+      .filter(p => statusFilter === 'All' || p.Status === statusFilter);
+  }, [products, searchTerm, statusFilter]);
+
+  const openStockModal = (product) => {
+    setSelectedProduct(product);
+    setStockAmount(10);
+    setIsStockModalOpen(true);
+  };
+
+  const openAdjustModal = (product) => {
+    setSelectedProduct(product);
+    setAdjustAmount(product.Quantity || 0);
+    setIsAdjustModalOpen(true);
+  };
+
+  const handleAddStock = async () => {
+    if (!selectedProduct || stockAmount <= 0) return;
+    try {
+      await axios.post(`${API_BASE}/api/inventory/restock`, {
+        product_id: selectedProduct.Product_ID,
+        quantity: parseInt(stockAmount)
+      });
+      toast.success(`Added ${stockAmount} units`);
+      setIsStockModalOpen(false);
+      fetchInventory();
+    } catch {
+      toast.error('Failed to add stock');
+    }
+  };
+
+  const handleAdjustStock = async () => {
+    if (!selectedProduct) return;
+    try {
+      await axios.put(`${API_BASE}/api/inventory/${selectedProduct.Product_ID}`, {
+        quantity: parseInt(adjustAmount)
+      });
+      toast.success('Stock updated');
+      setIsAdjustModalOpen(false);
+      fetchInventory();
+    } catch {
+      toast.error('Failed to adjust stock');
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    const base = "px-3 py-1 rounded-full text-xs font-semibold";
+    if (status === 'In Stock') return `${base} bg-green-100 text-green-700`;
+    if (status === 'Low Stock') return `${base} bg-amber-100 text-amber-700`;
+    return `${base} bg-red-100 text-red-700`;
+  };
+
+  return (
+    <div className="p-8 bg-gray-50 min-h-screen">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <Package className="w-8 h-8 text-[#15803d]" /> Inventory Management
+          </h1>
+          <p className="text-gray-500 mt-1">Manage stock levels and product inventory</p>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {[
+          { label: 'Total Products', value: stats.total, color: 'text-[#15803d]' },
+          { label: 'In Stock', value: stats.inStock, color: 'text-green-600' },
+          { label: 'Low Stock', value: stats.lowStock, color: 'text-amber-600' },
+          { label: 'Out of Stock', value: stats.outOfStock, color: 'text-red-600' },
+        ].map((stat, i) => (
+          <div key={i} className="bg-white rounded-2xl p-6 shadow-sm border">
+            <div className="flex justify-between">
+              <div>
+                <p className="text-sm text-gray-500">{stat.label}</p>
+                <p className="text-4xl font-bold mt-2">{stat.value}</p>
+              </div>
+              <Package className={`w-10 h-10 ${stat.color}`} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Search & Filter */}
+      <div className="flex gap-4 mb-6">
+        <div className="flex-1 relative">
+          <Search className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search name or barcode..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 border rounded-2xl focus:border-[#15803d]"
+          />
+        </div>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-4 py-3 border rounded-2xl">
+          <option>All</option>
+          <option>In Stock</option>
+          <option>Low Stock</option>
+          <option>Out of Stock</option>
+        </select>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-3xl shadow-sm border overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="text-left px-8 py-4 text-sm font-semibold">Product</th>
+              <th className="text-left px-6 py-4 text-sm font-semibold">Category</th>
+              <th className="text-right px-6 py-4 text-sm font-semibold">Price</th>
+              <th className="text-center px-6 py-4 text-sm font-semibold">Current Stock</th>
+              <th className="text-center px-6 py-4 text-sm font-semibold">Reorder Level</th>
+              <th className="text-center px-6 py-4 text-sm font-semibold">Status</th>
+              <th className="text-center px-8 py-4 text-sm font-semibold">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {loading ? (
+              <tr><td colSpan="7" className="text-center py-12 text-gray-500">Loading...</td></tr>
+            ) : filteredProducts.length === 0 ? (
+              <tr><td colSpan="7" className="text-center py-12 text-gray-500">No products found</td></tr>
+            ) : (
+              filteredProducts.map(product => (
+                <tr key={product.Product_ID} className="hover:bg-gray-50">
+                  <td className="px-8 py-5">
+                    <div className="font-semibold">{product.Name}</div>
+                    <div className="text-xs text-gray-500 font-mono">{product.Barcode}</div>
+                  </td>
+                  <td className="px-6 py-5 text-sm text-gray-600">{product.Category_Name}</td>
+                  <td className="px-6 py-5 text-right font-medium">${product.Unit_Price}</td>
+                  <td className="px-6 py-5 text-center font-bold text-lg">{product.Quantity ?? 0}</td>
+                  <td className="px-6 py-5 text-center text-gray-600">{product.Reorder_Level}</td>
+                  <td className="px-6 py-5 text-center">
+                    <span className={getStatusBadge(product.Status)}>{product.Status}</span>
+                  </td>
+                  <td className="px-8 py-5">
+                    <div className="flex justify-center gap-2">
+                      <button onClick={() => openStockModal(product)} className="px-3 py-1.5 text-xs bg-[#15803d] text-white rounded-xl flex items-center gap-1">
+                        <Plus className="w-3 h-3" /> Stock
+                      </button>
+                      <button onClick={() => openAdjustModal(product)} className="px-3 py-1.5 text-xs border rounded-xl flex items-center gap-1">
+                        <Edit2 className="w-3 h-3" /> Adjust
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* +Stock Modal */}
+      <Dialog.Root open={isStockModalOpen} onOpenChange={setIsStockModalOpen}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/40" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl p-8 w-full max-w-md">
+            <Dialog.Title className="text-xl font-bold mb-4">Add Stock</Dialog.Title>
+            <p className="mb-4 text-gray-600">Adding to <strong>{selectedProduct?.Name}</strong></p>
+            <input type="number" value={stockAmount} onChange={e => setStockAmount(e.target.value)} className="w-full px-4 py-3 border rounded-2xl text-lg font-semibold mb-6" />
+            <div className="flex gap-3">
+              <button onClick={() => setIsStockModalOpen(false)} className="flex-1 py-3 rounded-2xl border">Cancel</button>
+              <button onClick={handleAddStock} className="flex-1 py-3 rounded-2xl bg-[#15803d] text-white font-semibold">Add Stock</button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      {/* Adjust Modal */}
+      <Dialog.Root open={isAdjustModalOpen} onOpenChange={setIsAdjustModalOpen}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/40" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl p-8 w-full max-w-md">
+            <Dialog.Title className="text-xl font-bold mb-4">Adjust Stock</Dialog.Title>
+            <p className="mb-4 text-gray-600">Set new quantity for <strong>{selectedProduct?.Name}</strong></p>
+            <input type="number" value={adjustAmount} onChange={e => setAdjustAmount(e.target.value)} className="w-full px-4 py-3 border rounded-2xl text-lg font-semibold mb-6" />
+            <div className="flex gap-3">
+              <button onClick={() => setIsAdjustModalOpen(false)} className="flex-1 py-3 rounded-2xl border">Cancel</button>
+              <button onClick={handleAdjustStock} className="flex-1 py-3 rounded-2xl bg-[#15803d] text-white font-semibold">Update Stock</button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+    </div>
+  );
+}
