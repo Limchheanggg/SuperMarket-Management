@@ -38,13 +38,12 @@ export default function Footer() {
             {/* Brand */}
             <div>
               <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:18 }}>
-                <div style={{ width:40, height:40, borderRadius:11, background:'linear-gradient(135deg,#1a1f5e,#2d3491)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <rect x="3" y="3" width="4" height="18" rx="1" fill="white" opacity=".9"/>
-                    <rect x="10" y="8" width="4" height="13" rx="1" fill="#c0272d"/>
-                    <rect x="17" y="1" width="4" height="20" rx="1" fill="white" opacity=".9"/>
-                    <rect x="2" y="21" width="20" height="1.5" rx=".75" fill="#c0272d"/>
-                  </svg>
+                <div style={{ width:44, height:44, borderRadius:10, background:'linear-gradient(160deg,#1e2472 0%,#0d1240 100%)', display:'flex', alignItems:'flex-end', justifyContent:'center', padding:'0 8px 9px', gap:4, flexShrink:0, position:'relative', overflow:'hidden', boxShadow:'0 4px 18px rgba(13,18,64,0.50)' }}>
+                  <div style={{position:'absolute',top:0,left:0,right:0,height:'42%',background:'linear-gradient(180deg,rgba(255,255,255,0.11) 0%,transparent 100%)',pointerEvents:'none'}}/>
+                  <div style={{width:7,height:22,borderRadius:'2px 2px 1px 1px',background:'rgba(255,255,255,0.93)',flexShrink:0,position:'relative',zIndex:1}}/>
+                  <div style={{width:7,height:14,borderRadius:'2px 2px 1px 1px',background:'#c0272d',flexShrink:0,position:'relative',zIndex:1}}/>
+                  <div style={{width:7,height:29,borderRadius:'2px 2px 1px 1px',background:'rgba(255,255,255,0.93)',flexShrink:0,position:'relative',zIndex:1}}/>
+                  <div style={{position:'absolute',bottom:4,left:7,right:7,height:2,background:'#c0272d',borderRadius:99,zIndex:1}}/>
                 </div>
                 <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:22, fontWeight:800, lineHeight:1 }}>
                   <span style={{ color:'#fff' }}>AMS</span><span style={{ color:'#c0272d' }}> Mart</span>
