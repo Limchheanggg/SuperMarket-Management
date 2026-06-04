@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
-from sqlalchemy import text
 from ..core.database import get_db
 from ..models.user import User as UserModel
 from ..core.config import settings
@@ -45,7 +44,6 @@ def user_to_dict(user):
 def register(data: dict, db: Session = Depends(get_db)):
     if db.query(UserModel).filter(UserModel.email == data["email"]).first():
         raise HTTPException(status_code=400, detail="Email already registered")
-
     user = UserModel(
         full_name=data.get("name", ""),
         email=data["email"],
@@ -56,32 +54,6 @@ def register(data: dict, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
-
-    name_parts = user.full_name.strip().split(" ", 1)
-    first_name = name_parts[0]
-    last_name  = name_parts[1] if len(name_parts) > 1 else ""
-
-    now = datetime.datetime.now()
-    result = db.execute(text("""
-        INSERT INTO Customer (First_Name, Last_Name, Join_Day, Join_Month, Join_Year, Loyalty_Points, User_ID)
-        VALUES (:fn, :ln, :day, :month, :year, 0, :uid)
-    """), {
-        "fn": first_name,
-        "ln": last_name,
-        "day":   now.day,
-        "month": now.month,
-        "year":  now.year,
-        "uid":   user.id,
-    })
-    db.commit()
-    customer_id = result.lastrowid
-
-    db.execute(text("""
-        INSERT INTO Membership (Customer_ID, Tier, Points, Total_Spent, Joined_At)
-        VALUES (:cid, 'Bronze', 0, 0, NOW())
-    """), {"cid": customer_id})
-    db.commit()
-
     token = create_token(user.id, user.email, user.role or "customer")
     return {"access_token": token, "token_type": "bearer", "user": user_to_dict(user)}
 
