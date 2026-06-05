@@ -339,170 +339,145 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── CATEGORIES — real from DB ── */}
-      <section style={{ padding: "64px 0", background: "#fafafa" }}>
-        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 24px" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-end",
-              marginBottom: 36,
-            }}
-          >
+      {/* ── CATEGORIES — auto-scrolling marquee ── */}
+      <section style={{ padding:'64px 0', background:'#f8f9fc', overflow:'hidden' }}>
+        <style>{`
+          @keyframes marquee {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+          .cat-marquee-track {
+            display: flex;
+            gap: 16px;
+            animation: marquee 28s linear infinite;
+            width: max-content;
+          }
+          .cat-marquee-track:hover { animation-play-state: paused; }
+          .cat-card {
+            flex-shrink: 0;
+            width: 180px;
+            border-radius: 16px;
+            overflow: hidden;
+            text-decoration: none;
+            position: relative;
+            box-shadow: 0 2px 12px rgba(13,27,62,0.10);
+            transition: transform .25s, box-shadow .25s;
+            display: block;
+          }
+          .cat-card:hover {
+            transform: translateY(-5px) scale(1.03);
+            box-shadow: 0 10px 32px rgba(13,27,62,0.18);
+          }
+          .cat-card img {
+            width: 100%;
+            height: 130px;
+            object-fit: cover;
+            display: block;
+          }
+          .cat-card-label {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            background: linear-gradient(0deg, rgba(13,18,64,0.88) 0%, transparent 100%);
+            padding: 28px 12px 12px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.2px;
+          }
+          .cat-card-count {
+            font-size: 10px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.65);
+            margin-top: 2px;
+          }
+        `}</style>
+
+        <div style={{ maxWidth:1280, margin:'0 auto', padding:'0 24px', marginBottom:36 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end' }}>
             <div>
-              <p
-                style={{
-                  color: "#16a34a",
-                  fontWeight: 700,
-                  fontSize: 13,
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                  marginBottom: 6,
-                }}
-              >
+              <p style={{ color:'#c0272d', fontWeight:700, fontSize:13, textTransform:'uppercase', letterSpacing:1, marginBottom:6 }}>
                 What we offer
               </p>
               <h2 className="hm-section-title">
                 Popular <span>Categories</span>
               </h2>
             </div>
-            <Link to="/shop" className="hm-view-all">
-              View All →
-            </Link>
+            <Link to="/shop" className="hm-view-all">View All</Link>
           </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(6,1fr)",
-              gap: 14,
-            }}
-          >
-            {categories.slice(0, 12).map((c, i) => {
-              const colors = [
-                { color: "#dcfce7", border: "#86efac", text: "#15803d" },
-                { color: "#dbeafe", border: "#93c5fd", text: "#1d4ed8" },
-                { color: "#fee2e2", border: "#fca5a5", text: "#dc2626" },
-                { color: "#fef3c7", border: "#fcd34d", text: "#d97706" },
-                { color: "#e0e7ff", border: "#a5b4fc", text: "#4338ca" },
-                { color: "#fce7f3", border: "#f9a8d4", text: "#be185d" },
-                { color: "#cffafe", border: "#67e8f9", text: "#0e7490" },
-                { color: "#d1fae5", border: "#6ee7b7", text: "#065f46" },
-                { color: "#ffedd5", border: "#fdba74", text: "#ea580c" },
-                { color: "#f0fdf4", border: "#86efac", text: "#16a34a" },
-                { color: "#f5f3ff", border: "#c4b5fd", text: "#7c3aed" },
-                { color: "#ecfdf5", border: "#6ee7b7", text: "#059669" },
-              ];
-              const col = colors[i % colors.length];
-              const count = products.filter(
-                (p) => p.Category_Name === c.Category_Name,
-              ).length;
-              return (
-                <Link
-                  to={`/shop?cat=${encodeURIComponent(c.Category_Name)}`}
-                  key={c.Category_ID}
-                  className="hm-cat-card"
-                  style={{ background: col.color, borderColor: col.border }}
-                >
-                  <div style={{ fontSize: 38, marginBottom: 10 }}>
-                    {EMOJIS[c.Category_Name] || "📦"}
-                  </div>
-                  <p
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: col.text,
-                      marginBottom: 3,
-                    }}
+        </div>
+
+        {/* Marquee */}
+        <div style={{ overflow:'hidden', position:'relative' }}>
+          {/* Left fade */}
+          <div style={{ position:'absolute', left:0, top:0, bottom:0, width:80, background:'linear-gradient(90deg,#f8f9fc,transparent)', zIndex:2, pointerEvents:'none' }} />
+          {/* Right fade */}
+          <div style={{ position:'absolute', right:0, top:0, bottom:0, width:80, background:'linear-gradient(270deg,#f8f9fc,transparent)', zIndex:2, pointerEvents:'none' }} />
+
+          <div style={{ padding:'8px 0 16px' }}>
+            <div className="cat-marquee-track">
+              {/* Render twice for seamless loop */}
+              {[...categories, ...categories].map((c, i) => {
+                const CAT_IMAGES = {
+                  'Fresh Fruits':         'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&q=80',
+                  'Fresh Vegetables':     'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&q=80',
+                  'Meat & Seafood':       'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=400&q=80',
+                  'Dairy & Eggs':         'https://images.unsplash.com/photo-1628088062854-d1870b4553da?w=400&q=80',
+                  'Rice & Grains':        'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&q=80',
+                  'Instant Noodles':      'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&q=80',
+                  'Cooking Oil':          'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400&q=80',
+                  'Sauces & Condiments':  'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=400&q=80',
+                  'Snacks & Biscuits':    'https://images.unsplash.com/photo-1621939514649-280e2ee25f60?w=400&q=80',
+                  'Beverages':            'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&q=80',
+                  'Frozen Foods':         'https://images.unsplash.com/photo-1616684000067-36952fde56ec?w=400&q=80',
+                  'Canned Goods':         'https://images.unsplash.com/photo-1584568694244-14fbdf83bd30?w=400&q=80',
+                  'Bakery':               'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&q=80',
+                  'Personal Care':        'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=400&q=80',
+                  'Household':            'https://images.unsplash.com/photo-1563453392212-326f5e854473?w=400&q=80',
+                  'Baby & Kids':          'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&q=80',
+                }
+                const fallback = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80'
+                const img = CAT_IMAGES[c.Category_Name] || fallback
+                const count = products.filter(p => p.Category_Name === c.Category_Name).length
+                return (
+                  <Link
+                    key={`${c.Category_ID}-${i}`}
+                    to={`/shop?cat=${encodeURIComponent(c.Category_Name)}`}
+                    className="cat-card"
                   >
-                    {c.Category_Name}
-                  </p>
-                  <small style={{ fontSize: 11, color: col.text + "99" }}>
-                    {count} items
-                  </small>
-                </Link>
-              );
-            })}
+                    <img src={img} alt={c.Category_Name} loading="lazy"
+                      onError={e => { e.target.src = fallback }} />
+                    <div className="cat-card-label">
+                      <div>{c.Category_Name}</div>
+                      <div className="cat-card-count">{count} products</div>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── POPULAR PRODUCTS — real from DB ── */}
-      <section style={{ padding: "64px 0", background: "#fff" }}>
-        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 24px" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-end",
-              marginBottom: 36,
-            }}
-          >
+      {/* ── POPULAR PRODUCTS ── */}
+      <section style={{ padding:'64px 0', background:'#fff' }}>
+        <div style={{ maxWidth:1280, margin:'0 auto', padding:'0 24px' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:36 }}>
             <div>
-              <p
-                style={{
-                  color: "#16a34a",
-                  fontWeight: 700,
-                  fontSize: 13,
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                  marginBottom: 6,
-                }}
-              >
-                Best sellers
-              </p>
-              <h2 className="hm-section-title">
-                Popular <span>Products</span>
-              </h2>
+              <p style={{ color:'#c0272d', fontWeight:700, fontSize:13, textTransform:'uppercase', letterSpacing:1, marginBottom:6 }}>Fresh Picks</p>
+              <h2 className="hm-section-title">Popular <span>Products</span></h2>
             </div>
-            <Link to="/shop" className="hm-view-all">
-              View All →
-            </Link>
+            <Link to="/shop" className="hm-view-all">View All</Link>
           </div>
           {loading ? (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(5,1fr)",
-                gap: 20,
-              }}
-            >
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  style={{
-                    background: "#f0f0f0",
-                    borderRadius: 16,
-                    height: 280,
-                    animation: "pulse 1.5s infinite",
-                  }}
-                />
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:20 }}>
+              {[...Array(5)].map((_,i) => (
+                <div key={i} style={{ height:280, borderRadius:16, background:'#f3f4f6', animation:'pulse 1.5s infinite' }} />
               ))}
             </div>
-          ) : featuredProducts.length === 0 ? (
-            <div
-              style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}
-            >
-              <div style={{ fontSize: 48, marginBottom: 12 }}>📦</div>
-              <p>
-                No products in stock yet.{" "}
-                <Link
-                  to="/admin/inventory"
-                  style={{ color: "#16a34a", fontWeight: 700 }}
-                >
-                  Add products →
-                </Link>
-              </p>
-            </div>
           ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(5,1fr)",
-                gap: 20,
-              }}
-            >
-              {featuredProducts.map((p) => (
+            <div className="products-grid">
+              {featuredProducts.slice(0,10).map(p => (
                 <ProductCard key={p.Product_ID} product={p} />
               ))}
             </div>
@@ -510,364 +485,64 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── PROMO BANNER ── */}
-      <section
-        style={{
-          padding: "64px 0",
-          background:
-            "linear-gradient(135deg,#0f172a 0%,#1e3a2f 50%,#14532d 100%)",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            top: -100,
-            right: -100,
-            width: 500,
-            height: 500,
-            borderRadius: "50%",
-            background: "rgba(21,128,61,.15)",
-            pointerEvents: "none",
-          }}
-        />
-        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 24px" }}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 56,
-              alignItems: "center",
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  background: "rgba(239,68,68,.15)",
-                  border: "1px solid rgba(239,68,68,.3)",
-                  borderRadius: 99,
-                  padding: "5px 14px",
-                  color: "#f87171",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  letterSpacing: 0.5,
-                  marginBottom: 18,
-                  textTransform: "uppercase",
-                }}
-              >
-                ⚡ Limited Time Offer
-              </div>
-              <h2
-                style={{
-                  fontFamily: "'Plus Jakarta Sans',sans-serif",
-                  fontSize: 40,
-                  fontWeight: 800,
-                  color: "#fff",
-                  lineHeight: 1.2,
-                  marginBottom: 14,
-                }}
-              >
-                Sale of the{" "}
-                <span
-                  style={{
-                    background: "linear-gradient(135deg,#22c55e,#86efac)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                  }}
-                >
-                  Month
-                </span>
-              </h2>
-              <p
-                style={{
-                  color: "#94a3b8",
-                  fontSize: 16,
-                  lineHeight: 1.7,
-                  marginBottom: 28,
-                }}
-              >
-                Fresh deals on your favourite organic groceries!
-              </p>
-              <Link to="/shop" className="hm-hero-btn primary">
-                Shop Deals Now
-              </Link>
-            </div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3,1fr)",
-                gap: 14,
-              }}
-            >
-              {dealProducts.map((p) => (
-                <Link
-                  to={`/shop/${p.Product_ID}`}
-                  key={p.Product_ID}
-                  style={{
-                    background: "rgba(255,255,255,.07)",
-                    borderRadius: 16,
-                    padding: "20px 14px",
-                    textAlign: "center",
-                    border: "1px solid rgba(255,255,255,.08)",
-                    transition: "all .2s",
-                    display: "block",
-                    textDecoration: "none",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "rgba(21,128,61,.2)";
-                    e.currentTarget.style.borderColor = "#22c55e";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "rgba(255,255,255,.07)";
-                    e.currentTarget.style.borderColor = "rgba(255,255,255,.08)";
-                  }}
-                >
-                  {p.Product_Image ? (
-                    <img
-                      src={p.Product_Image}
-                      alt={p.Name}
-                      style={{
-                        width: 52,
-                        height: 52,
-                        objectFit: "cover",
-                        borderRadius: 8,
-                        margin: "0 auto 10px",
-                      }}
-                    />
-                  ) : (
-                    <div style={{ fontSize: 44, marginBottom: 10 }}>
-                      {EMOJIS[p.Category_Name] || "📦"}
-                    </div>
-                  )}
-                  <p
-                    style={{
-                      fontSize: 13,
-                      color: "#e2e8f0",
-                      fontWeight: 600,
-                      marginBottom: 6,
-                    }}
-                  >
-                    {p.Name}
-                  </p>
-                  <strong style={{ color: "#22c55e", fontSize: 16 }}>
-                    ${Number(p.Unit_Price).toFixed(2)}
-                  </strong>
-                </Link>
-              ))}
-            </div>
+      {/* ── WHY CHOOSE US ── */}
+      <section style={{ padding:'64px 0', background:'linear-gradient(135deg,#0d1240 0%,#1a1f5e 100%)' }}>
+        <div style={{ maxWidth:1280, margin:'0 auto', padding:'0 24px' }}>
+          <div style={{ textAlign:'center', marginBottom:48 }}>
+            <p style={{ color:'#c0272d', fontWeight:700, fontSize:13, textTransform:'uppercase', letterSpacing:1, marginBottom:8 }}>Why AMS Mart</p>
+            <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:32, fontWeight:800, color:'#fff', lineHeight:1.2 }}>
+              Your Trusted <span style={{ color:'#c0272d' }}>Supermarket</span>
+            </h2>
           </div>
-        </div>
-      </section>
-
-      {/* ── TESTIMONIALS ── */}
-      <section style={{ padding: "64px 0", background: "#fafafa" }}>
-        <div
-          style={{
-            maxWidth: 1280,
-            margin: "0 auto",
-            padding: "0 24px",
-            textAlign: "center",
-          }}
-        >
-          <p
-            style={{
-              color: "#16a34a",
-              fontWeight: 700,
-              fontSize: 13,
-              textTransform: "uppercase",
-              letterSpacing: 1,
-              marginBottom: 8,
-            }}
-          >
-            Customer love
-          </p>
-          <h2 className="hm-section-title" style={{ marginBottom: 8 }}>
-            What Our <span>Customers Say</span>
-          </h2>
-          <p style={{ color: "#6b7280", fontSize: 15, marginBottom: 40 }}>
-            Real feedback from happy shoppers across Phnom Penh
-          </p>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3,1fr)",
-              gap: 20,
-            }}
-          >
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:20 }}>
             {[
-              {
-                name: "Sarakseyha NY",
-                role: "Student",
-                text: "The UI is so clean that even my sleepy 2AM brain could use it without getting lost. That says a lot honestly.",
-                stars: 5,
-                color: "#dcfce7",
-                border: "#86efac",
-              },
-              {
-                name: "Putdararith KIM",
-                role: "Student",
-                text: "I opened the website just to test it, then spent 20 minutes pretending I was actually grocery shopping. Lowkey better than some real supermarket apps.",
-                stars: 5,
-                color: "#dbeafe",
-                border: "#93c5fd",
-              },
-              {
-                name: "Chhaythean LY",
-                role: "Senior",
-                text: "Your project shows strong frontend and system design skills. The UI is clean, responsive, and the supermarket workflow is implemented very well for a student project.",
-                stars: 4,
-                color: "#fce7f3",
-                border: "#f9a8d4",
-              },
-            ].map((t) => (
-              <div
-                key={t.name}
-                className="hm-review-card"
-                style={{
-                  textAlign: "left",
-                  borderColor: t.border,
-                  background: t.color + "40",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    marginBottom: 14,
-                  }}
-                >
-                  <div
-                    style={{ color: "#f59e0b", fontSize: 16, letterSpacing: 2 }}
-                  >
-                    {"★".repeat(t.stars)}
-                    {"☆".repeat(5 - t.stars)}
-                  </div>
-                  <div
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: "50%",
-                      background: "linear-gradient(135deg,#15803d,#22c55e)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#fff",
-                      fontWeight: 800,
-                      fontSize: 14,
-                    }}
-                  >
-                    {t.name[0]}
-                  </div>
+              [<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c0272d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, 'Quality Guaranteed', 'All products are carefully selected and quality checked before reaching your hands.'],
+              [<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c0272d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>, 'Open Every Day', 'We are open 7 days a week from 7:00 AM to 10:00 PM for your convenience.'],
+              [<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c0272d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>, 'Loyalty Rewards', 'Earn points on every purchase and redeem them for exclusive discounts.'],
+              [<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c0272d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>, 'Easy Payment', 'Pay with ABA, ACLEDA or Cash — fast, safe and hassle-free checkout.'],
+            ].map(([icon, title, desc], i) => (
+              <div key={i} style={{ background:'rgba(255,255,255,.06)', borderRadius:16, padding:28, border:'1px solid rgba(255,255,255,.1)', textAlign:'center', transition:'all .25s' }}
+                onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,.1)'}
+                onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,.06)'}>
+                <div style={{ width:60, height:60, borderRadius:16, background:'rgba(192,39,45,.15)', border:'1.5px solid rgba(192,39,45,.3)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 18px' }}>
+                  {icon}
                 </div>
-                <p
-                  style={{
-                    color: "#374151",
-                    fontSize: 14,
-                    lineHeight: 1.75,
-                    marginBottom: 16,
-                    fontStyle: "italic",
-                  }}
-                >
-                  "{t.text}"
-                </p>
-                <div>
-                  <strong
-                    style={{
-                      fontFamily: "'Plus Jakarta Sans',sans-serif",
-                      fontSize: 14,
-                      color: "#111827",
-                    }}
-                  >
-                    {t.name}
-                  </strong>
-                  <p style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
-                    {t.role}
-                  </p>
-                </div>
+                <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:16, fontWeight:800, color:'#fff', marginBottom:10 }}>{title}</div>
+                <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:13, color:'rgba(255,255,255,.55)', lineHeight:1.7 }}>{desc}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── NEWSLETTER ── */}
-      <section
-        style={{
-          padding: "56px 0",
-          background: "linear-gradient(135deg,#ecfdf5,#f0fdf4)",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 600,
-            margin: "0 auto",
-            padding: "0 24px",
-            textAlign: "center",
-          }}
-        >
-          <div style={{ fontSize: 40, marginBottom: 14 }}>📧</div>
-          <h2
-            style={{
-              fontFamily: "'Plus Jakarta Sans',sans-serif",
-              fontSize: 28,
-              fontWeight: 800,
-              color: "#111827",
-              marginBottom: 10,
-            }}
-          >
-            Stay in the Loop
-          </h2>
-          <p style={{ color: "#6b7280", fontSize: 15, marginBottom: 28 }}>
-            Get weekly deals, new arrivals, and organic tips straight to your
-            inbox.
-          </p>
-          <div
-            style={{
-              display: "flex",
-              gap: 10,
-              maxWidth: 440,
-              margin: "0 auto",
-            }}
-          >
-            <input
-              type="email"
-              placeholder="your@email.com"
-              style={{
-                flex: 1,
-                padding: "12px 18px",
-                border: "2px solid #bbf7d0",
-                borderRadius: 12,
-                fontFamily: "'Plus Jakarta Sans',sans-serif",
-                fontSize: 14,
-                outline: "none",
-                background: "#fff",
-              }}
-            />
-            <button
-              style={{
-                padding: "12px 24px",
-                background: "linear-gradient(135deg,#15803d,#22c55e)",
-                color: "#fff",
-                border: "none",
-                borderRadius: 12,
-                fontFamily: "'Plus Jakarta Sans',sans-serif",
-                fontWeight: 700,
-                fontSize: 14,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-              }}
-            >
-              Subscribe
-            </button>
+      {/* ── CTA ── */}
+      <section style={{ padding:'64px 0', background:'#f8f9fc' }}>
+        <div style={{ maxWidth:1280, margin:'0 auto', padding:'0 24px' }}>
+          <div style={{ background:'linear-gradient(135deg,#1a1f5e 0%,#0d1240 100%)', borderRadius:24, padding:'52px 48px', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:28 }}>
+            <div>
+              <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:30, fontWeight:800, color:'#fff', marginBottom:10, lineHeight:1.2 }}>
+                Ready to Start Shopping?
+              </h2>
+              <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:15, color:'rgba(255,255,255,.6)', maxWidth:480 }}>
+                Browse hundreds of fresh products across all categories. Quality guaranteed on every order.
+              </p>
+            </div>
+            <div style={{ display:'flex', gap:14, flexWrap:'wrap' }}>
+              <Link to="/shop" style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'13px 28px', borderRadius:12, background:'linear-gradient(135deg,#c0272d,#e53935)', color:'#fff', fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:15, fontWeight:700, textDecoration:'none', boxShadow:'0 4px 16px rgba(192,39,45,.4)', transition:'all .25s' }}
+                onMouseEnter={e=>e.currentTarget.style.transform='translateY(-2px)'}
+                onMouseLeave={e=>e.currentTarget.style.transform='translateY(0)'}>
+                Shop Now
+              </Link>
+              <Link to="/register" style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'13px 28px', borderRadius:12, background:'rgba(255,255,255,.1)', color:'#fff', fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:15, fontWeight:700, textDecoration:'none', border:'1.5px solid rgba(255,255,255,.2)', transition:'all .25s' }}
+                onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,.18)'}
+                onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,.1)'}>
+                Create Account
+              </Link>
+            </div>
           </div>
         </div>
       </section>
+
     </div>
   );
 }

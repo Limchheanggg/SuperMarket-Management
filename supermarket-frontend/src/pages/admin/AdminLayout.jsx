@@ -16,29 +16,35 @@ const NAV = [
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
 ]
 
-// AMS Logo mark — matches your brand exactly
-const AMSLogoMark = ({ size = 40 }) => (
-  <div style={{
-    width: size, height: size, borderRadius: size * 0.26,
-    background: 'linear-gradient(145deg,#1a1f5e 0%,#0d1240 100%)',
-    display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-    padding: `${size * 0.12}px ${size * 0.14}px ${size * 0.14}px`,
-    gap: size * 0.07, flexShrink: 0,
-    boxShadow: '0 4px 16px rgba(13,18,64,0.45)',
-    position: 'relative', overflow: 'hidden',
-  }}>
-    {/* Shine overlay */}
-    <div style={{ position:'absolute', top:0, left:0, right:0, height:'45%', background:'linear-gradient(180deg,rgba(255,255,255,0.13) 0%,transparent 100%)', borderRadius: `${size*0.26}px ${size*0.26}px 0 0` }} />
-    {/* Bar 1 — tall left, white */}
-    <div style={{ width: size*0.155, height: size*0.62, borderRadius: size*0.04, background: 'rgba(255,255,255,0.92)', flexShrink:0 }} />
-    {/* Bar 2 — medium middle, red */}
-    <div style={{ width: size*0.155, height: size*0.38, borderRadius: size*0.04, background: '#c0272d', flexShrink:0 }} />
-    {/* Bar 3 — tall right, white */}
-    <div style={{ width: size*0.155, height: size*0.72, borderRadius: size*0.04, background: 'rgba(255,255,255,0.92)', flexShrink:0 }} />
-    {/* Red underline */}
-    <div style={{ position:'absolute', bottom: size*0.1, left: size*0.1, right: size*0.1, height: size*0.055, background:'#c0272d', borderRadius: 99 }} />
-  </div>
-)
+const AMSLogoMark = ({ size = 40 }) => {
+  const s   = size / 44
+  const bw  = Math.round(7 * s)
+  const bh1 = Math.round(22 * s)
+  const bh2 = Math.round(14 * s)
+  const bh3 = Math.round(30 * s)
+  const g   = Math.round(3.5 * s)
+  const ph  = Math.round(7 * s)
+  const pb  = Math.round(9 * s)
+  const br  = `${Math.round(2*s)}px ${Math.round(2*s)}px 1px 1px`
+  return (
+    <div style={{
+      width: size, height: size,
+      borderRadius: Math.round(size * 0.22),
+      background: 'linear-gradient(160deg,#1e2472 0%,#0d1240 100%)',
+      display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+      padding: `0 ${ph}px ${pb}px`,
+      gap: g, flexShrink: 0,
+      position: 'relative', overflow: 'hidden',
+      boxShadow: '0 4px 18px rgba(13,18,64,0.55)',
+    }}>
+      <div style={{ position:'absolute', top:0, left:0, right:0, height:'44%', background:'linear-gradient(180deg,rgba(255,255,255,0.12),transparent)', pointerEvents:'none' }} />
+      <div style={{ width:bw, height:bh1, borderRadius:br, background:'rgba(255,255,255,0.93)', flexShrink:0, position:'relative', zIndex:1 }} />
+      <div style={{ width:bw, height:bh2, borderRadius:br, background:'#c0272d', flexShrink:0, position:'relative', zIndex:1 }} />
+      <div style={{ width:bw, height:bh3, borderRadius:br, background:'rgba(255,255,255,0.93)', flexShrink:0, position:'relative', zIndex:1 }} />
+      <div style={{ position:'absolute', bottom:Math.round(4*s), left:ph, right:ph, height:Math.round(2.5*s), background:'#c0272d', borderRadius:99, zIndex:1 }} />
+    </div>
+  )
+}
 
 export default function AdminLayout() {
   const location  = useLocation()
