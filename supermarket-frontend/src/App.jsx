@@ -8,6 +8,7 @@ import Checkout from "./pages/Checkout"
 import Login from "./pages/Login"
 import Register from "./pages/Register"
 import Dashboard from "./pages/Dashboard"
+import OrderSuccess from "./pages/OrderSuccess"
 import OrderHistory from "./pages/OrderHistory"
 import AccountSetting from "./pages/AccountSetting"
 import Wishlist from "./pages/Wishlist"
@@ -46,6 +47,7 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/orders" element={<OrderHistory />} />
+          <Route path="/order-success" element={<OrderSuccess />} />
           <Route path="/account" element={<AccountSetting />} />
         </Route>
       </Route>

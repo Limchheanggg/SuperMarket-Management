@@ -183,8 +183,7 @@ export default function Home() {
       {/* ═══ HERO ═══ */}
       <section style={{
         background:'linear-gradient(135deg,#1a0a0a 0%,#2d0b0b 30%,#0d1240 70%,#060d2e 100%)',
-        backgroundSize:'200% 200%', animation:'heroGrad 10s ease infinite',
-        padding:'90px 0 100px', position:'relative', overflow:'hidden',
+        padding:'60px 0 70px', position:'relative', overflow:'hidden',
       }}>
         {/* Decorative rings */}
         <div style={{ position:'absolute', top:-100, right:-100, width:500, height:500,

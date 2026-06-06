@@ -30,9 +30,6 @@ export const getCart = () => API.get("/api/cart");
 export const addToCart = (data) => API.post("/api/cart", data);
 export const removeFromCart = (id) => API.delete(`/api/cart/${id}`);
 
-// Orders
-export const getOrders = () => API.get("/api/orders");
-export const createOrder = (data) => API.post("/api/orders", data);
 
 // Inventory
 export const getInventory = () => API.get("/api/inventory/");

@@ -224,15 +224,6 @@ export default function Footer() {
                   ["FAQ", "/faq"],
                 ],
               },
-              {
-                title: "Categories",
-                links: [
-                  ["Produce", "/shop?cat=Produce"],
-                  ["Dairy", "/shop?cat=Dairy"],
-                  ["Meat", "/shop?cat=Meat"],
-                  ["Bakery", "/shop?cat=Bakery"],
-                ],
-              },
             ].map((col) => (
               <div key={col.title}>
                 <h4

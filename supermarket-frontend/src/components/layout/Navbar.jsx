@@ -63,9 +63,9 @@ const PhoneIcon = () => (
 // AMS Logo Mark — perfectly balanced bars
 const AMSMark = ({ size = 44 }) => {
   const bw  = Math.round(size * 0.16)   // all bars same width
-  const bh1 = Math.round(size * 0.50)   // left bar height
-  const bh2 = Math.round(size * 0.32)   // middle bar height (red, shortest)
-  const bh3 = Math.round(size * 0.68)   // right bar height (tallest)
+  const bh1 = Math.round(size * 0.55)   // left bar height
+  const bh2 = Math.round(size * 0.30)   // middle bar height (red, shortest)
+  const bh3 = Math.round(size * 0.55)   // right bar height (tallest)
   const gap = Math.round(size * 0.075)
   const px  = Math.round(size * 0.16)
   const pb  = Math.round(size * 0.20)
@@ -136,10 +136,10 @@ export default function Navbar() {
         /* Main header */
         .nb-header { position:sticky; top:0; z-index:100; background:#fff; border-bottom:2px solid #e8ecf4; transition:box-shadow .3s; }
         .nb-header.scrolled { box-shadow:0 4px 28px rgba(13,27,62,0.10); }
-        .nb-header-inner { max-width:1280px; margin:0 auto; padding:0 24px; height:72px; display:flex; align-items:center; gap:22px; }
+        .nb-header-inner { max-width:1280px; margin:0 auto; padding:0 24px; height:60px; display:flex; align-items:center; gap:22px; }
 
         /* Logo */
-        .nb-logo { text-decoration:none; display:flex; align-items:center; gap:11px; flex-shrink:0; }
+        .nb-logo { text-decoration:none; display:flex; align-items:center; gap:11px; flex-shrink:0; align-items:center; }
         .nb-logo-text { display:flex; flex-direction:column; }
         .nb-logo-name { font-family:'Barlow Condensed',sans-serif; font-size:23px; font-weight:900; color:#0d1240; letter-spacing:-.3px; line-height:1.1; }
         .nb-logo-name span { color:#c0272d; }

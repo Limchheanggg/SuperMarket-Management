@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import API from '../../services/api'
 import './admin.css'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 
@@ -40,6 +41,15 @@ const AMSLogoMark = ({ size=40 }) => {
 export default function AdminLayout() {
   const location  = useLocation()
   const [collapsed, setCollapsed] = useState(false)
+  const [lowStockCount, setLowStockCount] = useState(0)
+
+  useEffect(() => {
+    API.get('/api/inventory/').then(res => {
+      const items = res.data || []
+      setLowStockCount(items.filter(i => i.Status !== 'In Stock').length)
+    }).catch(() => {})
+  }, [])
+
 
   return (
     <div style={{ display:'flex', minHeight:'100vh', background:'#f4f6fa', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
@@ -160,3 +170,4 @@ export default function AdminLayout() {
     </div>
   )
 }
+

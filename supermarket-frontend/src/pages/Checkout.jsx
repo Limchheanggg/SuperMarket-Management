@@ -105,7 +105,17 @@ export default function Checkout() {
       });
       clearCart();
       toast.success("Order placed successfully!");
-      navigate("/orders");
+      navigate("/order-success", {
+        state: {
+          order: result.data,
+          items: cartItems,
+          subtotal: parseFloat(subtotal.toFixed(2)),
+          tax:      parseFloat(tax.toFixed(2)),
+          discount: parseFloat(discount.toFixed(2)),
+          coupon:   couponResult?.code || null,
+          payMethod,
+        }
+      });
     } catch {
       toast.error("Failed to place order. Please try again.");
     } finally {

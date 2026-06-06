@@ -43,10 +43,10 @@ const team = [
 ]
 
 const stats = [
-  { value:'200',  suffix:'+', label:'Partner Farms',    icon:'🌾' },
-  { value:'15000',suffix:'+', label:'Happy Customers',  icon:'😊' },
-  { value:'1200', suffix:'+', label:'Products',         icon:'📦' },
-  { value:'147',  suffix:'',  label:'Categories',       icon:'🗂️' },
+  { value:'147',  suffix:'',  label:'Products',         icon:'📦' },
+  { value:'12',   suffix:'',  label:'Categories',       icon:'🗂️' },
+  { value:'12',   suffix:'',  label:'Suppliers',        icon:'🚚' },
+  { value:'2026', suffix:'',  label:'Founded',          icon:'📅' },
 ]
 
 const values = [
@@ -179,7 +179,6 @@ export default function About() {
           }}>
             {stats.map(({ value, suffix, label, icon }) => (
               <div key={label} className="stat-box">
-                <div style={{ fontSize:24, marginBottom:6 }}>{icon}</div>
                 <div style={{ fontSize:26, fontWeight:800, color:'#fff', marginBottom:2 }}>
                   <Counter target={value} suffix={suffix}/>
                 </div>
