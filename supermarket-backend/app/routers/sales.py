@@ -226,11 +226,31 @@ def create_sale(data: dict, db: Session = Depends(get_db)):
     db.commit()
     sale_id = result.lastrowid
     for item in data.get("items", []):
+        pid = item["Product_ID"]
+        qty = item["qty"]
+
+        # Insert sale item
         db.execute(text("""
             INSERT INTO SaleItem (Sale_ID, Product_ID, Quantity, Unit_Price, Subtotal)
             VALUES (:sid,:pid,:qty,:price,:sub)
-        """), {"sid": sale_id, "pid": item["Product_ID"],
-               "qty": item["qty"], "price": item["Unit_Price"],
-               "sub": item["Unit_Price"] * item["qty"]})
+        """), {"sid": sale_id, "pid": pid,
+               "qty": qty, "price": item["Unit_Price"],
+               "sub": item["Unit_Price"] * qty})
+
+        # Deduct stock from Inventory
+        db.execute(text("""
+            INSERT INTO Inventory (Product_ID, Quantity, Last_Updated)
+            VALUES (:pid, 0, NOW())
+            ON DUPLICATE KEY UPDATE
+                Quantity = GREATEST(0, Quantity - :qty),
+                Last_Updated = NOW()
+        """), {"pid": pid, "qty": qty})
+
+        # Log stock movement
+        db.execute(text("""
+            INSERT INTO StockMovement (Product_ID, Movement_Type, Quantity, Note)
+            VALUES (:pid, 'out', :qty, :note)
+        """), {"pid": pid, "qty": qty, "note": f"Sale #{sale_id}"})
+
     db.commit()
     return {"Sale_ID": f"S{str(sale_id).zfill(4)}", "Total_Amount": data.get("total",0)}
