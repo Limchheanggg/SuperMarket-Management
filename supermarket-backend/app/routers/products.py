@@ -142,3 +142,40 @@ def get_bestsellers(limit: int = 10, db: Session = Depends(get_db)):
             result.append(serialize(p, cat, db))
 
     return result
+
+
+@router.get("/recent/list")
+def get_recent_products(limit: int = 6, db: Session = Depends(get_db)):
+    products = db.query(ProductModel).order_by(
+        ProductModel.Product_ID.desc()
+    ).limit(limit).all()
+    result = []
+    for p in products:
+        cat = db.query(CategoryModel).filter(CategoryModel.Category_ID == p.Category_ID).first()
+        result.append(serialize(p, cat, db))
+    return result
+
+
+@router.get("/bestsellers/list")
+def get_bestsellers(limit: int = 10, db: Session = Depends(get_db)):
+    from sqlalchemy import text as sqltext
+    rows = db.execute(sqltext("""
+        SELECT p.Product_ID, SUM(si.Quantity) as total_sold
+        FROM SaleItem si JOIN Product p ON p.Product_ID = si.Product_ID
+        GROUP BY p.Product_ID ORDER BY total_sold DESC LIMIT :limit
+    """), {"limit": limit}).fetchall()
+    result = []
+    for row in rows:
+        p = db.query(ProductModel).filter(ProductModel.Product_ID == row.Product_ID).first()
+        if p:
+            cat = db.query(CategoryModel).filter(CategoryModel.Category_ID == p.Category_ID).first()
+            result.append(serialize(p, cat, db))
+    if len(result) < limit:
+        existing_ids = {r['Product_ID'] for r in result}
+        extra = db.query(ProductModel).filter(
+            ~ProductModel.Product_ID.in_(existing_ids)
+        ).order_by(ProductModel.Product_ID.desc()).limit(limit - len(result)).all()
+        for p in extra:
+            cat = db.query(CategoryModel).filter(CategoryModel.Category_ID == p.Category_ID).first()
+            result.append(serialize(p, cat, db))
+    return result
