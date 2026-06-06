@@ -258,7 +258,7 @@ export default function Shop() {
                   <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                 </svg>
                 <input className="search-input" style={{ paddingLeft:36 }}
-                  placeholder="Product name or brand…"
+                  placeholder="Search by product name or brand…"
                   value={searchInput} onChange={handleSearchChange}/>
                 {searchInput && (
                   <button onClick={()=>{ setSearchInput(''); setSearch('') }}

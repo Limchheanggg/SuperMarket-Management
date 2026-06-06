@@ -239,7 +239,7 @@ export default function AdminReports() {
       <div ref={kpiRef} style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:16,marginBottom:24}}>
         {KPI.map((k,i)=>(
           <div key={k.label} className="kpi-card" style={{background:k.bg,border:`1.5px solid ${k.color}22`,
-            opacity:kpiVisible?1:0,animation:kpiVisible?`fadeUp .5s ease ${i*.08}s forwards`:'none'}}>
+            animation:`fadeUp .5s ease ${i*.08}s both`}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:14}}>
               <div style={{fontSize:11,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',letterSpacing:1}}>{k.label}</div>
               <Sparkline data={k.spark} color={k.color}/>
@@ -254,7 +254,7 @@ export default function AdminReports() {
       <div ref={chartRef} style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20,marginBottom:20}}>
 
         {/* Monthly Revenue Chart */}
-        <div className="rp-card" style={{opacity:chartVisible?1:0,animation:chartVisible?'scaleIn .6s ease forwards':'none'}}>
+        <div className="rp-card" style={{animation:'scaleIn .6s ease both'}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
             <div>
               <h3 style={{fontSize:16,fontWeight:800,color:'#0f172a',margin:0}}>Monthly Revenue</h3>
@@ -282,7 +282,7 @@ export default function AdminReports() {
         </div>
 
         {/* Best Sellers */}
-        <div className="rp-card" style={{opacity:chartVisible?1:0,animation:chartVisible?'scaleIn .6s ease .1s forwards':'none'}}>
+        <div className="rp-card" style={{animation:'scaleIn .6s ease .1s both'}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
             <div>
               <h3 style={{fontSize:16,fontWeight:800,color:'#0f172a',margin:0}}>Best Selling Products</h3>
@@ -325,7 +325,7 @@ export default function AdminReports() {
       <div ref={botRef} style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20,marginBottom:20}}>
 
         {/* Payment Methods */}
-        <div className="rp-card" style={{opacity:botVisible?1:0,animation:botVisible?'fadeUp .5s ease forwards':'none'}}>
+        <div className="rp-card" style={{animation:'fadeUp .5s ease both'}}>
           <h3 style={{fontSize:16,fontWeight:800,color:'#0f172a',marginBottom:4}}>Revenue by Payment</h3>
           <p style={{fontSize:12,color:'#94a3b8',marginBottom:16}}>Breakdown by payment method</p>
           {payData.length===0 ? (
@@ -354,7 +354,7 @@ export default function AdminReports() {
         </div>
 
         {/* All-Time Summary */}
-        <div className="rp-card" style={{opacity:botVisible?1:0,animation:botVisible?'fadeUp .5s ease .1s forwards':'none'}}>
+        <div className="rp-card" style={{animation:'fadeUp .5s ease .1s both'}}>
           <h3 style={{fontSize:16,fontWeight:800,color:'#0f172a',marginBottom:16}}>All-Time Summary</h3>
           {[
             { label:'Total Transactions', value:summary?.total_transactions||0,       color:'#6366f1', icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg> },
@@ -378,7 +378,7 @@ export default function AdminReports() {
       </div>
 
       {/* Inventory Alerts */}
-      <div className="rp-card" style={{opacity:botVisible?1:0,animation:botVisible?'fadeUp .5s ease .2s forwards':'none'}}>
+      <div className="rp-card" style={{animation:'fadeUp .5s ease .2s both'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
           <div>
             <h3 style={{fontSize:16,fontWeight:800,color:'#0f172a',margin:0}}>Inventory Alerts</h3>

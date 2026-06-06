@@ -40,7 +40,9 @@ export default function AdminUsers() {
   const [shiftForm, setShiftForm] = useState({ user_id:'', shift_name:'Morning', shift_date:'', start_time:'06:00', end_time:'14:00', status:'scheduled', note:'' })
   const [saving, setSaving]     = useState(false)
 
-  const today = new Date().toISOString().split('T')[0]
+  const today    = new Date().toISOString().split('T')[0]
+  const tomorrow = new Date(Date.now()+86400000).toISOString().split('T')[0]
+  const [dayView, setDayView] = useState('today')
 
   useEffect(() => { fetchAll() }, [])
   useEffect(() => { setPage(1) }, [search, roleFilter, tab])
@@ -313,93 +315,200 @@ export default function AdminUsers() {
       {/* ── SHIFTS TAB ── */}
       {tab === 'shifts' && (
         <>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-            <div style={{ display:'flex', gap:10 }}>
-              <div style={{ background:'#f0fdf4', borderRadius:10, padding:'9px 16px', border:'1px solid #86efac', fontSize:13 }}>
-                📅 Today: <strong style={{ color:'#16a34a' }}>{todayShifts.length} shifts</strong>
-              </div>
-              <div style={{ background:'#eef2ff', borderRadius:10, padding:'9px 16px', border:'1px solid #a5b4fc', fontSize:13 }}>
-                Total: <strong style={{ color:'#6366f1' }}>{shifts.length} shifts</strong>
-              </div>
+          {/* Header */}
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+            <div style={{ display:'flex', gap:8 }}>
+              {[
+                { key:'today',    label:'Today',    date:today,    count:shifts.filter(s=>s.shift_date===today).length,    color:'#16a34a', bg:'#f0fdf4', border:'#86efac' },
+                { key:'tomorrow', label:'Tomorrow', date:tomorrow, count:shifts.filter(s=>s.shift_date===tomorrow).length, color:'#6366f1', bg:'#eef2ff', border:'#a5b4fc' },
+                { key:'all',      label:'All Shifts',date:null,   count:shifts.length,                                     color:'#374151', bg:'#f8fafc', border:'#e5e7eb' },
+              ].map(d => (
+                <button key={d.key} onClick={()=>setDayView(d.key)}
+                  style={{ padding:'10px 18px', borderRadius:12, border:`1.5px solid ${dayView===d.key?d.border:'#e5e7eb'}`,
+                    background:dayView===d.key?d.bg:'#fff', cursor:'pointer', fontSize:13,
+                    fontWeight:700, color:dayView===d.key?d.color:'#64748b',
+                    fontFamily:"'Plus Jakarta Sans',sans-serif", transition:'all .2s',
+                    boxShadow:dayView===d.key?`0 4px 12px ${d.color}22`:'none' }}>
+                  {d.label}
+                  <span style={{ marginLeft:8, background:dayView===d.key?d.color:'#e5e7eb',
+                    color:dayView===d.key?'#fff':'#64748b', borderRadius:99,
+                    padding:'2px 8px', fontSize:11, fontWeight:800 }}>{d.count}</span>
+                </button>
+              ))}
             </div>
-            <button onClick={() => { setShiftForm({ user_id:'', shift_name:'Morning', shift_date:today, start_time:'06:00', end_time:'14:00', status:'scheduled', note:'' }); setShiftModal('add') }}
-              style={{ padding:'10px 20px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:14 }}>
+            <button onClick={() => { setShiftForm({ user_id:'', shift_name:'Morning', shift_date:dayView==='tomorrow'?tomorrow:today, start_time:'06:00', end_time:'14:00', status:'scheduled', note:'' }); setShiftModal('add') }}
+              style={{ padding:'10px 20px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#c0272d,#e53935)', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:14, fontFamily:"'Plus Jakarta Sans',sans-serif", boxShadow:'0 4px 14px rgba(192,39,45,.3)' }}>
               + Add Shift
             </button>
           </div>
 
-          {/* Shift templates */}
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:18 }}>
-            {SHIFT_TEMPLATES.map(t => (
-              <div key={t.name} style={{ background:'#fff', borderRadius:12, padding:'12px 16px', border:'1.5px solid #e5e7eb', textAlign:'center' }}>
-                <div style={{ width:10, height:10, borderRadius:'50%', background:t.color, margin:'0 auto 6px' }} />
-                <div style={{ fontWeight:700, color:'#0f172a', fontSize:14 }}>{t.name}</div>
-                <div style={{ fontSize:12, color:'#64748b' }}>{t.start} – {t.end}</div>
-              </div>
-            ))}
-          </div>
+          {/* Shift Summary Cards */}
+          {(dayView === 'today' || dayView === 'tomorrow') && (() => {
+            const date     = dayView === 'today' ? today : tomorrow
+            const dayShifts = shifts.filter(s => s.shift_date === date)
+            return (
+              <>
+                {/* Shift type breakdown */}
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:20 }}>
+                  {SHIFT_TEMPLATES.map(t => {
+                    const count = dayShifts.filter(s=>s.shift_name===t.name).length
+                    const workers = dayShifts.filter(s=>s.shift_name===t.name)
+                    return (
+                      <div key={t.name} style={{ background:'#fff', borderRadius:16, padding:16,
+                        border:`1.5px solid ${count>0?t.color+'33':'#f0f0f0'}`,
+                        boxShadow:count>0?`0 4px 16px ${t.color}15`:'none',
+                        transition:'all .3s' }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                            <div style={{ width:10, height:10, borderRadius:'50%', background:t.color }}/>
+                            <span style={{ fontWeight:700, fontSize:13, color:'#0f172a' }}>{t.name}</span>
+                          </div>
+                          <span style={{ fontSize:18, fontWeight:900, color:count>0?t.color:'#d1d5db',
+                            fontFamily:"'Playfair Display',serif" }}>{count}</span>
+                        </div>
+                        <div style={{ fontSize:11, color:'#94a3b8', marginBottom:8 }}>{t.start} – {t.end}</div>
+                        {workers.length > 0 ? (
+                          <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
+                            {workers.slice(0,3).map(w => (
+                              <span key={w.id} style={{ fontSize:10, fontWeight:700,
+                                background:t.color+'18', color:t.color,
+                                padding:'2px 8px', borderRadius:99 }}>
+                                {w.full_name?.split(' ')[0]}
+                              </span>
+                            ))}
+                            {workers.length > 3 && (
+                              <span style={{ fontSize:10, color:'#94a3b8' }}>+{workers.length-3}</span>
+                            )}
+                          </div>
+                        ) : (
+                          <div style={{ fontSize:11, color:'#d1d5db' }}>No staff assigned</div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
 
-          <div style={{ background:'#fff', borderRadius:16, overflow:'hidden', border:'1.5px solid #e5e7eb', boxShadow:'0 2px 10px rgba(0,0,0,.04)' }}>
+                {/* Who is working now indicator (today only) */}
+                {dayView === 'today' && (() => {
+                  const now = new Date()
+                  const hhmm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
+                  const onDuty = dayShifts.filter(s => {
+                    const start = String(s.start_time).slice(0,5)
+                    const end   = String(s.end_time).slice(0,5)
+                    return hhmm >= start && hhmm <= end && s.status === 'scheduled'
+                  })
+                  return onDuty.length > 0 ? (
+                    <div style={{ background:'linear-gradient(135deg,#f0fdf4,#dcfce7)', borderRadius:14,
+                      padding:'14px 20px', marginBottom:20, border:'1.5px solid #86efac',
+                      display:'flex', alignItems:'center', gap:14 }}>
+                      <div style={{ width:10, height:10, borderRadius:'50%', background:'#16a34a',
+                        boxShadow:'0 0 0 4px rgba(22,163,74,.2)', animation:'pulse 1.5s infinite', flexShrink:0 }}/>
+                      <div>
+                        <div style={{ fontSize:12, fontWeight:700, color:'#15803d', marginBottom:4 }}>
+                          Currently On Duty — {hhmm}
+                        </div>
+                        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                          {onDuty.map(w => (
+                            <span key={w.id} style={{ fontSize:12, fontWeight:700, color:'#15803d',
+                              background:'#fff', padding:'3px 10px', borderRadius:99,
+                              border:'1px solid #86efac' }}>
+                              {w.full_name} ({w.shift_name})
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ) : null
+                })()}
+              </>
+            )
+          })()}
+
+          {/* Table */}
+          <div style={{ background:'#fff', borderRadius:16, overflow:'hidden',
+            border:'1px solid rgba(0,0,0,.06)', boxShadow:'0 2px 12px rgba(0,0,0,.04)' }}>
             <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
               <thead>
-                <tr style={{ background:'#f8fafc', borderBottom:'2px solid #e5e7eb' }}>
+                <tr style={{ background:'linear-gradient(135deg,#0f172a,#1e293b)' }}>
                   {['Employee','Role','Shift','Date','Time','Status','Note','Actions'].map(h => (
-                    <th key={h} style={{ padding:'12px 14px', textAlign:'left', fontWeight:700, color:'#374151' }}>{h}</th>
+                    <th key={h} style={{ padding:'13px 14px', textAlign:'left', fontWeight:700,
+                      color:'rgba(255,255,255,.7)', fontSize:11, textTransform:'uppercase', letterSpacing:.5 }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr><td colSpan={8} style={{ padding:40, textAlign:'center', color:'#94a3b8' }}>Loading...</td></tr>
-                ) : shifts.length === 0 ? (
-                  <tr><td colSpan={8} style={{ padding:40, textAlign:'center', color:'#94a3b8' }}>
-                    <div style={{ fontSize:36, marginBottom:10 }}>📅</div>
-                    <p>No shifts yet. Click "+ Add Shift" to create one.</p>
-                  </td></tr>
-                ) : shifts.map(s => {
-                  const rc = ROLE_COLORS[s.role] || ROLE_COLORS.employee
-                  const sc = STATUS_COLORS[s.status] || STATUS_COLORS.scheduled
-                  const tmpl = SHIFT_TEMPLATES.find(t => t.name === s.shift_name)
-                  return (
-                    <tr key={s.id} style={{ borderBottom:'1px solid #f8fafc' }}
-                      onMouseEnter={e=>e.currentTarget.style.background='#fafafa'}
-                      onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                      <td style={{ padding:'11px 14px' }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                          <div style={{ width:28, height:28, borderRadius:8, background:`${rc.color}22`, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:11, color:rc.color }}>
-                            {(s.full_name||'?')[0].toUpperCase()}
-                          </div>
-                          <strong style={{ color:'#0f172a', fontSize:13 }}>{s.full_name}</strong>
-                        </div>
-                      </td>
-                      <td style={{ padding:'11px 14px' }}>
-                        <span style={{ padding:'3px 9px', borderRadius:99, fontSize:11, fontWeight:700, background:rc.bg, color:rc.color }}>{s.role}</span>
-                      </td>
-                      <td style={{ padding:'11px 14px' }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                          <div style={{ width:8, height:8, borderRadius:'50%', background:tmpl?.color||'#94a3b8' }} />
-                          <span style={{ fontWeight:600 }}>{s.shift_name}</span>
-                        </div>
-                      </td>
-                      <td style={{ padding:'11px 14px', color:'#64748b' }}>{s.shift_date}</td>
-                      <td style={{ padding:'11px 14px', fontWeight:600 }}>{String(s.start_time).slice(0,5)} – {String(s.end_time).slice(0,5)}</td>
-                      <td style={{ padding:'11px 14px' }}>
-                        <span style={{ padding:'3px 9px', borderRadius:99, fontSize:11, fontWeight:700, background:sc.bg, color:sc.color }}>{s.status}</span>
-                      </td>
-                      <td style={{ padding:'11px 14px', color:'#94a3b8', fontSize:12 }}>{s.note||'—'}</td>
-                      <td style={{ padding:'11px 14px' }}>
-                        <div style={{ display:'flex', gap:5 }}>
-                          <button onClick={() => {
-                            setShiftForm({ user_id:s.user_id, shift_name:s.shift_name, shift_date:s.shift_date, start_time:String(s.start_time).slice(0,5), end_time:String(s.end_time).slice(0,5), status:s.status, note:s.note||'' })
-                            setShiftModal(s.id)
-                          }} style={{ padding:'4px 9px', borderRadius:7, border:'1.5px solid #93c5fd', background:'#dbeafe', color:'#1d4ed8', cursor:'pointer', fontSize:11, fontWeight:700 }}>Edit</button>
-                          <button onClick={() => handleDeleteShift(s.id)}
-                            style={{ padding:'4px 9px', borderRadius:7, border:'1.5px solid #fca5a5', background:'#fee2e2', color:'#dc2626', cursor:'pointer', fontSize:11, fontWeight:700 }}>Del</button>
-                        </div>
-                      </td>
-                    </tr>
+                ) : (() => {
+                  const filtered = dayView === 'today'    ? shifts.filter(s=>s.shift_date===today)
+                                 : dayView === 'tomorrow' ? shifts.filter(s=>s.shift_date===tomorrow)
+                                 : shifts
+                  if (filtered.length === 0) return (
+                    <tr><td colSpan={8} style={{ padding:40, textAlign:'center', color:'#94a3b8' }}>
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#e5e7eb" strokeWidth="1.5" style={{ marginBottom:12 }}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      <p style={{ margin:0, fontSize:14 }}>No shifts for {dayView === 'today'?'today':dayView === 'tomorrow'?'tomorrow':'any date'}.</p>
+                    </td></tr>
                   )
-                })}
+                  return filtered.map(s => {
+                    const rc   = ROLE_COLORS[s.role] || ROLE_COLORS.employee
+                    const sc   = STATUS_COLORS[s.status] || STATUS_COLORS.scheduled
+                    const tmpl = SHIFT_TEMPLATES.find(t => t.name === s.shift_name)
+                    const now  = new Date()
+                    const hhmm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
+                    const isNow = s.shift_date === today &&
+                      hhmm >= String(s.start_time).slice(0,5) &&
+                      hhmm <= String(s.end_time).slice(0,5) &&
+                      s.status === 'scheduled'
+                    return (
+                      <tr key={s.id} style={{ borderBottom:'1px solid #f8fafc',
+                        background:isNow?'#f0fdf4':'transparent',
+                        transition:'background .15s' }}
+                        onMouseEnter={e=>{ if(!isNow) e.currentTarget.style.background='#fafbfc' }}
+                        onMouseLeave={e=>{ if(!isNow) e.currentTarget.style.background='transparent' }}>
+                        <td style={{ padding:'12px 14px' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                            {isNow && <div style={{ width:8, height:8, borderRadius:'50%', background:'#16a34a', boxShadow:'0 0 0 3px rgba(22,163,74,.2)', flexShrink:0 }}/>}
+                            <div style={{ width:28, height:28, borderRadius:8, background:`${rc.color}22`,
+                              display:'flex', alignItems:'center', justifyContent:'center',
+                              fontWeight:800, fontSize:11, color:rc.color }}>
+                              {(s.full_name||'?')[0].toUpperCase()}
+                            </div>
+                            <strong style={{ color:'#0f172a', fontSize:13 }}>{s.full_name}</strong>
+                          </div>
+                        </td>
+                        <td style={{ padding:'12px 14px' }}>
+                          <span style={{ padding:'3px 9px', borderRadius:99, fontSize:11, fontWeight:700, background:rc.bg, color:rc.color }}>{s.role}</span>
+                        </td>
+                        <td style={{ padding:'12px 14px' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                            <div style={{ width:8, height:8, borderRadius:'50%', background:tmpl?.color||'#94a3b8' }}/>
+                            <span style={{ fontWeight:600 }}>{s.shift_name}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding:'12px 14px', color:'#64748b' }}>
+                          {s.shift_date === today ? <span style={{ color:'#16a34a', fontWeight:700 }}>Today</span>
+                           : s.shift_date === tomorrow ? <span style={{ color:'#6366f1', fontWeight:700 }}>Tomorrow</span>
+                           : s.shift_date}
+                        </td>
+                        <td style={{ padding:'12px 14px', fontWeight:600 }}>{String(s.start_time).slice(0,5)} – {String(s.end_time).slice(0,5)}</td>
+                        <td style={{ padding:'12px 14px' }}>
+                          <span style={{ padding:'3px 9px', borderRadius:99, fontSize:11, fontWeight:700, background:sc.bg, color:sc.color }}>{s.status}</span>
+                        </td>
+                        <td style={{ padding:'12px 14px', color:'#94a3b8', fontSize:12 }}>{s.note||'—'}</td>
+                        <td style={{ padding:'12px 14px' }}>
+                          <div style={{ display:'flex', gap:5 }}>
+                            <button onClick={() => {
+                              setShiftForm({ user_id:s.user_id, shift_name:s.shift_name, shift_date:s.shift_date, start_time:String(s.start_time).slice(0,5), end_time:String(s.end_time).slice(0,5), status:s.status, note:s.note||'' })
+                              setShiftModal(s.id)
+                            }} style={{ padding:'4px 9px', borderRadius:7, border:'1.5px solid #93c5fd', background:'#dbeafe', color:'#1d4ed8', cursor:'pointer', fontSize:11, fontWeight:700 }}>Edit</button>
+                            <button onClick={() => handleDeleteShift(s.id)}
+                              style={{ padding:'4px 9px', borderRadius:7, border:'1.5px solid #fca5a5', background:'#fee2e2', color:'#dc2626', cursor:'pointer', fontSize:11, fontWeight:700 }}>Del</button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
+                })()}
               </tbody>
             </table>
           </div>

@@ -21,7 +21,7 @@ const NAV = [
 ]
 
 const AMSLogoMark = ({ size=40 }) => {
-  const s=size/44, bw=Math.round(7*s), bh1=Math.round(22*s), bh2=Math.round(14*s), bh3=Math.round(30*s)
+  const s=size/44, bw=Math.round(7*s), bh1=Math.round(24*s), bh2=Math.round(13*s), bh3=Math.round(24*s)
   const g=Math.round(3.5*s), ph=Math.round(7*s), pb=Math.round(9*s), br=`${Math.round(2*s)}px ${Math.round(2*s)}px 1px 1px`
   return (
     <div style={{ width:size, height:size, borderRadius:Math.round(size*0.22),

@@ -14,27 +14,29 @@ function useInView(threshold = 0.1) {
   return [ref, visible]
 }
 
-function Counter({ target, suffix = '' }) {
+function Counter({ target, suffix = '', delay = 0 }) {
   const [count, setCount] = useState(0)
-  const [started, setStarted] = useState(false)
   const ref = useRef()
   useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setStarted(true) }, { threshold: 0.5 })
+    const num = parseInt(String(target).replace(/\D/g, '')) || 0
+    if (num === 0) return
+    const start = () => {
+      setTimeout(() => {
+        let cur = 0
+        const step = num / 60
+        const timer = setInterval(() => {
+          cur += step
+          if (cur >= num) { setCount(num); clearInterval(timer) }
+          else setCount(Math.floor(cur))
+        }, 16)
+      }, delay)
+    }
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { start(); obs.disconnect() }
+    }, { threshold: 0.1 })
     if (ref.current) obs.observe(ref.current)
     return () => obs.disconnect()
-  }, [])
-  useEffect(() => {
-    if (!started) return
-    const num = parseInt(String(target).replace(/\D/g, ''))
-    let cur = 0
-    const step = num / 60
-    const timer = setInterval(() => {
-      cur += step
-      if (cur >= num) { setCount(num); clearInterval(timer) }
-      else setCount(Math.floor(cur))
-    }, 16)
-    return () => clearInterval(timer)
-  }, [started])
+  }, [target])
   return <span ref={ref}>{count.toLocaleString()}{suffix}</span>
 }
 
@@ -55,11 +57,160 @@ const CAT_IMAGES = {
 const FALLBACK = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80'
 
 const FEATURES = [
-  { icon:'🚚', title:'Free Delivery',   sub:'On orders over $50',    bg:'#fff7ed', accent:'#f97316' },
-  { icon:'🔒', title:'Secure Payment',  sub:'ABA · ACLEDA · Cash',   bg:'#eff6ff', accent:'#3b82f6' },
-  { icon:'🌿', title:'Fresh Products',  sub:'From local farms daily', bg:'#f0fdf4', accent:'#22c55e' },
-  { icon:'⭐', title:'Loyalty Rewards', sub:'Earn points every buy',  bg:'#fefce8', accent:'#eab308' },
+  { icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
+    title:'Free Delivery', sub:'Always free, every order', bg:'#fff7ed', accent:'#f97316' },
+  { icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+    title:'Secure Payment', sub:'ABA · ACLEDA · Cash', bg:'#eff6ff', accent:'#3b82f6' },
+  { icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+    title:'Fresh Products', sub:'From local farms daily', bg:'#f0fdf4', accent:'#22c55e' },
+  { icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#eab308" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+    title:'Loyalty Rewards', sub:'Earn points every buy', bg:'#fefce8', accent:'#eab308' },
 ]
+
+
+const REVIEWS = [
+  { name:'Sarakseyha NY',   role:'University Student', stars:5, color:'#22c55e',
+    text:'The UI is so clean that even my sleepy 2AM brain could use it without getting lost. That says a lot honestly.' },
+  { name:'Putdararith KIM', role:'University Student', stars:5, color:'#6366f1',
+    text:'I opened the website just to test it, then spent 20 minutes pretending I was actually grocery shopping. Lowkey better than some real supermarket apps.' },
+  { name:'Chhaythean LY',   role:'Senior',             stars:4, color:'#f59e0b',
+    text:'Your project shows strong frontend and system design skills. The UI is clean, responsive, and the supermarket workflow is implemented very well for a student project.' },
+]
+
+function ReviewCarousel() {
+  const [active, setActive] = useState(0)
+  const [animating, setAnimating] = useState(false)
+  const timerRef = useRef(null)
+
+  const goTo = (idx) => {
+    if (animating) return
+    setAnimating(true)
+    setTimeout(() => { setActive(idx); setAnimating(false) }, 300)
+  }
+
+  useEffect(() => {
+    timerRef.current = setInterval(() => {
+      setAnimating(true)
+      setTimeout(() => {
+        setActive(prev => (prev + 1) % REVIEWS.length)
+        setAnimating(false)
+      }, 300)
+    }, 4000)
+    return () => clearInterval(timerRef.current)
+  }, [])
+
+  const r = REVIEWS[active]
+
+  return (
+    <section style={{ padding:'80px 0', background:'linear-gradient(180deg,#f8f9fc,#fff 20%,#fff 80%,#f8f9fc)', overflow:'hidden' }}>
+      <style>{`
+        @keyframes reviewIn  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes reviewOut { from{opacity:1;transform:translateY(0)} to{opacity:0;transform:translateY(-20px)} }
+        .review-card-inner { animation: reviewIn .35s ease forwards; }
+        .review-card-inner.out { animation: reviewOut .3s ease forwards; }
+      `}</style>
+      <div style={{ maxWidth:1280, margin:'0 auto', padding:'0 24px' }}>
+        <div style={{ textAlign:'center', marginBottom:52 }}>
+          <span className="section-tag">Customer Love</span>
+          <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:36, fontWeight:900,
+            color:'#111827', margin:'10px 0 12px' }}>
+            What Our <span style={{ color:'#c0272d' }}>Customers</span> Say
+          </h2>
+          <p style={{ fontSize:15, color:'#9ca3af', maxWidth:480, margin:'0 auto' }}>
+            Real feedback from happy shoppers in Institute of Technology of Cambodia
+          </p>
+        </div>
+
+        {/* Main featured card */}
+        <div style={{ maxWidth:680, margin:'0 auto 32px', position:'relative' }}>
+          <div className={`review-card-inner${animating?' out':''}`}
+            style={{ background:'#fff', borderRadius:24, padding:40,
+              border:`1.5px solid ${r.color}33`,
+              boxShadow:`0 8px 40px rgba(0,0,0,.08), 0 0 0 1px ${r.color}11`,
+              position:'relative', overflow:'hidden' }}>
+
+            {/* Decorative quote mark */}
+            <div style={{ position:'absolute', top:20, right:28, fontSize:80,
+              fontFamily:'Georgia,serif', color:r.color+'15', lineHeight:1, fontWeight:900 }}>"</div>
+
+            <div style={{ display:'flex', gap:3, marginBottom:20 }}>
+              {[...Array(5)].map((_,j) => (
+                <svg key={j} width="18" height="18" viewBox="0 0 24 24"
+                  fill={j < r.stars ? '#f59e0b' : '#e5e7eb'}>
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+              ))}
+            </div>
+
+            <p style={{ fontSize:17, color:'#374151', lineHeight:1.85, marginBottom:28,
+              fontStyle:'italic', position:'relative', zIndex:1 }}>
+              "{r.text}"
+            </p>
+
+            <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+              <div style={{ width:48, height:48, borderRadius:'50%',
+                background:`linear-gradient(135deg,${r.color},${r.color}88)`,
+                display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:18, fontWeight:900, color:'#fff', flexShrink:0,
+                boxShadow:`0 4px 16px ${r.color}44` }}>
+                {r.name[0]}
+              </div>
+              <div>
+                <div style={{ fontSize:15, fontWeight:800, color:'#111827' }}>{r.name}</div>
+                <div style={{ fontSize:13, color:'#9ca3af' }}>{r.role}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Dots + nav */}
+        <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:16 }}>
+          <button onClick={()=>goTo((active-1+REVIEWS.length)%REVIEWS.length)}
+            style={{ width:36, height:36, borderRadius:'50%', border:'1.5px solid #e5e7eb',
+              background:'#fff', cursor:'pointer', display:'flex', alignItems:'center',
+              justifyContent:'center', transition:'all .2s' }}
+            onMouseEnter={e=>{ e.currentTarget.style.borderColor='#c0272d'; e.currentTarget.style.color='#c0272d' }}
+            onMouseLeave={e=>{ e.currentTarget.style.borderColor='#e5e7eb'; e.currentTarget.style.color='inherit' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+
+          <div style={{ display:'flex', gap:8 }}>
+            {REVIEWS.map((_,i) => (
+              <button key={i} onClick={()=>goTo(i)}
+                style={{ width: i===active?24:8, height:8, borderRadius:99, border:'none',
+                  background: i===active?'#c0272d':'#e5e7eb', cursor:'pointer',
+                  transition:'all .35s cubic-bezier(.34,1.56,.64,1)', padding:0 }}/>
+            ))}
+          </div>
+
+          <button onClick={()=>goTo((active+1)%REVIEWS.length)}
+            style={{ width:36, height:36, borderRadius:'50%', border:'1.5px solid #e5e7eb',
+              background:'#fff', cursor:'pointer', display:'flex', alignItems:'center',
+              justifyContent:'center', transition:'all .2s' }}
+            onMouseEnter={e=>{ e.currentTarget.style.borderColor='#c0272d'; e.currentTarget.style.color='#c0272d' }}
+            onMouseLeave={e=>{ e.currentTarget.style.borderColor='#e5e7eb'; e.currentTarget.style.color='inherit' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+
+        {/* Mini preview cards */}
+        <div style={{ display:'flex', justifyContent:'center', gap:16, marginTop:28 }}>
+          {REVIEWS.map((rev, i) => (
+            <div key={i} onClick={()=>goTo(i)}
+              style={{ padding:'12px 20px', borderRadius:14, cursor:'pointer',
+                border:`1.5px solid ${i===active?rev.color+'44':'#f0f0f0'}`,
+                background: i===active?rev.color+'08':'#fff',
+                transition:'all .3s', opacity: i===active?1:0.6,
+                transform: i===active?'scale(1.04)':'scale(1)' }}>
+              <div style={{ fontSize:12, fontWeight:700, color: i===active?rev.color:'#374151' }}>{rev.name}</div>
+              <div style={{ fontSize:11, color:'#9ca3af' }}>{rev.role}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
 
 export default function Home() {
   const [recentProducts,  setRecentProducts]  = useState([])
@@ -125,8 +276,17 @@ export default function Home() {
           display:flex; align-items:center; gap:16px;
           box-shadow:0 2px 12px rgba(0,0,0,.05); border:1.5px solid #f3f4f6;
           transition:all .3s cubic-bezier(.34,1.56,.64,1);
+          position:relative; overflow:hidden;
         }
-        .feat-card:hover { transform:translateY(-6px); box-shadow:0 12px 32px rgba(0,0,0,.1); }
+        .feat-card::before {
+          content:''; position:absolute; inset:0;
+          background:linear-gradient(135deg,rgba(192,39,45,.04),transparent);
+          opacity:0; transition:opacity .3s;
+        }
+        .feat-card:hover { transform:translateY(-6px); box-shadow:0 12px 32px rgba(0,0,0,.1); border-color:#fecaca; }
+        .feat-card:hover::before { opacity:1; }
+        .feat-card:hover .feat-icon { transform:scale(1.2) rotate(8deg); }
+        .feat-icon { transition:transform .3s cubic-bezier(.34,1.56,.64,1); display:flex; align-items:center; justify-content:center; }
 
         .cat-card {
           flex-shrink:0; width:190px; border-radius:18px; overflow:hidden;
@@ -147,16 +307,28 @@ export default function Home() {
         .why-card {
           background:rgba(255,255,255,.06); border-radius:20px; padding:32px 24px;
           border:1px solid rgba(255,255,255,.1); text-align:center;
-          transition:all .3s; position:relative; overflow:hidden;
+          transition:all .35s cubic-bezier(.34,1.56,.64,1); position:relative; overflow:hidden;
         }
-        .why-card:hover { background:rgba(255,255,255,.12); transform:translateY(-6px); }
+        .why-card:hover {
+          background:rgba(255,255,255,.12); transform:translateY(-8px);
+          border-color:rgba(192,39,45,.4);
+          box-shadow:0 20px 40px rgba(0,0,0,.3), 0 0 30px rgba(192,39,45,.15);
+        }
         .why-card::before {
           content:''; position:absolute; top:-50%; left:-50%;
           width:200%; height:200%; border-radius:50%;
-          background:radial-gradient(circle, rgba(192,39,45,.08) 0%, transparent 60%);
-          opacity:0; transition:opacity .3s;
+          background:radial-gradient(circle, rgba(192,39,45,.12) 0%, transparent 60%);
+          opacity:0; transition:opacity .4s;
         }
         .why-card:hover::before { opacity:1; }
+        .why-icon {
+          transition:transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .35s, background .3s;
+        }
+        .why-card:hover .why-icon {
+          transform:scale(1.18) rotate(-5deg);
+          background:rgba(192,39,45,.25) !important;
+          box-shadow:0 0 24px rgba(192,39,45,.5);
+        }
 
         .marquee-track { display:flex; gap:18px; animation:marquee 32s linear infinite; width:max-content; }
         .marquee-track:hover { animation-play-state:paused; }
@@ -257,13 +429,18 @@ export default function Home() {
 
               {/* Stats */}
               <div style={{ display:'flex', gap:40, animation:'fadeLeft .7s ease .4s both' }}>
-                {[['147','Products'],['12','Categories'],['100%','In Stock']].map(([n, l]) => (
-                  <div key={l}>
-                    <div style={{ fontFamily:"'Playfair Display',serif", fontSize:28,
-                      fontWeight:900, color:'#fff', marginBottom:2 }}>
-                      <Counter target={n.replace(/\D/g,'')} suffix={n.replace(/\d/g,'')}/>
+                {[
+                  { n:'147', suffix:'',  label:'Products'   },
+                  { n:'12',  suffix:'',  label:'Categories' },
+                  { n:'100', suffix:'%', label:'In Stock'   },
+                ].map(({ n, suffix, label }, i) => (
+                  <div key={label} style={{ textAlign:'center' }}>
+                    <div style={{ fontFamily:"'Playfair Display',serif", fontSize:32,
+                      fontWeight:900, color:'#fff', marginBottom:2, lineHeight:1 }}>
+                      <Counter target={n} suffix={suffix} delay={i*250}/>
                     </div>
-                    <div style={{ fontSize:12, color:'rgba(255,255,255,.5)', fontWeight:500 }}>{l}</div>
+                    <div style={{ fontSize:12, color:'rgba(255,255,255,.5)', fontWeight:600,
+                      textTransform:'uppercase', letterSpacing:1 }}>{label}</div>
                   </div>
                 ))}
               </div>
@@ -303,7 +480,7 @@ export default function Home() {
       </section>
 
       {/* ═══ FEATURES ═══ */}
-      <div ref={featRef} style={{ background:'#fff', padding:'24px 0', borderBottom:'1px solid #f3f4f6' }}>
+      <div ref={featRef} style={{ background:'linear-gradient(180deg,#f8f9fc,#fff)', padding:'28px 0', borderBottom:'1px solid #f3f4f6' }}>
         <div style={{ maxWidth:1280, margin:'0 auto', padding:'0 24px' }}>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16 }}>
             {FEATURES.map((f, i) => (
@@ -311,8 +488,7 @@ export default function Home() {
                 opacity: featVisible ? 1 : 0,
                 animation: featVisible ? `fadeUp .5s ease ${i*.08}s forwards` : 'none'
               }}>
-                <div style={{ width:50, height:50, borderRadius:14, background:f.bg,
-                  display:'flex', alignItems:'center', justifyContent:'center',
+                <div className="feat-icon" style={{ width:50, height:50, borderRadius:14, background:f.bg,
                   fontSize:22, flexShrink:0, border:`1.5px solid ${f.accent}22` }}>{f.icon}</div>
                 <div>
                   <div style={{ fontSize:14, fontWeight:800, color:'#111827', marginBottom:3 }}>{f.title}</div>
@@ -325,7 +501,7 @@ export default function Home() {
       </div>
 
       {/* ═══ CATEGORIES MARQUEE ═══ */}
-      <section ref={catRef} style={{ padding:'72px 0', background:'#f8f9fc', overflow:'hidden' }}>
+      <section ref={catRef} style={{ padding:'72px 0', background:'linear-gradient(180deg,#fff,#f8f9fc,#f0f2f8)', overflow:'hidden' }}>
         <div style={{ maxWidth:1280, margin:'0 auto', padding:'0 24px 32px' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end' }}>
             <div style={{
@@ -372,7 +548,7 @@ export default function Home() {
       </section>
 
       {/* ═══ POPULAR PRODUCTS ═══ */}
-      <section ref={popRef} style={{ padding:'72px 0', background:'#fff' }}>
+      <section ref={popRef} style={{ padding:'72px 0', background:'linear-gradient(180deg,#f0f2f8,#fff)' }}>
         <div style={{ maxWidth:1280, margin:'0 auto', padding:'0 24px' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:40 }}>
             <div style={{
@@ -425,7 +601,7 @@ export default function Home() {
       {/* ═══ WHY CHOOSE US ═══ */}
       <section ref={whyRef} style={{
         padding:'80px 0',
-        background:'linear-gradient(135deg,#0d1240 0%,#1a1f5e 50%,#0d1240 100%)',
+        background:'linear-gradient(180deg,#0a0f35,#0d1240 20%,#1a1f5e 50%,#0d1240 80%,#0a0f35)',
         position:'relative', overflow:'hidden'
       }}>
         <div style={{ position:'absolute', top:-200, right:-200, width:600, height:600,
@@ -447,21 +623,23 @@ export default function Home() {
 
           <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:20 }}>
             {[
-              { icon:'🛡️', title:'Quality Guaranteed',  desc:'Every product carefully selected and quality checked before reaching your hands.' },
-              { icon:'🕐', title:'Open Every Day',       desc:'Open 7 days a week from 7:00 AM to 9:00 PM for your convenience.' },
-              { icon:'⭐', title:'Loyalty Rewards',      desc:'Earn points on every purchase and redeem them for exclusive discounts.' },
-              { icon:'💳', title:'Easy Payment',         desc:'Pay with ABA, ACLEDA, or Cash — fast, safe and hassle-free checkout.' },
+              { icon:<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c0272d" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>,
+                title:'Quality Guaranteed', desc:'Every product carefully selected and quality checked before reaching your hands.' },
+              { icon:<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c0272d" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+                title:'Open Every Day', desc:'Open 7 days a week from 7:00 AM to 9:00 PM for your convenience.' },
+              { icon:<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c0272d" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+                title:'Loyalty Rewards', desc:'Earn points on every purchase and redeem them for exclusive discounts.' },
+              { icon:<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c0272d" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
+                title:'Easy Payment', desc:'Pay with ABA, ACLEDA, or Cash — fast, safe and hassle-free checkout.' },
             ].map((w, i) => (
               <div key={w.title} className="why-card" style={{
                 opacity: whyVisible ? 1 : 0,
                 animation: whyVisible ? `fadeUp .6s ease ${i*.1+.1}s forwards` : 'none'
               }}>
-                <div style={{ width:64, height:64, borderRadius:18,
+                <div className="why-icon" style={{ width:64, height:64, borderRadius:18,
                   background:'rgba(192,39,45,.12)', border:'1.5px solid rgba(192,39,45,.25)',
                   display:'flex', alignItems:'center', justifyContent:'center',
-                  fontSize:28, margin:'0 auto 20px', transition:'transform .3s' }}
-                  onMouseEnter={e=>e.currentTarget.style.transform='scale(1.15) rotate(5deg)'}
-                  onMouseLeave={e=>e.currentTarget.style.transform='scale(1) rotate(0deg)'}>
+                  fontSize:28, margin:'0 auto 20px' }}>
                   {w.icon}
                 </div>
                 <div style={{ fontSize:16, fontWeight:800, color:'#fff', marginBottom:12 }}>{w.title}</div>
@@ -472,8 +650,12 @@ export default function Home() {
         </div>
       </section>
 
+
+      {/* ═══ CUSTOMER REVIEWS ═══ */}
+      <ReviewCarousel />
+
       {/* ═══ CTA ═══ */}
-      <section ref={ctaRef} style={{ padding:'80px 0', background:'#f8f9fc' }}>
+      <section ref={ctaRef} style={{ padding:'80px 0', background:'linear-gradient(180deg,#f8f9fc,#f0f2f8)' }}>
         <div style={{ maxWidth:1280, margin:'0 auto', padding:'0 24px' }}>
           <div style={{
             background:'linear-gradient(135deg,#c0272d 0%,#9b1c1c 50%,#7f1d1d 100%)',

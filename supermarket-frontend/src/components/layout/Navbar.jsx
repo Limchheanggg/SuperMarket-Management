@@ -235,7 +235,7 @@ export default function Navbar() {
             <form className="nb-search-form" onSubmit={handleSearch}>
               <input
                 className="nb-search-input"
-                placeholder="Search products, brands, categories..."
+                placeholder="Search products or brands..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />

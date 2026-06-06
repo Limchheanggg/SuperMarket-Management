@@ -50,10 +50,18 @@ const stats = [
 ]
 
 const values = [
-  { icon:'🌿', title:'100% Fresh',       desc:'Every product sourced directly from certified Cambodian farms daily.' },
-  { icon:'💰', title:'Fair Pricing',     desc:'We work directly with farmers to bring you the best prices possible.' },
-  { icon:'🚀', title:'Fast Service',     desc:'Efficient checkout and in-store experience powered by our smart system.' },
-  { icon:'🔒', title:'Trusted Quality',  desc:'Rigorous quality checks on every product before it reaches our shelves.' },
+  { icon:<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>,
+    color:'#16a34a', bg:'#f0fdf4', border:'#bbf7d0',
+    title:'100% Fresh', desc:'Every product sourced directly from certified Cambodian farms daily.' },
+  { icon:<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c0272d" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+    color:'#c0272d', bg:'#fff0f0', border:'#fecaca',
+    title:'Fair Pricing', desc:'We work directly with farmers to bring you the best prices possible.' },
+  { icon:<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+    color:'#6366f1', bg:'#eef2ff', border:'#c7d2fe',
+    title:'Fast Service', desc:'Efficient checkout and in-store experience powered by our smart system.' },
+  { icon:<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1" fill="#d97706"/></svg>,
+    color:'#d97706', bg:'#fffbeb', border:'#fde68a',
+    title:'Trusted Quality', desc:'Rigorous quality checks on every product before it reaches our shelves.' },
 ]
 
 export default function About() {
@@ -271,13 +279,17 @@ export default function About() {
               fontWeight:700, color:'#111', margin:0 }}>Our Core Values</h2>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:20 }}>
-            {values.map(({ icon, title, desc }, i) => (
+            {values.map(({ icon, title, desc, color, bg, border }, i) => (
               <div key={title} className="value-card" style={{
                 opacity: valuesVisible ? 1 : 0,
                 animation: valuesVisible ? `fadeUp .6s ease ${i*.1+.1}s forwards` : 'none',
               }}>
-                <span className="value-icon">{icon}</span>
-                <h3 style={{ fontSize:16, fontWeight:700, marginBottom:10, color:'#111' }}>{title}</h3>
+                <div style={{ width:56, height:56, borderRadius:16, background:bg,
+                  border:`1.5px solid ${border}`, display:'flex', alignItems:'center',
+                  justifyContent:'center', marginBottom:16, transition:'transform .3s' }}>
+                  {icon}
+                </div>
+                <h3 style={{ fontSize:16, fontWeight:800, marginBottom:10, color:'#111' }}>{title}</h3>
                 <p style={{ fontSize:13, color:'#6b7280', lineHeight:1.7, margin:0 }}>{desc}</p>
               </div>
             ))}

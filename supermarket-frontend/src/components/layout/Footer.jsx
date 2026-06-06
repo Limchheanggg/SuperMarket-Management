@@ -67,7 +67,7 @@ export default function Footer() {
                   <div
                     style={{
                       width: 7,
-                      height: 22,
+                      height: 24,
                       borderRadius: "2px 2px 1px 1px",
                       background: "rgba(255,255,255,0.93)",
                       flexShrink: 0,
@@ -89,7 +89,7 @@ export default function Footer() {
                   <div
                     style={{
                       width: 7,
-                      height: 29,
+                      height: 24,
                       borderRadius: "2px 2px 1px 1px",
                       background: "rgba(255,255,255,0.93)",
                       flexShrink: 0,

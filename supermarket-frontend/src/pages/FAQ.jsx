@@ -90,7 +90,9 @@ export default function FAQ() {
       <style>{`
         @keyframes fadeUp   { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
         @keyframes fadeLeft { from{opacity:0;transform:translateX(-24px)} to{opacity:1;transform:translateX(0)} }
-        @keyframes spin     { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @keyframes spin-cw  { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @keyframes spin-ccw { from{transform:rotate(0deg)} to{transform:rotate(-360deg)} }
+        @keyframes float    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
 
         .faq-cat-btn {
           padding:9px 18px; border-radius:99px; border:1.5px solid #e5e7eb;
@@ -100,7 +102,9 @@ export default function FAQ() {
         .faq-cat-btn:hover { border-color:#fca5a5; color:#c0272d; }
         .faq-cat-btn.active { background:linear-gradient(135deg,#c0272d,#e53935); color:#fff; border-color:transparent; box-shadow:0 4px 12px rgba(192,39,45,.3); }
 
-        .faq-item {
+        .faq-item { position:relative; }/
+        .faq-item::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:linear-gradient(180deg,#c0272d,#f87171); transform:scaleY(0); transition:transform .3s; border-radius:0 2px 2px 0; }
+        .faq-item-x {
           background:#fff; border-radius:16px; overflow:hidden;
           border:1px solid rgba(0,0,0,.06); box-shadow:0 2px 8px rgba(0,0,0,.04);
           transition:box-shadow .3s, transform .3s;
@@ -108,7 +112,7 @@ export default function FAQ() {
         .faq-item:hover { box-shadow:0 8px 28px rgba(0,0,0,.08); transform:translateY(-2px); }
 
         .faq-question {
-          width:100%; padding:20px 24px; display:flex; justify-content:space-between;
+          width:100%; padding:22px 28px; display:flex; justify-content:space-between;
           align-items:center; cursor:pointer; border:none; background:transparent;
           font-family:'Plus Jakarta Sans',sans-serif; font-size:15px; font-weight:700;
           color:#0f172a; text-align:left; transition:color .2s; gap:16px;
@@ -117,10 +121,10 @@ export default function FAQ() {
         .faq-question.open { color:#c0272d; }
 
         .faq-icon {
-          width:28px; height:28px; border-radius:8px; display:flex; align-items:center;
+          width:32px; height:32px; border-radius:10px; border:1.5px solid #f0f0f0; display:flex; align-items:center;
           justify-content:center; flex-shrink:0; transition:all .3s;
         }
-        .faq-icon.open { background:#c0272d; transform:rotate(45deg); }
+        .faq-icon.open { background:#c0272d; border-color:#c0272d; transform:rotate(45deg); box-shadow:0 4px 12px rgba(192,39,45,.3); }
         .faq-icon:not(.open) { background:#f3f4f6; }
 
         .faq-answer {
@@ -149,7 +153,8 @@ export default function FAQ() {
 
       {/* Hero */}
       <div ref={heroRef} style={{ background:'linear-gradient(135deg,#1a0505,#2d0b0b 40%,#0d1240)', padding:'60px 0 48px', position:'relative', overflow:'hidden' }}>
-        <div style={{ position:'absolute', top:-80, right:-80, width:300, height:300, borderRadius:'50%', border:'1px solid rgba(255,255,255,.05)' }}/>
+        <div style={{ position:'absolute', top:-80, right:-80, width:350, height:350, borderRadius:'50%', border:'1px solid rgba(255,255,255,.06)', animation:'spin-cw 30s linear infinite' }}/>
+        <div style={{ position:'absolute', bottom:-80, left:-80, width:300, height:300, borderRadius:'50%', border:'1px solid rgba(192,39,45,.08)', animation:'spin-ccw 25s linear infinite' }}/>
         <div style={{ position:'absolute', bottom:-60, left:-60, width:200, height:200, borderRadius:'50%', border:'1px solid rgba(192,39,45,.1)' }}/>
 
         <div className="container" style={{ position:'relative', zIndex:1, textAlign:'center' }}>
@@ -195,8 +200,8 @@ export default function FAQ() {
         <div className="container" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:0 }}>
           {[['20+','Questions Answered'],['4','Categories'],['7AM–9PM','Store Hours'],['24/7','Online Support']].map(([v,l],i) => (
             <div key={l} style={{ padding:'20px 24px', textAlign:'center', borderRight:i<3?'1px solid #f0f0f0':'none' }}>
-              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:24, fontWeight:900, color:'#c0272d' }}>{v}</div>
-              <div style={{ fontSize:12, color:'#94a3b8', fontWeight:600, marginTop:3 }}>{l}</div>
+              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:900, color:'#c0272d' }}>{v}</div>
+              <div style={{ fontSize:11, color:'#94a3b8', fontWeight:600, marginTop:3, textTransform:'uppercase', letterSpacing:1 }}>{l}</div>
             </div>
           ))}
         </div>
@@ -266,31 +271,7 @@ export default function FAQ() {
           ))}
         </div>
 
-        {/* Bottom CTA */}
-        <div style={{ maxWidth:760, margin:'40px auto 0', background:'linear-gradient(135deg,#0f172a,#1e293b)',
-          borderRadius:20, padding:'36px 40px', display:'flex', justifyContent:'space-between',
-          alignItems:'center', flexWrap:'wrap', gap:20 }}>
-          <div>
-            <h3 style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:900,
-              color:'#fff', margin:'0 0 6px' }}>Still have questions?</h3>
-            <p style={{ color:'rgba(255,255,255,.5)', fontSize:14, margin:0 }}>
-              Our team is available every day from 7AM to 9PM.
-            </p>
-          </div>
-          <div style={{ display:'flex', gap:12 }}>
-            <Link to="/contact" style={{ padding:'11px 22px', borderRadius:11,
-              background:'linear-gradient(135deg,#c0272d,#e53935)', color:'#fff',
-              fontWeight:700, fontSize:14, textDecoration:'none',
-              boxShadow:'0 4px 14px rgba(192,39,45,.4)' }}>
-              Contact Us
-            </Link>
-            <a href="tel:+85512345678" style={{ padding:'11px 22px', borderRadius:11,
-              background:'rgba(255,255,255,.08)', border:'1px solid rgba(255,255,255,.15)',
-              color:'#fff', fontWeight:700, fontSize:14, textDecoration:'none' }}>
-              Call Us
-            </a>
-          </div>
-        </div>
+
       </div>
     </div>
   )
