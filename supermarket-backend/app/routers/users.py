@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..core.database import get_db
+from ..core.dependencies import require_admin
 from ..models.user import User as UserModel
 from ..models.customer import Customer as CustomerModel
 import bcrypt
@@ -10,10 +11,8 @@ router = APIRouter()
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
-# ── Employees / All Users ──────────────────────────────────────────────
-@router.get("/employees")
+@router.get("/employees", dependencies=[Depends(require_admin)])
 def get_employees(db: Session = Depends(get_db)):
-    # Return ALL users regardless of role so admin can see everyone
     users = db.query(UserModel).all()
     return [
         {
@@ -26,7 +25,7 @@ def get_employees(db: Session = Depends(get_db)):
         for u in users
     ]
 
-@router.post("/employees")
+@router.post("/employees", dependencies=[Depends(require_admin)])
 def create_employee(data: dict, db: Session = Depends(get_db)):
     if db.query(UserModel).filter(UserModel.email == data["email"]).first():
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -42,20 +41,20 @@ def create_employee(data: dict, db: Session = Depends(get_db)):
     db.refresh(user)
     return {"id": user.id, "full_name": user.full_name, "email": user.email, "role": user.role}
 
-@router.put("/employees/{user_id}")
+@router.put("/employees/{user_id}", dependencies=[Depends(require_admin)])
 def update_employee(user_id: int, data: dict, db: Session = Depends(get_db)):
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if "full_name" in data: user.full_name = data["full_name"]
-    if "phone" in data: user.phone = data["phone"]
-    if "role" in data: user.role = data["role"]
-    if "password" in data and data["password"]:
+    if "phone"     in data: user.phone     = data["phone"]
+    if "role"      in data: user.role      = data["role"]
+    if "password"  in data and data["password"]:
         user.password = hash_password(data["password"])
     db.commit()
     return {"id": user.id, "full_name": user.full_name, "email": user.email, "role": user.role}
 
-@router.delete("/employees/{user_id}")
+@router.delete("/employees/{user_id}", dependencies=[Depends(require_admin)])
 def delete_employee(user_id: int, db: Session = Depends(get_db)):
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
@@ -64,13 +63,11 @@ def delete_employee(user_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "User deleted"}
 
-# ── Customers (Customer table, not users table) ──────────────────────────────────────────────
-@router.get("/customers")
+@router.get("/customers", dependencies=[Depends(require_admin)])
 def get_customers(db: Session = Depends(get_db)):
-    customers = db.query(CustomerModel).all()
-    return customers
+    return db.query(CustomerModel).all()
 
-@router.post("/customers")
+@router.post("/customers", dependencies=[Depends(require_admin)])
 def create_customer(data: dict, db: Session = Depends(get_db)):
     customer = CustomerModel(
         First_Name=data.get("First_Name", ""),
@@ -85,7 +82,7 @@ def create_customer(data: dict, db: Session = Depends(get_db)):
     db.refresh(customer)
     return customer
 
-@router.put("/customers/{customer_id}")
+@router.put("/customers/{customer_id}", dependencies=[Depends(require_admin)])
 def update_customer(customer_id: int, data: dict, db: Session = Depends(get_db)):
     customer = db.query(CustomerModel).filter(CustomerModel.Customer_ID == customer_id).first()
     if not customer:
@@ -96,7 +93,7 @@ def update_customer(customer_id: int, data: dict, db: Session = Depends(get_db))
     db.commit()
     return customer
 
-@router.delete("/customers/{customer_id}")
+@router.delete("/customers/{customer_id}", dependencies=[Depends(require_admin)])
 def delete_customer(customer_id: int, db: Session = Depends(get_db)):
     customer = db.query(CustomerModel).filter(CustomerModel.Customer_ID == customer_id).first()
     if not customer:

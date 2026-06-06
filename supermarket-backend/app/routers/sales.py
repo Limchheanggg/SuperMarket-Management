@@ -33,7 +33,7 @@ def get_sales(
         where.append("s.Payment_Method = :method")
         params["method"] = method
     if cashier:
-        where.append("CONCAT(e.First_Name,' ',e.Last_Name) LIKE :cashier")
+        where.append("u.full_name LIKE :cashier")
         params["cashier"] = f"%{cashier}%"
     if min_amount is not None:
         where.append("s.Total_Amount >= :min_a")
@@ -42,7 +42,7 @@ def get_sales(
         where.append("s.Total_Amount <= :max_a")
         params["max_a"] = max_amount
     if search:
-        where.append("(CONCAT(e.First_Name,' ',e.Last_Name) LIKE :search OR s.Payment_Method LIKE :search)")
+        where.append("(u.full_name LIKE :search OR s.Payment_Method LIKE :search)")
         params["search"] = f"%{search}%"
 
     where_clause = " AND ".join(where)
@@ -56,11 +56,11 @@ def get_sales(
             s.Discount,
             s.Tax,
             COALESCE(CONCAT(c.First_Name,' ',c.Last_Name), 'Walk-in') as customer,
-            COALESCE(CONCAT(e.First_Name,' ',e.Last_Name), 'Staff') as cashier,
+            COALESCE(u.full_name, 'Staff') as cashier,
             (SELECT COUNT(*) FROM SaleItem si WHERE si.Sale_ID = s.Sale_ID) as item_count
         FROM Sale s
         LEFT JOIN Customer c ON c.Customer_ID = s.Customer_ID
-        LEFT JOIN Employee e ON e.Employee_ID = s.Employee_ID
+        LEFT JOIN users u    ON u.id           = s.Employee_ID
         WHERE {where_clause}
         ORDER BY s.Sale_Year DESC, s.Sale_Month DESC, s.Sale_Day DESC, s.Sale_Time DESC
         LIMIT 500
@@ -81,9 +81,9 @@ def get_sales(
 @router.get("/cashiers")
 def get_cashiers(db: Session = Depends(get_db)):
     rows = db.execute(text("""
-        SELECT DISTINCT CONCAT(e.First_Name,' ',e.Last_Name) as name
+        SELECT DISTINCT u.full_name as name
         FROM Sale s
-        JOIN Employee e ON e.Employee_ID = s.Employee_ID
+        JOIN users u ON u.id = s.Employee_ID
         ORDER BY name
     """)).fetchall()
     return [r.name for r in rows]
@@ -135,10 +135,10 @@ def get_daily(db: Session = Depends(get_db)):
         WHERE Sale_Day=:d AND Sale_Month=:m AND Sale_Year=:y
     """), {"d": today.day, "m": today.month, "y": today.year}).fetchone()
     return {
-        "date": str(today),
-        "total_sales":      row.total_sales or 0,
-        "total_revenue":    float(row.total_revenue or 0),
-        "avg_transaction":  float(row.avg_transaction or 0),
+        "date":            str(today),
+        "total_sales":     row.total_sales or 0,
+        "total_revenue":   float(row.total_revenue or 0),
+        "avg_transaction": float(row.avg_transaction or 0),
     }
 
 @router.get("/reports/monthly")
@@ -179,10 +179,10 @@ def get_sale(sale_id: int, db: Session = Depends(get_db)):
                s.Discount, s.Tax, s.Sale_Day, s.Sale_Month, s.Sale_Year,
                s.Sale_Time,
                COALESCE(CONCAT(c.First_Name,' ',c.Last_Name),'Walk-in') as customer,
-               COALESCE(CONCAT(e.First_Name,' ',e.Last_Name),'Staff') as cashier
+               COALESCE(u.full_name,'Staff') as cashier
         FROM Sale s
         LEFT JOIN Customer c ON c.Customer_ID = s.Customer_ID
-        LEFT JOIN Employee e ON e.Employee_ID = s.Employee_ID
+        LEFT JOIN users u    ON u.id           = s.Employee_ID
         WHERE s.Sale_ID = :id
     """), {"id": sale_id}).fetchone()
     if not sale:

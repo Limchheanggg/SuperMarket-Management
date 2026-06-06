@@ -4,6 +4,7 @@ from sqlalchemy import text
 from ..core.database import get_db
 from ..models.user import User as UserModel
 from ..core.config import settings
+from ..core.dependencies import decode_token
 import bcrypt
 import jwt
 import datetime
@@ -25,12 +26,6 @@ def create_token(user_id: int, email: str, role: str = "customer") -> str:
         "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-
-def decode_token(token: str) -> dict:
-    try:
-        return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 def user_to_dict(user):
     return {
@@ -66,12 +61,9 @@ def register(data: dict, db: Session = Depends(get_db)):
         INSERT INTO Customer (First_Name, Last_Name, Join_Day, Join_Month, Join_Year, Loyalty_Points, User_ID)
         VALUES (:fn, :ln, :day, :month, :year, 0, :uid)
     """), {
-        "fn": first_name,
-        "ln": last_name,
-        "day":   now.day,
-        "month": now.month,
-        "year":  now.year,
-        "uid":   user.id,
+        "fn": first_name, "ln": last_name,
+        "day": now.day, "month": now.month, "year": now.year,
+        "uid": user.id,
     })
     db.commit()
     customer_id = result.lastrowid
@@ -113,8 +105,8 @@ def update_me(data: dict, authorization: Optional[str] = Header(None), db: Sessi
     user = db.query(UserModel).filter(UserModel.id == int(payload["sub"])).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    if "name" in data:      user.full_name = data["name"]
-    if "phone" in data:     user.phone     = data["phone"]
+    if "name"     in data: user.full_name = data["name"]
+    if "phone"    in data: user.phone     = data["phone"]
     if "password" in data and data["password"]:
         user.password = hash_password(data["password"])
     db.commit()

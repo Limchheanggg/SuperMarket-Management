@@ -8,8 +8,8 @@ from .stock import get_stock
 
 router = APIRouter()
 
-def serialize(p, cat):
-    stock = get_stock(p.Product_ID)
+def serialize(p, cat, db=None):
+    stock = get_stock(p.Product_ID, db)
     return {
         "Product_ID": p.Product_ID,
         "Barcode": p.Barcode,
@@ -33,7 +33,7 @@ def get_all_products(db: Session = Depends(get_db)):
     result = []
     for p in products:
         cat = db.query(CategoryModel).filter(CategoryModel.Category_ID == p.Category_ID).first()
-        result.append(serialize(p, cat))
+        result.append(serialize(p, cat, db))
     return result
 
 @router.get("/categories")
@@ -46,7 +46,7 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
     if not p:
         raise HTTPException(status_code=404, detail="Product not found")
     cat = db.query(CategoryModel).filter(CategoryModel.Category_ID == p.Category_ID).first()
-    return serialize(p, cat)
+    return serialize(p, cat, db)
 
 @router.post("/")
 def create_product(data: dict, db: Session = Depends(get_db)):
@@ -78,7 +78,7 @@ def update_product(product_id: int, data: dict, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(p)
     cat = db.query(CategoryModel).filter(CategoryModel.Category_ID == p.Category_ID).first()
-    return serialize(p, cat)
+    return serialize(p, cat, db)
 
 @router.delete("/{product_id}")
 def delete_product(product_id: int, db: Session = Depends(get_db)):
@@ -87,7 +87,7 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Product not found")
     try:
         db.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
-        for tbl in ["Inventory_Batch","Sale_Item","Stock_Adjustment"]:
+        for tbl in ["Inventory", "StockMovement", "SaleItem"]:
             try: db.execute(text(f"DELETE FROM {tbl} WHERE Product_ID = {product_id}"))
             except: pass
         db.delete(p)
@@ -98,3 +98,47 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
         db.rollback()
         db.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/recent/list")
+def get_recent_products(limit: int = 6, db: Session = Depends(get_db)):
+    products = db.query(ProductModel).order_by(
+        ProductModel.Product_ID.desc()
+    ).limit(limit).all()
+    result = []
+    for p in products:
+        cat = db.query(CategoryModel).filter(CategoryModel.Category_ID == p.Category_ID).first()
+        result.append(serialize(p, cat, db))
+    return result
+
+
+@router.get("/bestsellers/list")
+def get_bestsellers(limit: int = 10, db: Session = Depends(get_db)):
+    from sqlalchemy import text
+    rows = db.execute(text("""
+        SELECT p.Product_ID, SUM(si.Quantity) as total_sold
+        FROM SaleItem si
+        JOIN Product p ON p.Product_ID = si.Product_ID
+        GROUP BY p.Product_ID
+        ORDER BY total_sold DESC
+        LIMIT :limit
+    """), {"limit": limit}).fetchall()
+
+    result = []
+    for row in rows:
+        p = db.query(ProductModel).filter(ProductModel.Product_ID == row.Product_ID).first()
+        if p:
+            cat = db.query(CategoryModel).filter(CategoryModel.Category_ID == p.Category_ID).first()
+            result.append(serialize(p, cat, db))
+
+    # If not enough sales data, fill with newest products
+    if len(result) < limit:
+        existing_ids = {r['Product_ID'] for r in result}
+        extra = db.query(ProductModel).filter(
+            ~ProductModel.Product_ID.in_(existing_ids)
+        ).order_by(ProductModel.Product_ID.desc()).limit(limit - len(result)).all()
+        for p in extra:
+            cat = db.query(CategoryModel).filter(CategoryModel.Category_ID == p.Category_ID).first()
+            result.append(serialize(p, cat, db))
+
+    return result

@@ -2,10 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from ..core.database import get_db
+from ..core.dependencies import require_admin
 
 router = APIRouter()
 
-@router.get("/all")
+@router.get("/all", dependencies=[Depends(require_admin)])
 def get_all_memberships(db: Session = Depends(get_db)):
     result = db.execute(text("""
         SELECT
@@ -21,7 +22,6 @@ def get_all_memberships(db: Session = Depends(get_db)):
         ORDER BY COALESCE(m.Points, 0) DESC
     """)).fetchall()
     return [dict(r._mapping) for r in result]
-
 
 @router.get("/me")
 def get_my_membership(user_id: int, db: Session = Depends(get_db)):
@@ -43,7 +43,6 @@ def get_my_membership(user_id: int, db: Session = Depends(get_db)):
         return {"points": 0, "tier": "Bronze", "total_spent": 0.0}
     return dict(result._mapping)
 
-
 @router.get("/")
 def get_memberships(db: Session = Depends(get_db)):
     result = db.execute(text("""
@@ -61,8 +60,7 @@ def get_memberships(db: Session = Depends(get_db)):
     """)).fetchall()
     return [dict(r._mapping) for r in result]
 
-
-@router.get("/customers")
+@router.get("/customers", dependencies=[Depends(require_admin)])
 def get_unregistered_customers(db: Session = Depends(get_db)):
     result = db.execute(text("""
         SELECT
@@ -75,8 +73,7 @@ def get_unregistered_customers(db: Session = Depends(get_db)):
     """)).fetchall()
     return [dict(r._mapping) for r in result]
 
-
-@router.post("/register")
+@router.post("/register", dependencies=[Depends(require_admin)])
 def register(data: dict, db: Session = Depends(get_db)):
     customer_id = data.get("customer_id") or data.get("user_id")
     if not customer_id:
@@ -93,26 +90,21 @@ def register(data: dict, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Membership registered"}
 
-
-@router.put("/add-points/{member_id}")
+@router.put("/add-points/{member_id}", dependencies=[Depends(require_admin)])
 def add_points(member_id: int, data: dict, db: Session = Depends(get_db)):
     points = int(data.get("points", 0))
-    spent = float(data.get("total_spent", 0))
+    spent  = float(data.get("total_spent", 0))
     m = db.execute(text(
         "SELECT * FROM Membership WHERE Membership_ID=:id"),
         {"id": member_id}).fetchone()
     if not m:
         raise HTTPException(status_code=404, detail="Member not found")
     new_points = m.Points + points
-    new_spent = m.Total_Spent + spent
-    if new_points >= 5000:
-        tier = "Platinum"
-    elif new_points >= 3000:
-        tier = "Gold"
-    elif new_points >= 1000:
-        tier = "Silver"
-    else:
-        tier = "Bronze"
+    new_spent  = m.Total_Spent + spent
+    if new_points >= 5000:   tier = "Platinum"
+    elif new_points >= 3000: tier = "Gold"
+    elif new_points >= 1000: tier = "Silver"
+    else:                    tier = "Bronze"
     db.execute(text("""
         UPDATE Membership SET Points=:p, Total_Spent=:s, Tier=:t
         WHERE Membership_ID=:id
@@ -120,8 +112,7 @@ def add_points(member_id: int, data: dict, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Points updated", "tier": tier, "new_points": new_points}
 
-
-@router.delete("/{member_id}")
+@router.delete("/{member_id}", dependencies=[Depends(require_admin)])
 def delete_member(member_id: int, db: Session = Depends(get_db)):
     db.execute(text("DELETE FROM Membership WHERE Membership_ID=:id"), {"id": member_id})
     db.commit()
