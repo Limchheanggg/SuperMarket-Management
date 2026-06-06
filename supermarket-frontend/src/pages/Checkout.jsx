@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
@@ -23,6 +23,11 @@ export default function Checkout() {
   const { cartItems, totalPrice, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect to cart if empty
+  useEffect(() => {
+    if (cartItems.length === 0) navigate('/cart')
+  }, [])
 
   const [payMethod, setPayMethod] = useState("Cash");
   const [form, setForm] = useState({
