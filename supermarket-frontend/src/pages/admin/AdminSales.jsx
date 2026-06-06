@@ -96,13 +96,14 @@ export default function AdminSales() {
   const activeFilters = [dateFrom, dateTo, method, cashier, minAmount, maxAmount, search].filter(Boolean).length
 
   return (
-    <div style={{ padding:28, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+    <div className='admin-page'>
 
       {/* Header */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24 }}>
+      <div className='admin-header'>
         <div>
-          <h2 style={{ fontSize:24, fontWeight:800, color:'#0f172a', marginBottom:4 }}>🛒 Sales Management</h2>
-          <p style={{ color:'#64748b', fontSize:14 }}>View, filter and analyse all transactions</p>
+          <div className='admin-header-tag'>Sales Management</div>
+          <h1 className='admin-title'>Sales and Transactions</h1>
+          <p className='admin-subtitle'>View, filter and analyse all transactions</p>
         </div>
       </div>
 

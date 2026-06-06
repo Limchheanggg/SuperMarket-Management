@@ -18,6 +18,7 @@ import NotFound from "./pages/NotFound"
 import ProtectedRoute from "./components/common/ProtectedRoute"
 import AdminLayout from "./pages/admin/AdminLayout"
 import AdminDashboard from "./pages/admin/AdminDashboard"
+import AdminSuppliers from './pages/admin/AdminSuppliers'
 import AdminInventory from "./pages/admin/AdminInventory"
 import AdminUsers from "./pages/admin/AdminUsers"
 import AdminSales from "./pages/admin/AdminSales"
@@ -53,6 +54,7 @@ export default function App() {
       <Route path="/admin" element={<AdminRoute />}>
         <Route element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
+          <Route path="suppliers" element={<AdminSuppliers />} />
           <Route path="inventory" element={<AdminInventory />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="sales" element={<AdminSales />} />

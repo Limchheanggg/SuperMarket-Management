@@ -163,13 +163,14 @@ export default function AdminMembership() {
   }
 
   return (
-    <div style={{ padding:28, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+    <div className='admin-page'>
 
       {/* Header */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24 }}>
+      <div className='admin-header'>
         <div>
-          <h2 style={{ fontSize:24, fontWeight:800, color:'#0f172a', marginBottom:4 }}>⭐ Customer Membership</h2>
-          <p style={{ color:'#64748b', fontSize:14 }}>Manage loyalty tiers, points and reward coupons</p>
+          <div className='admin-header-tag'>Membership</div>
+          <h1 className='admin-title'>Loyalty and Coupons</h1>
+          <p className='admin-subtitle'>Manage loyalty tiers, points and reward coupons</p>
         </div>
         {tab === 'members' ? (
           <button onClick={() => { setShowModal(true); setCustomerSearch('') }}

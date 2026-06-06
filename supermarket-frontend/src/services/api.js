@@ -81,3 +81,10 @@ export const createCoupon     = (data)   => API.post('/api/coupons/', data)
 export const updateCoupon     = (id, data) => API.put(`/api/coupons/${id}`, data)
 export const deleteCoupon     = (id)     => API.delete(`/api/coupons/${id}`)
 export const validateCoupon   = (data)   => API.post('/api/coupons/validate', data)
+
+// Suppliers
+export const getSuppliers   = ()         => API.get('/api/suppliers/')
+export const getSupplier    = (id)       => API.get(`/api/suppliers/${id}`)
+export const createSupplier = (data)     => API.post('/api/suppliers/', data)
+export const updateSupplier = (id, data) => API.put(`/api/suppliers/${id}`, data)
+export const deleteSupplier = (id)       => API.delete(`/api/suppliers/${id}`)

@@ -19,7 +19,7 @@ const EMOJIS = {
 }
 
 const EMPTY = {
-  Name:'', Barcode:'', Category_ID:'', Brand:'', Unit:'piece',
+  Name:'', Barcode:'', Category_ID:'', Supplier_ID:'', Brand:'', Unit:'piece',
   Unit_Price:'', Unit_Mass_Kg:'', Reorder_Level:10,
   Is_Perishable:0, Description:'', Product_Image:'', Quantity:99
 }
@@ -27,6 +27,7 @@ const EMPTY = {
 export default function AdminInventory() {
   const [items, setItems]         = useState([])
   const [cats, setCats]           = useState([])
+  const [suppliers, setSuppliers]   = useState([])
   const [loading, setLoading]     = useState(true)
   const [search, setSearch]       = useState('')
   const [statusF, setStatusF]     = useState('All')
@@ -43,12 +44,14 @@ export default function AdminInventory() {
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const [iRes, cRes] = await Promise.all([
+      const [iRes, cRes, sRes] = await Promise.all([
         API.get('/api/inventory/'),
         API.get('/api/products/categories'),
+        API.get('/api/suppliers/'),
       ])
       setItems(iRes.data  || [])
       setCats(cRes.data   || [])
+      setSuppliers(sRes.data || [])
     } catch(e) {
       toast.error('Failed to load: ' + (e.response?.data?.detail || e.message))
     }
@@ -56,27 +59,24 @@ export default function AdminInventory() {
   }
 
   // ── Image compress ──────────────────────────────────────────────────
-  const handleImage = (e) => {
+  const handleImage = async (e) => {
     const file = e.target.files[0]
     if (!file) return
     if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return }
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      const img = new Image()
-      img.onload = () => {
-        const canvas = document.createElement('canvas')
-        const MAX = 400
-        let w = img.width, h = img.height
-        if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX } }
-        else { if (h > MAX) { w = w * MAX / h; h = MAX } }
-        canvas.width = w; canvas.height = h
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h)
-        setForm(f => ({ ...f, Product_Image: canvas.toDataURL('image/jpeg', 0.82) }))
-        toast.success('Image ready!')
-      }
-      img.src = ev.target.result
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('http://localhost:8000/api/upload/', {
+        method: 'POST',
+        body: formData
+      })
+      if (!res.ok) throw new Error('Upload failed')
+      const data = await res.json()
+      setForm(f => ({ ...f, Product_Image: `http://localhost:8000${data.url}` }))
+      toast.success('Image uploaded!')
+    } catch (err) {
+      toast.error('Image upload failed')
     }
-    reader.readAsDataURL(file)
   }
 
   // ── Save product ────────────────────────────────────────────────────
@@ -93,6 +93,7 @@ export default function AdminInventory() {
         Unit_Mass_Kg:  parseFloat(form.Unit_Mass_Kg) || null,
         Reorder_Level: parseInt(form.Reorder_Level)  || 10,
         Category_ID:   parseInt(form.Category_ID),
+        Supplier_ID:   parseInt(form.Supplier_ID) || null,
       }
       if (modal === 'add') await API.post('/api/products/', payload)
       else                 await API.put(`/api/products/${form.Product_ID}`, payload)
@@ -257,7 +258,6 @@ export default function AdminInventory() {
             <tbody>
               {filtered.map((item, idx) => {
                 const sc  = STATUS_CFG[item.Status] || STATUS_CFG['In Stock']
-                const emoji = EMOJIS[item.Category_Name] || '📦'
                 return (
                   <tr key={item.Product_ID} className="inv-row"
                     style={{ borderBottom:'1px solid #f1f5f9', background: idx%2===0 ? '#fff' : '#fafbfc', transition:'background .15s' }}>
@@ -267,7 +267,7 @@ export default function AdminInventory() {
                         <div style={{ width:44, height:44, borderRadius:11, overflow:'hidden', flexShrink:0, background:'#f0fdf4', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, border:'1.5px solid #e2e8f0' }}>
                           {item.Product_Image
                             ? <img src={item.Product_Image} alt={item.Name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                            : emoji}
+                            : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>}
                         </div>
                         <div>
                           <div style={{ fontWeight:700, color:'#0f172a', fontSize:13, marginBottom:2 }}>{item.Name}</div>
@@ -278,7 +278,7 @@ export default function AdminInventory() {
                     {/* Category */}
                     <td style={{ padding:'13px 16px' }}>
                       <span style={{ padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:600, background:'#f0fdf4', color:'#16a34a', border:'1px solid #bbf7d0' }}>
-                        {emoji} {item.Category_Name}
+                        {item.Category_Name}
                       </span>
                     </td>
                     {/* Price */}
@@ -373,6 +373,15 @@ export default function AdminInventory() {
                   onChange={e=>setForm({...form,Category_ID:e.target.value})}>
                   <option value="">Select category…</option>
                   {cats.map(c => <option key={c.Category_ID} value={c.Category_ID}>{c.Category_Name}</option>)}
+                </select>
+              </div>
+              {/* Supplier */}
+              <div>
+                <label className="inv-label">Supplier</label>
+                <select className="inv-input" value={form.Supplier_ID}
+                  onChange={e=>setForm({...form,Supplier_ID:e.target.value})}>
+                  <option value="">Select supplier…</option>
+                  {suppliers.map(s => <option key={s.Supplier_ID} value={s.Supplier_ID}>{s.Company_Name}</option>)}
                 </select>
               </div>
               {/* Unit */}
@@ -473,7 +482,7 @@ export default function AdminInventory() {
               <div style={{ width:48, height:48, borderRadius:10, overflow:'hidden', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0, border:'1px solid #e2e8f0' }}>
                 {restockItem.Product_Image
                   ? <img src={restockItem.Product_Image} alt={restockItem.Name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                  : (EMOJIS[restockItem.Category_Name] || '📦')}
+                  : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>}
               </div>
               <div>
                 <div style={{ fontWeight:700, color:'#0f172a', fontSize:14 }}>{restockItem.Name}</div>

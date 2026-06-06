@@ -3,63 +3,43 @@ import { useSearchParams } from 'react-router-dom'
 import { getProducts, getCategories } from '../services/api'
 import ProductCard from '../components/product/ProductCard'
 
-const EMOJIS = {
-  Produce:'🥬', Dairy:'🥛', Meat:'🥩', Bakery:'🍞', Beverages:'🧴',
-  Snacks:'🍿', Frozen:'🧊', Cleaning:'🧹', 'Fruits & Vegetables':'🍎',
-  'Meat & Seafood':'🥩', 'Canned Goods':'🥫', 'Personal Care':'💊',
-  Household:'🧹', 'Frozen Foods':'🧊', Seafood:'🐟', Organic:'🌿',
-}
-
 export default function Shop() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [products, setProducts] = useState([])
+  const [products,   setProducts]   = useState([])
   const [categories, setCategories] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [sort, setSort] = useState('popular')
-  const [maxPrice, setMaxPrice] = useState(100)
-  const [searchInput, setSearchInput] = useState(searchParams.get('search') || '')
-  const [search, setSearch] = useState(searchParams.get('search') || '')
-  const [view, setView] = useState('grid')
+  const [loading,    setLoading]    = useState(true)
+  const [sort,       setSort]       = useState('popular')
+  const [maxPrice,   setMaxPrice]   = useState(100)
+  const [searchInput,setSearchInput]= useState(searchParams.get('search') || '')
+  const [search,     setSearch]     = useState(searchParams.get('search') || '')
+  const [view,       setView]       = useState('grid')
+  const [hoveredCat, setHoveredCat] = useState(null)
   const debounceRef = useRef(null)
-
-  // ← KEY FIX: read activeCat directly from URL every render
-  const activeCat = searchParams.get('cat') || 'All'
+  const activeCat   = searchParams.get('cat') || 'All'
 
   useEffect(() => {
     getProducts()
       .then(res => { if (res.data?.length) setProducts(res.data) })
-      .catch(() => {})
-      .finally(() => setLoading(false))
+      .catch(() => {}).finally(() => setLoading(false))
     getCategories()
       .then(res => setCategories(res.data || []))
       .catch(() => {})
   }, [])
 
-  // ← KEY FIX: when URL ?cat changes, reset search & price
   useEffect(() => {
-    const cat = searchParams.get('cat')
     const s = searchParams.get('search') || ''
-    setSearchInput(s)
-    setSearch(s)
+    setSearchInput(s); setSearch(s)
   }, [searchParams])
 
   const handleSearchChange = (e) => {
     const val = e.target.value
     setSearchInput(val)
-    if (debounceRef.current) clearTimeout(debounceRef.current)
+    clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => setSearch(val), 300)
   }
 
-  const handleClearSearch = () => {
-    setSearchInput(''); setSearch('')
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-  }
-
   const handleClearAll = () => {
-    handleClearSearch()
-    setSort('popular')
-    setMaxPrice(100)
-    setSearchParams({})
+    setSearchInput(''); setSearch(''); setSort('popular'); setMaxPrice(100); setSearchParams({})
   }
 
   const catNames = ['All', ...categories.map(c => c.Category_Name)]
@@ -74,139 +54,338 @@ export default function Shop() {
   const activeFilters = [activeCat !== 'All', search !== '', maxPrice < maxProductPrice, sort !== 'popular'].filter(Boolean).length
 
   return (
-    <div className="page-enter" style={{fontFamily:"'Plus Jakarta Sans',sans-serif",background:'#f8fafc',minHeight:'100vh'}}>
+    <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", background:'#f4f6fa', minHeight:'100vh' }}>
+      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet"/>
+
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-        .sp-cat-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;transition:all .2s;text-align:left;background:transparent;color:#374151}
-        .sp-cat-btn:hover{background:#f0fdf4;color:#15803d}
-        .sp-cat-btn.active{background:linear-gradient(135deg,#dcfce7,#bbf7d0);color:#15803d;border-left:3px solid #16a34a}
-        .sp-input{width:100%;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:#111;outline:none;transition:all .2s;box-sizing:border-box;background:#fff}
-        .sp-input:focus{border-color:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.1)}
-        .sp-view-btn{width:34px;height:34px;border-radius:8px;border:1.5px solid #e5e7eb;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;background:#fff;transition:all .2s}
-        .sp-view-btn.active{background:#f0fdf4;border-color:#86efac;color:#16a34a}
-        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+        @keyframes fadeUp   { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes shimmer  { from{background-position:200% center} to{background-position:-200% center} }
+        @keyframes slideIn  { from{opacity:0;transform:translateX(-20px)} to{opacity:1;transform:translateX(0)} }
+        @keyframes pulse    { 0%,100%{opacity:1} 50%{opacity:.4} }
+        @keyframes spin     { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+        .shop-sidebar {
+          background:#fff; border-radius:20px; padding:24px;
+          height:fit-content; position:sticky; top:20px;
+          box-shadow:0 4px 24px rgba(0,0,0,.06);
+          border:1px solid rgba(0,0,0,.06);
+        }
+
+        .cat-btn {
+          display:flex; align-items:center; justify-content:space-between;
+          width:100%; padding:10px 14px; border-radius:10px; border:none;
+          cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif;
+          font-size:13px; font-weight:600; transition:all .2s;
+          background:transparent; color:#4b5563; text-align:left;
+          position:relative; overflow:hidden;
+        }
+        .cat-btn::before {
+          content:''; position:absolute; left:0; top:0; bottom:0;
+          width:3px; background:#c0272d; border-radius:0 2px 2px 0;
+          transform:scaleY(0); transition:transform .2s;
+        }
+        .cat-btn:hover { background:#fef2f2; color:#c0272d; }
+        .cat-btn:hover::before { transform:scaleY(1); }
+        .cat-btn.active { background:linear-gradient(135deg,#fff0f0,#ffe4e4); color:#c0272d; font-weight:700; }
+        .cat-btn.active::before { transform:scaleY(1); }
+
+        .search-input {
+          width:100%; padding:11px 40px 11px 14px;
+          border:1.5px solid #e5e7eb; border-radius:12px;
+          font-family:'Plus Jakarta Sans',sans-serif; font-size:13px;
+          color:#111; outline:none; transition:all .25s; box-sizing:border-box;
+          background:#f9fafb;
+        }
+        .search-input:focus {
+          border-color:#c0272d; box-shadow:0 0 0 3px rgba(192,39,45,.1);
+          background:#fff;
+        }
+
+        .sort-select {
+          padding:9px 16px; border:1.5px solid #e5e7eb; border-radius:10px;
+          font-family:'Plus Jakarta Sans',sans-serif; font-size:13px;
+          font-weight:600; color:#374151; cursor:pointer; outline:none;
+          background:#fff; transition:all .2s;
+        }
+        .sort-select:focus { border-color:#c0272d; }
+
+        .view-btn {
+          width:36px; height:36px; border-radius:10px;
+          border:1.5px solid #e5e7eb; display:flex; align-items:center;
+          justify-content:center; cursor:pointer; background:#fff;
+          transition:all .2s; color:#6b7280;
+        }
+        .view-btn.active { background:#fff0f0; border-color:#fca5a5; color:#c0272d; }
+        .view-btn:hover { border-color:#fca5a5; color:#c0272d; }
+
+        .toolbar {
+          display:flex; justify-content:space-between; align-items:center;
+          padding:14px 20px; background:#fff; border-radius:14px;
+          box-shadow:0 2px 12px rgba(0,0,0,.04); margin-bottom:20px;
+          border:1px solid rgba(0,0,0,.05); flex-wrap:wrap; gap:10px;
+        }
+
+        .skeleton-card {
+          background:linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%);
+          background-size:200% 100%; animation:shimmer 1.5s infinite;
+          border-radius:18px; height:300px;
+        }
+
+        .product-item {
+          animation: fadeUp .4s ease both;
+        }
+
+        .price-range-track {
+          width:100%; height:6px; border-radius:99px;
+          background:linear-gradient(90deg,#c0272d var(--pct),#e5e7eb var(--pct));
+          outline:none; cursor:pointer; appearance:none;
+          -webkit-appearance:none;
+        }
+        .price-range-track::-webkit-slider-thumb {
+          appearance:none; width:18px; height:18px;
+          border-radius:50%; background:#c0272d;
+          box-shadow:0 2px 8px rgba(192,39,45,.4);
+          cursor:pointer; border:2px solid #fff;
+          transition:transform .2s;
+        }
+        .price-range-track::-webkit-slider-thumb:hover { transform:scale(1.2); }
+
+        .empty-state {
+          text-align:center; padding:80px 20px;
+          background:#fff; border-radius:20px;
+          border:1px solid rgba(0,0,0,.06);
+          box-shadow:0 4px 24px rgba(0,0,0,.04);
+        }
+
+        .products-grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
+        .products-grid-list { display:grid; grid-template-columns:1fr; gap:14px; }
       `}</style>
 
       {/* Breadcrumb */}
-      <div style={{background:'#fff',borderBottom:'1px solid #e5e7eb',padding:'12px 0'}}>
+      <div style={{ background:'#fff', borderBottom:'1px solid #eee', padding:'12px 0' }}>
         <div className="container">
-          <span style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:13,color:'#6b7280'}}>
-            🏠 Home › <strong style={{color:'#111827'}}>Shop</strong>
-            {activeCat !== 'All' && <> › <strong style={{color:'#16a34a'}}>{activeCat}</strong></>}
+          <span style={{ fontSize:13, color:'#9ca3af' }}>
+            Home ›{' '}
+            <strong style={{ color:'#111827' }}>Shop</strong>
+            {activeCat !== 'All' && <> › <strong style={{ color:'#c0272d' }}>{activeCat}</strong></>}
           </span>
         </div>
       </div>
 
-      <div className="container" style={{padding:'28px 24px'}}>
-        <div style={{display:'grid',gridTemplateColumns:'260px 1fr',gap:24}}>
+      {/* Page Header */}
+      <div style={{
+        background:'linear-gradient(135deg,#1a0505 0%,#2d0b0b 40%,#0d1240 100%)',
+        padding:'36px 0 32px', marginBottom:0,
+      }}>
+        <div className="container">
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:16 }}>
+            <div>
+              <h1 style={{
+                fontFamily:"'Playfair Display',serif",
+                fontSize:'clamp(28px,4vw,40px)', fontWeight:900, color:'#fff',
+                margin:'0 0 6px', lineHeight:1.2
+              }}>
+                Our{' '}
+                <span style={{
+                  background:'linear-gradient(135deg,#c0272d,#f87171)',
+                  WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text'
+                }}>Products</span>
+              </h1>
+              <p style={{ color:'rgba(255,255,255,.5)', fontSize:14, margin:0 }}>
+                {loading ? 'Loading…' : `${products.length} products across ${categories.length} categories`}
+              </p>
+            </div>
+            <div style={{ display:'flex', gap:20 }}>
+              {[
+                { label:'In Stock',    value: products.filter(p=>p.Current_Stock>0).length },
+                { label:'Categories',  value: categories.length },
+                { label:'Brands',      value: [...new Set(products.map(p=>p.Brand).filter(Boolean))].length },
+              ].map(s => (
+                <div key={s.label} style={{ textAlign:'center' }}>
+                  <div style={{ fontSize:22, fontWeight:900, color:'#fff', fontFamily:"'Playfair Display',serif" }}>{s.value}</div>
+                  <div style={{ fontSize:11, color:'rgba(255,255,255,.4)', fontWeight:600, textTransform:'uppercase', letterSpacing:1 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container" style={{ padding:'28px 24px' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'260px 1fr', gap:24 }}>
 
           {/* SIDEBAR */}
-          <aside style={{background:'#fff',border:'1.5px solid #e5e7eb',borderRadius:18,padding:22,height:'fit-content',position:'sticky',top:20,boxShadow:'0 2px 10px rgba(0,0,0,.04)'}}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingBottom:14,borderBottom:'2px solid #f3f4f6',marginBottom:18}}>
-              <h3 style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:16,fontWeight:800,color:'#111827'}}>🔽 Filters</h3>
+          <aside className="shop-sidebar">
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+              <h3 style={{ fontSize:15, fontWeight:800, color:'#111827', margin:0 }}>Filters</h3>
               {activeFilters > 0 && (
-                <button onClick={handleClearAll} style={{fontSize:12,color:'#ef4444',fontWeight:700,background:'#fef2f2',border:'1px solid #fecaca',borderRadius:8,padding:'4px 10px',cursor:'pointer'}}>
+                <button onClick={handleClearAll} style={{ fontSize:12, color:'#c0272d', fontWeight:700,
+                  background:'#fff0f0', border:'1px solid #fecaca', borderRadius:8,
+                  padding:'4px 10px', cursor:'pointer' }}>
                   Clear ({activeFilters})
                 </button>
               )}
             </div>
 
             {/* Search */}
-            <div style={{marginBottom:22}}>
-              <label style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:13,fontWeight:700,color:'#374151',display:'block',marginBottom:8}}>Search</label>
-              <div style={{position:'relative'}}>
-                <input className="sp-input" placeholder="Product name or brand…" value={searchInput} onChange={handleSearchChange} style={{paddingRight: searchInput ? 36 : 14}} />
+            <div style={{ marginBottom:22 }}>
+              <label style={{ fontSize:11, fontWeight:800, color:'#9ca3af', display:'block',
+                marginBottom:8, textTransform:'uppercase', letterSpacing:1.2 }}>Search</label>
+              <div style={{ position:'relative' }}>
+                <svg style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)',
+                  color:'#9ca3af' }} width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2.5">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+                <input className="search-input" style={{ paddingLeft:36 }}
+                  placeholder="Product name or brand…"
+                  value={searchInput} onChange={handleSearchChange}/>
                 {searchInput && (
-                  <button onClick={handleClearSearch} style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:'#9ca3af',fontSize:16,lineHeight:1}}>✕</button>
+                  <button onClick={() => { setSearchInput(''); setSearch('') }}
+                    style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)',
+                      background:'none', border:'none', cursor:'pointer', color:'#9ca3af', fontSize:16 }}>✕</button>
                 )}
               </div>
             </div>
 
-            {/* Category */}
-            <div style={{marginBottom:22}}>
-              <label style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:13,fontWeight:700,color:'#374151',display:'block',marginBottom:10}}>Category</label>
-              <div style={{maxHeight:280,overflowY:'auto',display:'flex',flexDirection:'column',gap:2}}>
-                {catNames.map(c => (
-                  <button key={c} className={`sp-cat-btn${activeCat===c?' active':''}`}
-                    onClick={() => setSearchParams(c === 'All' ? {} : {cat: c})}>
-                    <span style={{fontSize:16}}>{EMOJIS[c]||'📦'}</span>
-                    <span style={{flex:1}}>{c}</span>
-                    <span style={{fontSize:11,color:activeCat===c?'#16a34a':'#9ca3af',fontWeight:600}}>
-                      {c==='All' ? products.length : products.filter(p=>p.Category_Name===c).length}
-                    </span>
-                  </button>
-                ))}
+            {/* Categories */}
+            <div style={{ marginBottom:22 }}>
+              <label style={{ fontSize:11, fontWeight:800, color:'#9ca3af', display:'block',
+                marginBottom:10, textTransform:'uppercase', letterSpacing:1.2 }}>Category</label>
+              <div style={{ maxHeight:300, overflowY:'auto', display:'flex', flexDirection:'column', gap:2 }}>
+                {catNames.map(c => {
+                  const count = c === 'All' ? products.length : products.filter(p => p.Category_Name === c).length
+                  return (
+                    <button key={c} className={`cat-btn${activeCat===c?' active':''}`}
+                      onClick={() => setSearchParams(c === 'All' ? {} : { cat: c })}>
+                      <span>{c}</span>
+                      <span style={{ fontSize:11, fontWeight:700,
+                        color: activeCat===c ? '#c0272d' : '#d1d5db',
+                        background: activeCat===c ? '#ffe4e4' : '#f3f4f6',
+                        borderRadius:99, padding:'2px 8px' }}>{count}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
             {/* Price */}
-            <div style={{marginBottom:22}}>
-              <label style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:13,fontWeight:700,color:'#374151',display:'block',marginBottom:10}}>
-                Price Range <span style={{float:'right',color:'#16a34a',fontWeight:800}}>${maxPrice}</span>
+            <div style={{ marginBottom:24 }}>
+              <label style={{ fontSize:11, fontWeight:800, color:'#9ca3af', display:'block',
+                marginBottom:10, textTransform:'uppercase', letterSpacing:1.2 }}>
+                Price Range
               </label>
-              <input type="range" min={0} max={maxProductPrice} value={maxPrice} onChange={e=>setMaxPrice(+e.target.value)} style={{width:'100%',accentColor:'#16a34a',height:6,cursor:'pointer'}} />
-              <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'#9ca3af',marginTop:6}}>
+              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:10 }}>
+                <span style={{ fontSize:13, color:'#6b7280' }}>$0</span>
+                <span style={{ fontSize:14, fontWeight:800, color:'#c0272d' }}>${maxPrice}</span>
+              </div>
+              <input type="range" min={0} max={maxProductPrice} value={maxPrice}
+                onChange={e => setMaxPrice(+e.target.value)}
+                className="price-range-track"
+                style={{ '--pct': `${(maxPrice/maxProductPrice)*100}%` }}/>
+              <div style={{ display:'flex', justifyContent:'space-between', fontSize:11,
+                color:'#d1d5db', marginTop:6 }}>
                 <span>$0</span><span>${maxProductPrice}</span>
               </div>
             </div>
 
-            <button onClick={handleClearAll}
-              style={{width:'100%',padding:'10px',border:'1.5px solid #e5e7eb',borderRadius:10,fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:13,fontWeight:700,color:'#6b7280',cursor:'pointer',background:'#f9fafb',transition:'all .2s'}}
-              onMouseEnter={e=>{e.currentTarget.style.borderColor='#fca5a5';e.currentTarget.style.color='#ef4444'}}
-              onMouseLeave={e=>{e.currentTarget.style.borderColor='#e5e7eb';e.currentTarget.style.color='#6b7280'}}>
-              🔄 Reset Filters
+            <button onClick={handleClearAll} style={{ width:'100%', padding:'11px',
+              border:'1.5px solid #e5e7eb', borderRadius:12,
+              fontSize:13, fontWeight:700, color:'#6b7280', cursor:'pointer',
+              background:'#f9fafb', transition:'all .2s', fontFamily:"'Plus Jakarta Sans',sans-serif" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor='#fca5a5'; e.currentTarget.style.color='#c0272d'; e.currentTarget.style.background='#fff0f0' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor='#e5e7eb'; e.currentTarget.style.color='#6b7280'; e.currentTarget.style.background='#f9fafb' }}>
+              Reset Filters
             </button>
           </aside>
 
-          {/* PRODUCTS */}
+          {/* MAIN */}
           <div>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20,padding:'14px 20px',background:'#fff',borderRadius:14,border:'1.5px solid #e5e7eb',boxShadow:'0 2px 8px rgba(0,0,0,.03)',flexWrap:'wrap',gap:10}}>
-              <span style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:14,color:'#6b7280',fontWeight:500}}>
-                {loading ? 'Loading…' : (
-                  <><strong style={{color:'#111827'}}>{filtered.length}</strong> of <strong style={{color:'#111827'}}>{products.length}</strong> products
-                    {activeCat !== 'All' && <> in <strong style={{color:'#16a34a'}}>{activeCat}</strong></>}
+            {/* Toolbar */}
+            <div className="toolbar">
+              <div style={{ fontSize:14, color:'#6b7280', fontWeight:500 }}>
+                {loading ? (
+                  <span style={{ display:'inline-flex', alignItems:'center', gap:8 }}>
+                    <svg style={{ animation:'spin 1s linear infinite' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c0272d" strokeWidth="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                    Loading products…
+                  </span>
+                ) : (
+                  <>
+                    <strong style={{ color:'#111827', fontSize:16 }}>{filtered.length}</strong>
+                    <span style={{ color:'#9ca3af' }}> of {products.length} products</span>
+                    {activeCat !== 'All' && (
+                      <span style={{ marginLeft:8, background:'#fff0f0', color:'#c0272d',
+                        borderRadius:99, padding:'2px 10px', fontSize:12, fontWeight:700 }}>
+                        {activeCat}
+                      </span>
+                    )}
                   </>
                 )}
-              </span>
-              <div style={{display:'flex',alignItems:'center',gap:10}}>
-                <label style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:13,color:'#6b7280',fontWeight:500}}>Sort:</label>
-                <select value={sort} onChange={e=>setSort(e.target.value)}
-                  style={{padding:'8px 14px',border:'1.5px solid #e5e7eb',borderRadius:10,fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:13,fontWeight:600,color:'#374151',cursor:'pointer',outline:'none',background:'#fff'}}>
+              </div>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <span style={{ fontSize:13, color:'#9ca3af', fontWeight:500 }}>Sort:</span>
+                <select className="sort-select" value={sort} onChange={e => setSort(e.target.value)}>
                   <option value="popular">Most Popular</option>
-                  <option value="low">Price: Low → High</option>
-                  <option value="high">Price: High → Low</option>
-                  <option value="name">Name: A–Z</option>
+                  <option value="low">Price: Low to High</option>
+                  <option value="high">Price: High to Low</option>
+                  <option value="name">Name: A to Z</option>
                 </select>
-                <button className={`sp-view-btn${view==='grid'?' active':''}`} onClick={()=>setView('grid')} title="Grid view">⊞</button>
-                <button className={`sp-view-btn${view==='list'?' active':''}`} onClick={()=>setView('list')} title="List view">☰</button>
+                <button className={`view-btn${view==='grid'?' active':''}`} onClick={() => setView('grid')}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                  </svg>
+                </button>
+                <button className={`view-btn${view==='list'?' active':''}`} onClick={() => setView('list')}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+                    <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
+                    <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+                  </svg>
+                </button>
               </div>
             </div>
 
+            {/* Active search hint */}
             {search && (
-              <div style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:13,color:'#6b7280',marginBottom:12}}>
-                Found <strong style={{color:'#111827'}}>{filtered.length}</strong> result{filtered.length!==1?'s':''} for "<strong style={{color:'#16a34a'}}>{search}</strong>"
+              <div style={{ fontSize:13, color:'#6b7280', marginBottom:14,
+                padding:'8px 14px', background:'#fff', borderRadius:10,
+                border:'1px solid #e5e7eb' }}>
+                {filtered.length} result{filtered.length!==1?'s':''} for{' '}
+                "<strong style={{ color:'#c0272d' }}>{search}</strong>"
               </div>
             )}
 
+            {/* Products */}
             {loading ? (
-              <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:18}}>
-                {[...Array(8)].map((_,i) => (
-                  <div key={i} style={{background:'linear-gradient(135deg,#f3f4f6,#e5e7eb)',borderRadius:16,height:280,animation:'pulse 1.5s ease-in-out infinite'}} />
-                ))}
+              <div className="products-grid-4">
+                {[...Array(8)].map((_,i) => <div key={i} className="skeleton-card"/>)}
               </div>
             ) : filtered.length === 0 ? (
-              <div style={{textAlign:'center',padding:'80px 20px',background:'#fff',borderRadius:18,border:'1.5px solid #e5e7eb'}}>
-                <div style={{fontSize:64,marginBottom:16}}>🔍</div>
-                <h3 style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:20,fontWeight:700,color:'#111827',marginBottom:8}}>No products found</h3>
-                <p style={{color:'#6b7280',fontSize:14,marginBottom:20}}>Try adjusting your search or filters.</p>
-                <button onClick={handleClearAll}
-                  style={{padding:'11px 24px',background:'linear-gradient(135deg,#15803d,#22c55e)',color:'#fff',border:'none',borderRadius:12,fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:14,cursor:'pointer'}}>
-                  Clear Filters
+              <div className="empty-state">
+                <div style={{ width:80, height:80, borderRadius:'50%', background:'#f9fafb',
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  margin:'0 auto 20px' }}>
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                  </svg>
+                </div>
+                <h3 style={{ fontSize:20, fontWeight:800, color:'#111827', marginBottom:8 }}>No products found</h3>
+                <p style={{ color:'#9ca3af', fontSize:14, marginBottom:24 }}>Try adjusting your search or filters.</p>
+                <button onClick={handleClearAll} style={{ padding:'12px 28px',
+                  background:'linear-gradient(135deg,#c0272d,#e53935)', color:'#fff',
+                  border:'none', borderRadius:12, fontWeight:700, fontSize:14, cursor:'pointer' }}>
+                  Clear All Filters
                 </button>
               </div>
             ) : (
-              <div style={{display:'grid',gridTemplateColumns:view==='list'?'1fr':'repeat(4,1fr)',gap:18}}>
-                {filtered.map(p => <ProductCard key={p.Product_ID} product={p} />)}
+              <div className={view==='list' ? 'products-grid-list' : 'products-grid-4'}>
+                {filtered.map((p, i) => (
+                  <div key={p.Product_ID} className="product-item"
+                    style={{ animationDelay:`${Math.min(i, 12) * 0.04}s` }}>
+                    <ProductCard product={p}/>
+                  </div>
+                ))}
               </div>
             )}
           </div>

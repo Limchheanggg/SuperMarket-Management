@@ -326,26 +326,17 @@ export default function AdminReports() {
   ];
 
   return (
-    <div style={{ padding: 28, fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
+    <div className='admin-page'>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         .rp-card{background:#fff;border-radius:18px;padding:22px;border:1.5px solid #e5e7eb;box-shadow:0 2px 10px rgba(0,0,0,.04)}
       `}</style>
 
-      <div style={{ marginBottom: 28 }}>
-        <h1
-          style={{
-            fontFamily: "'Plus Jakarta Sans',sans-serif",
-            fontSize: 26,
-            fontWeight: 800,
-            color: "#0f172a",
-            marginBottom: 4,
-          }}
-        >
-          Reports & Analytics
-        </h1>
-        <p style={{ color: "#64748b", fontSize: 14 }}>
-          Track your store performance in real time
-        </p>
+      <div className="admin-header">
+        <div>
+          <div className="admin-header-tag">Analytics</div>
+          <h1 className="admin-title">Reports and Analytics</h1>
+          <p className="admin-subtitle">Track your store performance in real time</p>
+        </div>
       </div>
 
       {/* Today banner */}
@@ -372,7 +363,7 @@ export default function AdminReports() {
               marginBottom: 6,
             }}
           >
-            📅 Today — {daily?.date}
+            Today — {daily?.date}
           </div>
           <div
             style={{
@@ -449,7 +440,7 @@ export default function AdminReports() {
         }}
       >
         <StatCard
-          icon="📆"
+          icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>}
           label="Monthly Sales"
           value={summary?.monthly_sales || 0}
           sub="this month"
@@ -457,7 +448,7 @@ export default function AdminReports() {
           bg="linear-gradient(135deg,#eef2ff,#e0e7ff)"
         />
         <StatCard
-          icon="💵"
+          icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
           label="Monthly Revenue"
           value={`$${summary?.monthly_revenue?.toFixed(2) || "0.00"}`}
           sub="this month"
@@ -465,7 +456,7 @@ export default function AdminReports() {
           bg="linear-gradient(135deg,#f0fdf4,#dcfce7)"
         />
         <StatCard
-          icon="📊"
+          icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>}
           label="Yearly Sales"
           value={summary?.yearly_sales || 0}
           sub="this year"
@@ -473,7 +464,7 @@ export default function AdminReports() {
           bg="linear-gradient(135deg,#fffbeb,#fef3c7)"
         />
         <StatCard
-          icon="🏆"
+          icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>}
           label="Yearly Revenue"
           value={`$${summary?.yearly_revenue?.toFixed(2) || "0.00"}`}
           sub="this year"
@@ -579,7 +570,7 @@ export default function AdminReports() {
                 color: "#0f172a",
               }}
             >
-              🏆 Best Selling Products
+              Best Selling Products
             </h3>
             <span
               style={{
@@ -716,7 +707,7 @@ export default function AdminReports() {
               marginBottom: 16,
             }}
           >
-            💳 Revenue by Payment Method
+            Revenue by Payment Method
           </h3>
           {paymentData.length === 0 ? (
             <div style={{ textAlign: "center", padding: 20, color: "#94a3b8" }}>
@@ -793,7 +784,7 @@ export default function AdminReports() {
               marginBottom: 16,
             }}
           >
-            📈 All-Time Summary
+            All-Time Summary
           </h3>
           {[
             [
@@ -865,7 +856,7 @@ export default function AdminReports() {
               color: "#0f172a",
             }}
           >
-            ⚠️ Inventory Alerts
+            Inventory Alerts
             <span
               style={{
                 marginLeft: 10,

@@ -129,13 +129,13 @@ export default function AdminUsers() {
   }
 
   return (
-    <div style={{ padding:28, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+    <div className='admin-page'>
 
-      {/* Header */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24 }}>
+      <div className='admin-header'>
         <div>
-          <h2 style={{ fontSize:24, fontWeight:800, color:'#0f172a', marginBottom:4 }}>👥 User Management</h2>
-          <p style={{ color:'#64748b', fontSize:14 }}>Manage all users and employee shifts</p>
+          <div className='admin-header-tag'>User Management</div>
+          <h1 className='admin-title'>Users and Shifts</h1>
+          <p className='admin-subtitle'>Manage all users and employee shift schedules</p>
         </div>
         <button onClick={() => { setForm({ full_name:'', email:'', phone:'', role:'employee', password:'' }); setUserModal('add') }}
           style={{ padding:'10px 20px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#15803d,#22c55e)', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:14, boxShadow:'0 4px 12px rgba(21,128,61,.3)' }}>
