@@ -43,6 +43,7 @@ export default function AdminUsers() {
   const today    = new Date().toISOString().split('T')[0]
   const tomorrow = new Date(Date.now()+86400000).toISOString().split('T')[0]
   const [dayView, setDayView] = useState('today')
+  const [selectedDate, setSelectedDate] = useState(today)
 
   useEffect(() => { fetchAll() }, [])
   useEffect(() => { setPage(1) }, [search, roleFilter, tab])
@@ -335,6 +336,12 @@ export default function AdminUsers() {
                     padding:'2px 8px', fontSize:11, fontWeight:800 }}>{d.count}</span>
                 </button>
               ))}
+              {dayView === 'pick' && (
+                <input type="date" value={selectedDate} onChange={e=>setSelectedDate(e.target.value)}
+                  style={{ padding:'9px 14px', borderRadius:12, border:'1.5px solid #fde68a',
+                    background:'#fffbeb', fontSize:13, fontWeight:600, outline:'none',
+                    color:'#d97706', fontFamily:"'Plus Jakarta Sans',sans-serif" }}/>
+              )}
             </div>
             <button onClick={() => { setShiftForm({ user_id:'', shift_name:'Morning', shift_date:dayView==='tomorrow'?tomorrow:today, start_time:'06:00', end_time:'14:00', status:'scheduled', note:'' }); setShiftModal('add') }}
               style={{ padding:'10px 20px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#c0272d,#e53935)', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:14, fontFamily:"'Plus Jakarta Sans',sans-serif", boxShadow:'0 4px 14px rgba(192,39,45,.3)' }}>
@@ -343,8 +350,8 @@ export default function AdminUsers() {
           </div>
 
           {/* Shift Summary Cards */}
-          {(dayView === 'today' || dayView === 'tomorrow') && (() => {
-            const date     = dayView === 'today' ? today : tomorrow
+          {(dayView === 'today' || dayView === 'tomorrow' || dayView === 'pick') && (() => {
+            const date = dayView === 'today' ? today : dayView === 'tomorrow' ? tomorrow : selectedDate
             const dayShifts = shifts.filter(s => s.shift_date === date)
             return (
               <>
@@ -442,6 +449,7 @@ export default function AdminUsers() {
                 ) : (() => {
                   const filtered = dayView === 'today'    ? shifts.filter(s=>s.shift_date===today)
                                  : dayView === 'tomorrow' ? shifts.filter(s=>s.shift_date===tomorrow)
+                                 : dayView === 'pick'     ? shifts.filter(s=>s.shift_date===selectedDate)
                                  : shifts
                   if (filtered.length === 0) return (
                     <tr><td colSpan={8} style={{ padding:40, textAlign:'center', color:'#94a3b8' }}>

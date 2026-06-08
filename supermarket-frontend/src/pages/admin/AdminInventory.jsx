@@ -30,6 +30,7 @@ export default function AdminInventory() {
   const [suppliers, setSuppliers]   = useState([])
   const [loading, setLoading]     = useState(true)
   const [search, setSearch]       = useState('')
+  const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [statusF, setStatusF]     = useState('All')
   const [catF, setCatF]           = useState('All')
   const [modal, setModal]         = useState(null)  // null | 'add' | 'edit' | 'restock' | 'view'
@@ -104,13 +105,17 @@ export default function AdminInventory() {
   }
 
   // ── Delete ──────────────────────────────────────────────────────────
-  const handleDelete = async (id, name) => {
-    if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return
+  const handleDelete = (id, name) => {
+    setDeleteConfirm({ id, name })
+  }
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return
     try {
-      await API.delete(`/api/products/${id}`)
-      toast.success(`"${name}" deleted`)
+      await API.delete(`/api/products/${deleteConfirm.id}`)
+      toast.success(`${deleteConfirm.name} deleted successfully`)
+      setDeleteConfirm(null)
       fetchAll()
-    } catch(e) { toast.error(e.response?.data?.detail || 'Delete failed') }
+    } catch(e) { toast.error(e.response?.data?.detail || "Delete failed"); setDeleteConfirm(null) }
   }
 
   // ── Restock ──────────────────────────────────────────────────────────
@@ -511,6 +516,48 @@ export default function AdminInventory() {
               <button onClick={() => setModal(null)} className="inv-btn"
                 style={{ padding:'12px 20px', borderRadius:11, border:'1.5px solid #e2e8f0', background:'#f8fafc', fontWeight:700, fontSize:14, color:'#374151' }}>
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteConfirm && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex',
+          alignItems:'center', justifyContent:'center', zIndex:1000, padding:20, backdropFilter:'blur(4px)' }}
+          onClick={e=>{ if(e.target===e.currentTarget) setDeleteConfirm(null) }}>
+          <div style={{ background:'#fff', borderRadius:20, padding:36, maxWidth:420, width:'100%',
+            boxShadow:'0 24px 64px rgba(0,0,0,.2)', fontFamily:"'Plus Jakarta Sans',sans-serif", textAlign:'center' }}>
+            <div style={{ width:64, height:64, borderRadius:'50%', background:'#fef2f2',
+              display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px', border:'2px solid #fecaca' }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 0-2-2L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              </svg>
+            </div>
+            <h3 style={{ fontSize:20, fontWeight:800, color:'#0f172a', marginBottom:10 }}>Delete Product</h3>
+            <p style={{ fontSize:14, color:'#64748b', marginBottom:8 }}>Are you sure you want to delete</p>
+            <p style={{ fontSize:15, fontWeight:800, color:'#c0272d', marginBottom:24,
+              background:'#fff0f0', padding:'8px 16px', borderRadius:10, border:'1px solid #fecaca' }}>
+              {deleteConfirm.name}
+            </p>
+            <p style={{ fontSize:12, color:'#94a3b8', marginBottom:28 }}>This action cannot be undone.</p>
+            <div style={{ display:'flex', gap:12 }}>
+              <button onClick={()=>setDeleteConfirm(null)}
+                style={{ flex:1, padding:'12px', borderRadius:12, border:'1.5px solid #e5e7eb',
+                  background:'#f9fafb', color:'#374151', fontWeight:700, fontSize:14,
+                  cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                Cancel
+              </button>
+              <button onClick={confirmDelete}
+                style={{ flex:1, padding:'12px', borderRadius:12, border:'none',
+                  background:'linear-gradient(135deg,#dc2626,#ef4444)', color:'#fff',
+                  fontWeight:700, fontSize:14, cursor:'pointer',
+                  fontFamily:"'Plus Jakarta Sans',sans-serif",
+                  boxShadow:'0 4px 14px rgba(220,38,38,.35)' }}>
+                Delete
               </button>
             </div>
           </div>
