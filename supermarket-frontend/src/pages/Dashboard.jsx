@@ -43,19 +43,19 @@ export default function Dashboard() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [salesRes, memRes] = await Promise.all([
-          API.get('/api/sales/').catch(()=>({data:[]})),
+        const [memRes, salesRes] = await Promise.all([
           API.get(`/api/membership/me?user_id=${user?.id}`).catch(()=>({data:null})),
+          API.get(`/api/sales/my?user_id=${user?.id}`).catch(()=>({data:[]})),
         ])
-        const sales = salesRes.data || []
-        const spent = sales.reduce((s,o) => s+Number(o.Total_Amount||0), 0)
-        setOrders(sales.slice(0,5))
         const mem = memRes.data
+        const sales = Array.isArray(salesRes.data) ? salesRes.data : []
+        const spent = mem?.total_spent || 0
+        setOrders(sales.slice(0,5))
         setStats({
-          orders: sales.length,
-          spent:  mem?.total_spent || spent,
-          points: mem?.points || Math.floor(spent),
-          tier:   mem?.tier   || getTier(spent),
+          orders: mem?.total_orders || sales.length,
+          spent:  spent,
+          points: mem?.points || 0,
+          tier:   mem?.tier || 'Bronze',
         })
       } catch {}
       setLoading(false)
@@ -65,9 +65,9 @@ export default function Dashboard() {
 
   const tc      = TIER_COLORS[stats.tier] || '#ea580c'
   const nextTier = TIER_NEXT[stats.tier]
-  const nextVal  = nextTier ? TIER_THRESHOLD[nextTier] : 500
-  const currVal  = TIER_THRESHOLD[stats.tier]
-  const progress = nextTier ? Math.min(100,((stats.spent-currVal)/(nextVal-currVal))*100) : 100
+  const currVal  = TIER_THRESHOLD[stats.tier]  || 0
+  const nextVal  = nextTier ? TIER_THRESHOLD[nextTier] : TIER_THRESHOLD[stats.tier]
+  const progress = !nextTier ? 100 : Math.min(100, Math.max(0, ((stats.points - currVal) / (nextVal - currVal)) * 100))
 
   return (
     <div style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", background:'#f4f6fa', minHeight:'100vh' }}>
@@ -237,7 +237,7 @@ export default function Dashboard() {
                     </div>
                     <div>
                       <div style={{ fontSize:13, fontWeight:700, color:'#0f172a' }}>#{o.Sale_ID}</div>
-                      <div style={{ fontSize:11, color:'#94a3b8' }}>{o.date}</div>
+                      <div style={{ fontSize:11, color:'#94a3b8' }}>{o.Sale_Year}-{String(o.Sale_Month).padStart(2,'0')}-{String(o.Sale_Day).padStart(2,'0')}</div>
                     </div>
                   </div>
                   <strong style={{ fontSize:14, color:'#16a34a' }}>${Number(o.Total_Amount||0).toFixed(2)}</strong>

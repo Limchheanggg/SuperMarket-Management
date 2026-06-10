@@ -7,8 +7,8 @@ import API from "../services/api";
 import toast from "react-hot-toast";
 
 const PAY_MAP = {
-  'ABA':    'QR Code',
-  'ACLEDA': 'Bank Transfer',
+  'ABA':    'ABA',
+  'Aceleda': 'Aceleda',
   'Cash':   'Cash',
 };
 
@@ -42,6 +42,7 @@ export default function Checkout() {
   const [couponError, setCouponError] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [notes, setNotes] = useState("");
 
   const subtotal = totalPrice;
   const tax = subtotal * 0.1;
@@ -90,12 +91,11 @@ export default function Checkout() {
   const placeOrder = async (e) => {
     e.preventDefault();
     if (cartItems.length === 0) return toast.error("Your cart is empty");
-    if (form.phone.length < 6)
-      return toast.error("Please enter a valid phone number");
+
     setLoading(true);
     try {
       await createSale({
-        customer_id: null,
+        customer_id: user?.customer_id || null,
         cashier_id: user?.id || null,
         items: cartItems.map((i) => ({
           Product_ID: i.Product_ID,
@@ -106,21 +106,32 @@ export default function Checkout() {
         tax: parseFloat(tax.toFixed(2)),
         discount: parseFloat(discount.toFixed(2)),
         payment_method: PAY_MAP[payMethod] || "Cash",
+        customer_info: {
+          name:    user?.name  || user?.full_name || "",
+          email:   user?.email || "",
+          phone:   user?.phone || "",
+          notes:   notes,
+        },
       });
       clearCart();
       toast.success("Order placed successfully!");
-      navigate("/order-success", {
-        state: {
-          order: result.data,
-          items: cartItems,
-          subtotal: parseFloat(subtotal.toFixed(2)),
-          tax:      parseFloat(tax.toFixed(2)),
-          discount: parseFloat(discount.toFixed(2)),
-          coupon:   couponResult?.code || null,
-          payMethod,
-        }
-      });
-    } catch {
+      try {
+        navigate("/order-success", {
+          state: {
+            order: result.data,
+            items: cartItems,
+            subtotal: parseFloat(subtotal.toFixed(2)),
+            tax:      parseFloat(tax.toFixed(2)),
+            discount: parseFloat(discount.toFixed(2)),
+            coupon:   couponResult?.code || null,
+            payMethod,
+          }
+        });
+      } catch {
+        navigate("/");
+      }
+    } catch (err) {
+      console.error("Order error:", err);
       toast.error("Failed to place order. Please try again.");
     } finally {
       setLoading(false);
@@ -226,114 +237,42 @@ export default function Checkout() {
                     marginBottom: 14,
                   }}
                 >
-                  {[
-                    ["firstName", "First Name", "Limchheang"],
-                    ["lastName", "Last Name", "Khun"],
-                  ].map(([key, label, ph]) => (
-                    <div key={key}>
-                      <label
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 700,
-                          display: "block",
-                          marginBottom: 6,
-                          color: "#374151",
-                        }}
-                      >
-                        {label} *
-                      </label>
-                      <input
-                        required
-                        placeholder={ph}
-                        value={form[key]}
-                        onChange={(e) =>
-                          setForm({ ...form, [key]: e.target.value })
-                        }
-                        style={inputStyle(false)}
-                      />
-                    </div>
-                  ))}
                 </div>
-                <div style={{ marginBottom: 14 }}>
-                  <label
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      display: "block",
-                      marginBottom: 6,
-                      color: "#374151",
-                    }}
-                  >
-                    Email *
-                  </label>
-                  <input
-                    required
-                    type="email"
-                    placeholder="you@email.com"
-                    value={form.email}
-                    onChange={(e) =>
-                      setForm({ ...form, email: e.target.value })
-                    }
-                    style={inputStyle(false)}
-                  />
+                {/* System info display */}
+                <div style={{ background:'#f8fafc', borderRadius:12, padding:'16px', marginBottom:14, border:'1px solid #e5e7eb' }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:12 }}>Your Information</div>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                    {[
+                      ['Full Name', user?.name || user?.full_name || 'N/A'],
+                      ['Email',     user?.email || 'N/A'],
+                      ['Phone',     user?.phone || 'N/A'],
+                      ['Member',    user?.role  || 'customer'],
+                    ].map(([l,v]) => (
+                      <div key={l}>
+                        <div style={{ fontSize:11, color:'#94a3b8', fontWeight:600, marginBottom:3 }}>{l}</div>
+                        <div style={{ fontSize:13, fontWeight:700, color:'#0f172a' }}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ fontSize:11, color:'#94a3b8', marginTop:10 }}>
+                    To update your info, go to{' '}
+                    <a href="/settings" style={{ color:'#c0272d', fontWeight:700, textDecoration:'none' }}>Account Settings</a>
+                  </div>
                 </div>
-                <div style={{ marginBottom: 14 }}>
-                  <label
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      display: "block",
-                      marginBottom: 6,
-                      color: "#374151",
-                    }}
-                  >
-                    Phone *{" "}
-                    <span
-                      style={{
-                        color: "#9ca3af",
-                        fontWeight: 400,
-                        fontSize: 12,
-                      }}
-                    >
-                      (numbers only)
-                    </span>
-                  </label>
-                  <input
-                    required
-                    placeholder="+855 12 345 678"
-                    value={form.phone}
-                    onChange={handlePhone}
-                    inputMode="tel"
-                    style={inputStyle(form.phone && form.phone.length < 6)}
-                  />
-                  {form.phone && form.phone.length < 6 && (
-                    <div
-                      style={{ fontSize: 12, color: "#ef4444", marginTop: 5 }}
-                    >
-                      Please enter a valid phone number
-                    </div>
-                  )}
-                </div>
+                {/* Optional notes */}
                 <div>
-                  <label
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      display: "block",
-                      marginBottom: 6,
-                      color: "#374151",
-                    }}
-                  >
-                    Delivery Address *
+                  <label style={{ fontSize:13, fontWeight:700, display:'block', marginBottom:6, color:'#374151' }}>
+                    Order Notes <span style={{ color:'#9ca3af', fontWeight:400, fontSize:12 }}>(optional)</span>
                   </label>
-                  <input
-                    required
-                    placeholder="Street 271, Phnom Penh"
-                    value={form.address}
-                    onChange={(e) =>
-                      setForm({ ...form, address: e.target.value })
-                    }
-                    style={inputStyle(false)}
+                  <textarea
+                    placeholder="Any special instructions, delivery notes, or requests..."
+                    value={notes}
+                    onChange={e => setNotes(e.target.value)}
+                    rows={3}
+                    style={{ width:'100%', padding:'11px 14px', borderRadius:10,
+                      border:'1.5px solid #e5e7eb', fontSize:14, resize:'vertical',
+                      fontFamily:"'Plus Jakarta Sans',sans-serif", outline:'none',
+                      boxSizing:'border-box', color:'#374151' }}
                   />
                 </div>
               </div>
@@ -367,7 +306,7 @@ export default function Checkout() {
                     gap: 10,
                   }}
                 >
-                  {["ABA", "ACLEDA", "Cash"].map(
+                  {["ABA", "Aceleda", "Cash"].map(
                     (method) => (
                       <div
                         key={method}

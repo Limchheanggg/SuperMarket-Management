@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { getProducts, getCategories } from '../services/api'
+import API from '../services/api'
 import ProductCard from '../components/product/ProductCard'
 
 function useInView(threshold = 0.1) {
@@ -18,6 +19,7 @@ export default function Shop() {
   const [categories, setCategories] = useState([])
   const [loading,    setLoading]    = useState(true)
   const [sort,       setSort]       = useState('popular')
+  const [popularIds, setPopularIds]  = useState([])
   const [maxPrice,   setMaxPrice]   = useState(100)
   const [searchInput,setSearchInput]= useState(searchParams.get('search') || '')
   const [search,     setSearch]     = useState(searchParams.get('search') || '')
@@ -33,6 +35,9 @@ export default function Shop() {
       .catch(() => {}).finally(() => setLoading(false))
     getCategories()
       .then(res => setCategories(res.data || []))
+      .catch(() => {})
+    API.get('/api/sales/reports/best-sellers')
+      .then(res => setPopularIds((res.data||[]).map(p => p.name)))
       .catch(() => {})
   }, [])
 
@@ -58,7 +63,20 @@ export default function Shop() {
     .filter(p => activeCat === 'All' || p.Category_Name === activeCat)
     .filter(p => !search || p.Name.toLowerCase().includes(search.toLowerCase()) || p.Brand?.toLowerCase().includes(search.toLowerCase()))
     .filter(p => Number(p.Unit_Price) <= maxPrice)
-    .sort((a,b) => sort==='low' ? a.Unit_Price-b.Unit_Price : sort==='high' ? b.Unit_Price-a.Unit_Price : sort==='name' ? a.Name.localeCompare(b.Name) : 0)
+    .sort((a,b) => {
+      if (sort==='low')     return a.Unit_Price - b.Unit_Price
+      if (sort==='high')    return b.Unit_Price - a.Unit_Price
+      if (sort==='name')    return a.Name.localeCompare(b.Name)
+      if (sort==='popular') {
+        const ai = popularIds.indexOf(a.Name)
+        const bi = popularIds.indexOf(b.Name)
+        if (ai === -1 && bi === -1) return 0
+        if (ai === -1) return 1
+        if (bi === -1) return -1
+        return ai - bi
+      }
+      return 0
+    })
 
   const activeFilters = [activeCat !== 'All', search !== '', maxPrice < maxProductPrice, sort !== 'popular'].filter(Boolean).length
 

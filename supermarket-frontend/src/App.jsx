@@ -47,7 +47,6 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/orders" element={<OrderHistory />} />
-          <Route path="/order-success" element={<OrderSuccess />} />
           <Route path="/account" element={<AccountSetting />} />
         </Route>
       </Route>

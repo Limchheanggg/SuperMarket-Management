@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { getSales } from '../services/api'
 import API from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
 const METHOD_COLORS = {
   Cash:          { bg:'#f0fdf4', color:'#16a34a', border:'#86efac' },
@@ -11,6 +12,7 @@ const METHOD_COLORS = {
 }
 
 export default function OrderHistory() {
+  const { user } = useAuth()
   const [orders, setOrders]     = useState([])
   const [loading, setLoading]   = useState(true)
   const [selected, setSelected] = useState(null)
@@ -18,7 +20,7 @@ export default function OrderHistory() {
   const [itemLoading, setItemLoading] = useState(false)
 
   useEffect(() => {
-    getSales().then(r=>setOrders(r.data||[])).catch(()=>setOrders([])).finally(()=>setLoading(false))
+    API.get('/api/sales/my?user_id='+user?.id).then(r=>setOrders(r.data||[])).catch(()=>setOrders([])).finally(()=>setLoading(false))
   }, [])
 
   const openDetail = async (order) => {
@@ -27,6 +29,18 @@ export default function OrderHistory() {
       const id = String(order.Sale_ID).replace(/\D/g,'')
       const res = await API.get(`/api/sales/${id}`)
       setItems(res.data.items||[])
+      // Merge sale detail info into selected
+      let info = {}
+      try { info = JSON.parse(res.data.Customer_Note || '{}') } catch {}
+      setSelected(prev => ({
+        ...prev,
+        ...res.data,
+        customerName:    info.name    || res.data.customer || user?.name || 'Walk-in',
+        customerEmail:   info.email   || user?.email || 'N/A',
+        customerPhone:   info.phone   || user?.phone || 'N/A',
+        customerNotes:   info.notes   || '',
+        customerAddress: info.address || 'N/A',
+      }))
     } catch { setItems([]) }
     finally { setItemLoading(false) }
   }
@@ -167,6 +181,25 @@ export default function OrderHistory() {
               ))}
             </div>
 
+            {/* Customer Info */}
+            <div style={{ background:'#f0f9ff', borderRadius:12, padding:'14px 16px', marginBottom:16, border:'1px solid #bae6fd' }}>
+              <div style={{ fontSize:11, fontWeight:700, color:'#0369a1', textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>Customer Information</div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                {[
+                  ['Full Name', selected?.customerName || user?.name || 'Walk-in'],
+                  ['Email', selected?.customerEmail || user?.email || 'N/A'],
+                  
+                  ['Phone', selected?.customerPhone || 'N/A'],
+                  ['Notes', selected?.customerNotes || 'None'],
+                  ['Payment', selected?.Payment_Method || 'Cash'],
+                ].map(([l,v]) => (
+                  <div key={l} style={{ background:'#fff', borderRadius:8, padding:'10px 12px', border:'1px solid #e0f2fe' }}>
+                    <div style={{ fontSize:11, color:'#94a3b8', fontWeight:600, marginBottom:3 }}>{l}</div>
+                    <div style={{ fontSize:13, fontWeight:700, color:'#0f172a' }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
             <h4 style={{ fontSize:14, fontWeight:800, color:'#0f172a', marginBottom:12 }}>Items Purchased</h4>
             {itemLoading ? (
               <div style={{ display:'flex', justifyContent:'center', padding:24 }}>

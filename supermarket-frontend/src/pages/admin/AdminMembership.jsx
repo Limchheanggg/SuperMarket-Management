@@ -14,22 +14,26 @@ const EMPTY_COUPON = {
   Min_Purchase:0, Tier_Required:'Bronze', Uses_Limit:100, Expiry_Date:'', Is_Active:1
 }
 
-function ProgressBar({ points }) {
-  const tiers = [
-    { label:'Silver',   min:0,    max:500  },
-    { label:'Gold',     min:500,  max:2000 },
-    { label:'Platinum', min:2000, max:5000 },
-  ]
-  const next = tiers.find(t => points < t.max)
-  if (!next) return <span style={{ fontSize:12, color:'#7c3aed', fontWeight:700 }}>💎 Max Tier!</span>
-  const pct = Math.min(100, ((points - next.min) / (next.max - next.min)) * 100)
+function ProgressBar({ points, tier }) {
+  const TNEXT = { Bronze:"Silver", Silver:"Gold", Gold:"Platinum" }
+  const TMIN  = { Bronze:0, Silver:50, Gold:200, Platinum:500 }
+  const nextTier = TNEXT[tier]
+  if (!nextTier) return (
+    <div style={{display:"flex",alignItems:"center",gap:8}}>
+      <div style={{flex:1,height:6,borderRadius:99,background:"linear-gradient(90deg,#7c3aed,#a78bfa)"}}/>
+      <span style={{fontSize:11,color:"#7c3aed",fontWeight:800,whiteSpace:"nowrap"}}>Max Tier!</span>
+    </div>
+  )
+  const pct = Math.min(100, Math.max(0, ((points - TMIN[tier]) / (TMIN[nextTier] - TMIN[tier])) * 100))
+  const colors = { Bronze:"#ea580c", Silver:"#64748b", Gold:"#d97706", Platinum:"#7c3aed" }
+  const col = colors[nextTier] || "#6366f1"
   return (
-    <div style={{ minWidth:140 }}>
-      <div style={{ fontSize:11, color:'#64748b', marginBottom:4 }}>
-        {points} / {next.max} pts → {next.label}
+    <div>
+      <div style={{fontSize:11,color:"#94a3b8",marginBottom:4}}>
+        {points} / {TMIN[nextTier]} pts → {nextTier}
       </div>
-      <div style={{ background:'#e5e7eb', borderRadius:99, height:6, overflow:'hidden' }}>
-        <div style={{ width:`${pct}%`, height:'100%', background:'linear-gradient(90deg,#16a34a,#22c55e)', borderRadius:99 }} />
+      <div style={{height:6,background:"#f1f5f9",borderRadius:99,overflow:"hidden"}}>
+        <div style={{height:"100%",width:pct+"%",background:"linear-gradient(90deg,"+col+","+col+"88)",borderRadius:99,transition:"width .6s ease"}}/>
       </div>
     </div>
   )
@@ -282,7 +286,7 @@ export default function AdminMembership() {
                       </td>
                       <td style={{ padding:'13px 16px', fontWeight:800, color:'#6366f1', fontSize:15 }}>{m.points}</td>
                       <td style={{ padding:'13px 16px', fontWeight:700, color:'#16a34a' }}>${Number(m.total_spent||0).toFixed(2)}</td>
-                      <td style={{ padding:'13px 16px' }}><ProgressBar points={m.points||0} /></td>
+                      <td style={{ padding:'13px 16px' }}><ProgressBar points={m.points||0} tier={m.tier||"Bronze"} /></td>
                       <td style={{ padding:'13px 16px', color:'#64748b', fontSize:12 }}>
                         {m.joined_at ? new Date(m.joined_at).toLocaleDateString() : '—'}
                       </td>
