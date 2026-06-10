@@ -94,24 +94,34 @@ def get_methods(db: Session = Depends(get_db)):
     return [r.Payment_Method for r in rows]
 
 @router.get("/reports/summary")
-def get_summary(db: Session = Depends(get_db)):
+def get_summary(date_from: Optional[str] = Query(None), date_to: Optional[str] = Query(None), db: Session = Depends(get_db)):
     today = date.today()
-    row = db.execute(text("""
-        SELECT
-            COUNT(*) as total_transactions,
-            ROUND(SUM(Total_Amount),2) as total_revenue,
-            ROUND(AVG(Total_Amount),2) as average_transaction,
-            SUM(CASE WHEN Sale_Month=:m AND Sale_Year=:y THEN 1 ELSE 0 END) as monthly_sales,
-            ROUND(SUM(CASE WHEN Sale_Month=:m AND Sale_Year=:y THEN Total_Amount ELSE 0 END),2) as monthly_revenue,
-            SUM(CASE WHEN Sale_Year=:y THEN 1 ELSE 0 END) as yearly_sales,
-            ROUND(SUM(CASE WHEN Sale_Year=:y THEN Total_Amount ELSE 0 END),2) as yearly_revenue
-        FROM Sale
-    """), {"m": today.month, "y": today.year}).fetchone()
-
-    methods = db.execute(text("""
-        SELECT Payment_Method, ROUND(SUM(Total_Amount),2) as total
-        FROM Sale GROUP BY Payment_Method
-    """)).fetchall()
+    where = "1=1"
+    params = {}
+    if date_from:
+        d = datetime.strptime(date_from, "%Y-%m-%d")
+        where += " AND (s.Sale_Year*10000+s.Sale_Month*100+s.Sale_Day) >= :dfrom"
+        params["dfrom"] = d.year*10000+d.month*100+d.day
+    if date_to:
+        d = datetime.strptime(date_to, "%Y-%m-%d")
+        where += " AND (s.Sale_Year*10000+s.Sale_Month*100+s.Sale_Day) <= :dto"
+        params["dto"] = d.year*10000+d.month*100+d.day
+    params["m"] = today.month
+    params["y"] = today.year
+    row = db.execute(text(
+        "SELECT COUNT(*) as total_transactions,"
+        " ROUND(SUM(Total_Amount),2) as total_revenue,"
+        " ROUND(AVG(Total_Amount),2) as average_transaction,"
+        " SUM(CASE WHEN Sale_Month=:m AND Sale_Year=:y THEN 1 ELSE 0 END) as monthly_sales,"
+        " ROUND(SUM(CASE WHEN Sale_Month=:m AND Sale_Year=:y THEN Total_Amount ELSE 0 END),2) as monthly_revenue,"
+        " SUM(CASE WHEN Sale_Year=:y THEN 1 ELSE 0 END) as yearly_sales,"
+        " ROUND(SUM(CASE WHEN Sale_Year=:y THEN Total_Amount ELSE 0 END),2) as yearly_revenue"
+        " FROM Sale s WHERE " + where
+    ), params).fetchone()
+    methods = db.execute(text(
+        "SELECT Payment_Method, ROUND(SUM(Total_Amount),2) as total"
+        " FROM Sale s WHERE " + where + " GROUP BY Payment_Method"
+    ), params).fetchall()
 
     return {
         "total_transactions":  row.total_transactions or 0,
@@ -142,15 +152,16 @@ def get_daily(db: Session = Depends(get_db)):
     }
 
 @router.get("/reports/monthly")
-def get_monthly(db: Session = Depends(get_db)):
+def get_monthly(year: Optional[int] = Query(None), db: Session = Depends(get_db)):
     today = date.today()
+    y = year if year else today.year
     rows = db.execute(text("""
         SELECT Sale_Month as month,
                COUNT(*) as sales,
                ROUND(SUM(Total_Amount),2) as revenue
         FROM Sale WHERE Sale_Year=:y
         GROUP BY Sale_Month ORDER BY Sale_Month
-    """), {"y": today.year}).fetchall()
+    """), {"y": y}).fetchall()
     data = {r.month: {"sales": r.sales, "revenue": float(r.revenue)} for r in rows}
     months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
     return [{"label": months[i], "month": i+1,
@@ -158,16 +169,28 @@ def get_monthly(db: Session = Depends(get_db)):
              "value": data.get(i+1,{}).get("revenue",0)} for i in range(12)]
 
 @router.get("/reports/best-sellers")
-def get_best_sellers(db: Session = Depends(get_db)):
+def get_best_sellers(date_from: Optional[str] = Query(None), date_to: Optional[str] = Query(None), db: Session = Depends(get_db)):
+    where = "1=1"
+    params = {}
+    if date_from:
+        d = datetime.strptime(date_from, "%Y-%m-%d")
+        where += " AND (s.Sale_Year*10000+s.Sale_Month*100+s.Sale_Day) >= :dfrom"
+        params["dfrom"] = d.year*10000+d.month*100+d.day
+    if date_to:
+        d = datetime.strptime(date_to, "%Y-%m-%d")
+        where += " AND (s.Sale_Year*10000+s.Sale_Month*100+s.Sale_Day) <= :dto"
+        params["dto"] = d.year*10000+d.month*100+d.day
     rows = db.execute(text("""
         SELECT p.Name as name, p.Unit_Price as price,
                SUM(si.Quantity) as total_qty,
                ROUND(SUM(si.Subtotal),2) as total_revenue
         FROM SaleItem si
         JOIN Product p ON p.Product_ID = si.Product_ID
+        JOIN Sale s ON s.Sale_ID = si.Sale_ID
+        WHERE """ + where + """
         GROUP BY p.Product_ID, p.Name, p.Unit_Price
         ORDER BY total_qty DESC LIMIT 10
-    """)).fetchall()
+    """), params).fetchall()
     return [{"name": r.name, "price": float(r.price),
              "total_qty": int(r.total_qty),
              "total_revenue": float(r.total_revenue)} for r in rows]

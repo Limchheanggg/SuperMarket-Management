@@ -4,12 +4,12 @@ from sqlalchemy import text
 from ..core.database import get_db
 from ..models.product import Product as ProductModel
 from ..models.category import Category as CategoryModel
-from .stock import get_stock
 
 router = APIRouter()
 
 def serialize(p, cat, db=None):
-    stock = get_stock(p.Product_ID, db)
+    inv = db.execute(text("SELECT Quantity FROM Inventory WHERE Product_ID=:pid"), {"pid": p.Product_ID}).fetchone()
+    stock = inv.Quantity if inv else 0
     return {
         "Product_ID": p.Product_ID,
         "Barcode": p.Barcode,

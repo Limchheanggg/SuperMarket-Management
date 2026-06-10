@@ -27,14 +27,21 @@ def create_token(user_id: int, email: str, role: str = "customer") -> str:
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
-def user_to_dict(user):
-    return {
+def user_to_dict(user, db=None):
+    d = {
         "id":    user.id,
         "name":  user.full_name,
         "email": user.email,
         "phone": user.phone,
         "role":  user.role or "customer",
+        "membership_tier": "None",
     }
+    if db:
+        from sqlalchemy import text as sqlt
+        mem = db.execute(sqlt("SELECT Tier FROM Membership WHERE Customer_ID=:uid"), {"uid": user.id}).fetchone()
+        if mem:
+            d["membership_tier"] = mem.Tier
+    return d
 
 @router.post("/register")
 def register(data: dict, db: Session = Depends(get_db)):
@@ -75,7 +82,7 @@ def register(data: dict, db: Session = Depends(get_db)):
     db.commit()
 
     token = create_token(user.id, user.email, user.role or "customer")
-    return {"access_token": token, "token_type": "bearer", "user": user_to_dict(user)}
+    return {"access_token": token, "token_type": "bearer", "user": user_to_dict(user, db)}
 
 @router.post("/login")
 def login(data: dict, db: Session = Depends(get_db)):
@@ -83,7 +90,7 @@ def login(data: dict, db: Session = Depends(get_db)):
     if not user or not verify_password(data["password"], user.password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     token = create_token(user.id, user.email, user.role or "customer")
-    return {"access_token": token, "token_type": "bearer", "user": user_to_dict(user)}
+    return {"access_token": token, "token_type": "bearer", "user": user_to_dict(user, db)}
 
 @router.get("/me")
 def get_me(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
@@ -94,7 +101,7 @@ def get_me(authorization: Optional[str] = Header(None), db: Session = Depends(ge
     user = db.query(UserModel).filter(UserModel.id == int(payload["sub"])).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return user_to_dict(user)
+    return user_to_dict(user, db)
 
 @router.put("/me")
 def update_me(data: dict, authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
@@ -111,7 +118,7 @@ def update_me(data: dict, authorization: Optional[str] = Header(None), db: Sessi
         user.password = hash_password(data["password"])
     db.commit()
     db.refresh(user)
-    return user_to_dict(user)
+    return user_to_dict(user, db)
 
 @router.post("/me")
 def get_me_post(data: dict, db: Session = Depends(get_db)):
@@ -119,4 +126,4 @@ def get_me_post(data: dict, db: Session = Depends(get_db)):
     user = db.query(UserModel).filter(UserModel.id == int(payload["sub"])).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return user_to_dict(user)
+    return user_to_dict(user, db)
