@@ -13,7 +13,6 @@ const ROLE_COLORS = {
 const SHIFT_TEMPLATES = [
   { name:'Morning',   start:'06:00', end:'14:00', color:'#f59e0b' },
   { name:'Afternoon', start:'14:00', end:'22:00', color:'#6366f1' },
-  { name:'Night',     start:'22:00', end:'06:00', color:'#0891b2' },
   { name:'Full Day',  start:'08:00', end:'20:00', color:'#16a34a' },
 ]
 

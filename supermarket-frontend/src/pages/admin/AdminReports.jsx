@@ -122,6 +122,7 @@ export default function AdminReports() {
   const [inventory,    setInventory]    = useState([])
   const [loading,      setLoading]      = useState(true)
   const [activeChart,  setActiveChart]  = useState('bar')
+  const [chartYear,    setChartYear]    = useState(new Date().getFullYear())
   const [dateRange,    setDateRange]    = useState({ from:'', to:'' })
 
   const [kpiRef,  kpiVisible]  = useInView()
@@ -130,14 +131,18 @@ export default function AdminReports() {
 
   useEffect(()=>{ fetchAll() },[])
 
-  const fetchAll = async () => {
+  const fetchAll = async (from, to) => {
+    const df = from !== undefined ? from : dateRange.from
+    const dt = to !== undefined ? to : dateRange.to
+    const p = df && dt ? "?date_from="+df+"&date_to="+dt : ""
+    const yr = df ? new Date(df).getFullYear() : new Date().getFullYear()
     try {
       const [sRes,dRes,iRes,mRes,bRes] = await Promise.all([
-        API.get('/api/sales/reports/summary'),
-        API.get('/api/sales/reports/daily'),
-        API.get('/api/inventory/'),
-        API.get('/api/sales/reports/monthly'),
-        API.get('/api/sales/reports/best-sellers'),
+        API.get("/api/sales/reports/summary"+p),
+        API.get("/api/sales/reports/daily"),
+        API.get("/api/inventory/"),
+        API.get("/api/sales/reports/monthly?year="+yr),
+        API.get("/api/sales/reports/best-sellers"+p),
       ])
       setSummary(sRes.data); setDaily(dRes.data)
       setInventory(iRes.data||[]); setMonthly(mRes.data||[])
@@ -201,7 +206,7 @@ export default function AdminReports() {
           <span style={{color:'#94a3b8',fontSize:13}}>to</span>
           <input type="date" value={dateRange.to} onChange={e=>setDateRange({...dateRange,to:e.target.value})}
             style={{padding:'8px 12px',border:'1.5px solid #e5e7eb',borderRadius:10,fontSize:13,outline:'none',fontFamily:"'Plus Jakarta Sans',sans-serif"}}/>
-          <button onClick={fetchAll}
+          <button onClick={()=>fetchAll(dateRange.from, dateRange.to)}
             style={{padding:'8px 18px',borderRadius:10,border:'none',background:'linear-gradient(135deg,#c0272d,#e53935)',color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
             Refresh
           </button>

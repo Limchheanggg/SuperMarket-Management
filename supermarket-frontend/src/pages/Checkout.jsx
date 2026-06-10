@@ -53,6 +53,10 @@ export default function Checkout() {
   };
 
   const applyCoupon = async () => {
+    if (!user) {
+      setCouponError("Please sign in to use coupon codes");
+      return;
+    }
     if (!couponCode.trim()) {
       setCouponError("Please enter a coupon code");
       return;
@@ -64,7 +68,7 @@ export default function Checkout() {
       const res = await API.post("/api/coupons/validate", {
         code: couponCode.trim().toUpperCase(),
         total: subtotal + tax,
-        tier: "Bronze", // TODO: fetch user membership tier
+        tier: user?.membership_tier || user?.tier || "Bronze",
       });
       setCouponResult(res.data);
       toast.success(
