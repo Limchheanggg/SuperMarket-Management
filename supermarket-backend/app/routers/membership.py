@@ -33,14 +33,15 @@ def get_my_membership(user_id: int, db: Session = Depends(get_db)):
             m.Tier as tier,
             m.Points as points,
             m.Total_Spent as total_spent,
-            m.Joined_At as joined_at
+            m.Joined_At as joined_at,
+            (SELECT COUNT(*) FROM Sale s WHERE s.Customer_ID = m.Customer_ID) as total_orders
         FROM Customer c
         JOIN Membership m ON c.Customer_ID = m.Customer_ID
         WHERE c.User_ID = :uid
         LIMIT 1
     """), {"uid": user_id}).fetchone()
     if not result:
-        return {"points": 0, "tier": "Bronze", "total_spent": 0.0}
+        return {"points": 0, "tier": "Bronze", "total_spent": 0.0, "total_orders": 0}
     return dict(result._mapping)
 
 @router.get("/")

@@ -86,11 +86,13 @@ def validate_coupon(data: dict, db: Session = Depends(get_db)):
     if coupon.Expiry_Date < today:
         raise HTTPException(status_code=400, detail="Coupon has expired")
     if coupon.Uses_Count >= coupon.Uses_Limit:
-        raise HTTPException(status_code=400, detail="Coupon usage limit reached")
+        raise HTTPException(status_code=400, detail=f"Coupon limit reached ({coupon.Uses_Count}/{coupon.Uses_Limit} uses)")
     if total < coupon.Min_Purchase:
         raise HTTPException(status_code=400, detail=f"Minimum purchase ${coupon.Min_Purchase:.2f} required")
+    if tier == "None" or tier is None:
+        raise HTTPException(status_code=400, detail="Membership required to use coupons. Join our membership program first!")
     if TIER_ORDER.get(tier,0) < TIER_ORDER.get(coupon.Tier_Required,0):
-        raise HTTPException(status_code=400, detail=f"{coupon.Tier_Required} membership required")
+        raise HTTPException(status_code=400, detail=f"{coupon.Tier_Required} membership required. Your tier: {tier}")
     discount = round(total * coupon.Discount_Value/100, 2) if coupon.Discount_Type=='percentage' \
                else min(float(coupon.Discount_Value), total)
     return {

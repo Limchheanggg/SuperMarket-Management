@@ -10,16 +10,21 @@ router = APIRouter()
 @router.get("/")
 def get_sales(
     db: Session = Depends(get_db),
-    date_from:   Optional[str] = Query(None),
-    date_to:     Optional[str] = Query(None),
-    method:      Optional[str] = Query(None),
-    cashier:     Optional[str] = Query(None),
-    min_amount:  Optional[float] = Query(None),
-    max_amount:  Optional[float] = Query(None),
-    search:      Optional[str] = Query(None),
+    date_from:          Optional[str] = Query(None),
+    date_to:            Optional[str] = Query(None),
+    method:             Optional[str] = Query(None),
+    cashier:            Optional[str] = Query(None),
+    min_amount:         Optional[float] = Query(None),
+    max_amount:         Optional[float] = Query(None),
+    search:             Optional[str] = Query(None),
+    customer_user_id:   Optional[int] = Query(None),
+    limit:              Optional[int] = Query(500),
 ):
     where = ["1=1"]
     params = {}
+    if customer_user_id:
+        where.append("c.User_ID = :cuid")
+        params["cuid"] = customer_user_id
 
     if date_from:
         where.append("(s.Sale_Year*10000 + s.Sale_Month*100 + s.Sale_Day) >= :dfrom")
@@ -195,12 +200,27 @@ def get_best_sellers(date_from: Optional[str] = Query(None), date_to: Optional[s
              "total_qty": int(r.total_qty),
              "total_revenue": float(r.total_revenue)} for r in rows]
 
+
+@router.get("/my")
+def get_my_sales(user_id: int, db: Session = Depends(get_db)):
+    rows = db.execute(text("""
+        SELECT s.Sale_ID, s.Total_Amount, s.Payment_Method, s.Discount,
+               s.Sale_Day, s.Sale_Month, s.Sale_Year, s.Sale_Time,
+               (SELECT COUNT(*) FROM SaleItem si WHERE si.Sale_ID = s.Sale_ID) as item_count
+        FROM Sale s
+        JOIN Customer c ON c.Customer_ID = s.Customer_ID
+        WHERE c.User_ID = :uid
+        ORDER BY s.Sale_Year DESC, s.Sale_Month DESC, s.Sale_Day DESC, s.Sale_Time DESC
+        LIMIT 500
+    """), {"uid": user_id}).fetchall()
+    return [dict(r._mapping) for r in rows]
+
 @router.get("/{sale_id}")
 def get_sale(sale_id: int, db: Session = Depends(get_db)):
     sale = db.execute(text("""
         SELECT s.Sale_ID, s.Total_Amount, s.Payment_Method,
                s.Discount, s.Tax, s.Sale_Day, s.Sale_Month, s.Sale_Year,
-               s.Sale_Time,
+               s.Sale_Time, s.Customer_Note,
                COALESCE(CONCAT(c.First_Name,' ',c.Last_Name),'Walk-in') as customer,
                COALESCE(u.full_name,'Staff') as cashier
         FROM Sale s
@@ -225,6 +245,7 @@ def get_sale(sale_id: int, db: Session = Depends(get_db)):
         "Tax":            float(sale.Tax or 0),
         "customer":       sale.customer,
         "cashier":        sale.cashier,
+        "Customer_Note":  sale.Customer_Note,
         "items":          [{"Name": i.Name, "Quantity": i.Quantity,
                             "Unit_Price": float(i.Unit_Price),
                             "Subtotal": float(i.Subtotal)} for i in items],
@@ -233,10 +254,13 @@ def get_sale(sale_id: int, db: Session = Depends(get_db)):
 @router.post("/")
 def create_sale(data: dict, db: Session = Depends(get_db)):
     now = datetime.now()
+    import json
+    customer_info = data.get("customer_info", {})
+    note = json.dumps(customer_info) if customer_info else None
     result = db.execute(text("""
         INSERT INTO Sale (Sale_Day, Sale_Month, Sale_Year, Sale_Time,
-                          Employee_ID, Customer_ID, Total_Amount, Discount, Tax, Payment_Method)
-        VALUES (:d,:m,:y,:t,:eid,:cid,:total,:disc,:tax,:method)
+                          Employee_ID, Customer_ID, Total_Amount, Discount, Tax, Payment_Method, Customer_Note)
+        VALUES (:d,:m,:y,:t,:eid,:cid,:total,:disc,:tax,:method,:note)
     """), {
         "d": now.day, "m": now.month, "y": now.year, "t": now.strftime("%H:%M:%S"),
         "eid":    data.get("cashier_id") or 1,
@@ -245,6 +269,7 @@ def create_sale(data: dict, db: Session = Depends(get_db)):
         "disc":   data.get("discount", 0),
         "tax":    data.get("tax", 0),
         "method": data.get("payment_method", "Cash"),
+        "note":   note,
     })
     db.commit()
     sale_id = result.lastrowid
@@ -275,5 +300,26 @@ def create_sale(data: dict, db: Session = Depends(get_db)):
             VALUES (:pid, 'out', :qty, :note)
         """), {"pid": pid, "qty": qty, "note": f"Sale #{sale_id}"})
 
-    db.commit()
+    # Update membership points and total spent
+    cid = data.get("customer_id")
+    if cid:
+        total = float(data.get("total", 0))
+        pts = int(total)
+        db.execute(text("""
+            UPDATE Membership
+            SET Points = Points + :pts,
+                Total_Spent = Total_Spent + :spent,
+                Tier = CASE
+                    WHEN Total_Spent + :spent >= 500 THEN 'Platinum'
+                    WHEN Total_Spent + :spent >= 200 THEN 'Gold'
+                    WHEN Total_Spent + :spent >= 50  THEN 'Silver'
+                    ELSE 'Bronze'
+                END
+            WHERE Customer_ID = :cid
+        """), {"pts": pts, "spent": total, "cid": cid})
+        # Also update Customer loyalty points
+        db.execute(text("""
+            UPDATE Customer SET Loyalty_Points = Loyalty_Points + :pts WHERE Customer_ID = :cid
+        """), {"pts": pts, "cid": cid})
+        db.commit()
     return {"Sale_ID": f"S{str(sale_id).zfill(4)}", "Total_Amount": data.get("total",0)}

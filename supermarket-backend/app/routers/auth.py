@@ -38,9 +38,12 @@ def user_to_dict(user, db=None):
     }
     if db:
         from sqlalchemy import text as sqlt
-        mem = db.execute(sqlt("SELECT Tier FROM Membership WHERE Customer_ID=:uid"), {"uid": user.id}).fetchone()
-        if mem:
-            d["membership_tier"] = mem.Tier
+        cust = db.execute(sqlt("SELECT Customer_ID FROM Customer WHERE User_ID=:uid"), {"uid": user.id}).fetchone()
+        if cust:
+            d["customer_id"] = cust.Customer_ID
+            mem = db.execute(sqlt("SELECT Tier FROM Membership WHERE Customer_ID=:cid"), {"cid": cust.Customer_ID}).fetchone()
+            if mem:
+                d["membership_tier"] = mem.Tier
     return d
 
 @router.post("/register")
