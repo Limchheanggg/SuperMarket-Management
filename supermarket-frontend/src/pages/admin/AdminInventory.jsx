@@ -356,8 +356,6 @@ export default function AdminInventory() {
                 <input className="inv-input" placeholder="e.g. Jasmine Rice 5kg" value={form.Name}
                   onChange={e=>setForm({...form,Name:e.target.value})} />
               </div>
-              <div>
-              </div>
               {/* Brand */}
               <div>
                 <label className="inv-label">Brand</label>
