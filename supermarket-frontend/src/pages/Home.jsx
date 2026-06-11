@@ -430,7 +430,7 @@ export default function Home() {
               {/* Stats */}
               <div style={{ display:'flex', gap:40, animation:'fadeLeft .7s ease .4s both' }}>
                 {[
-                  { n:'147', suffix:'',  label:'Products'   },
+                  { n:'148', suffix:'',  label:'Products'   },
                   { n:'12',  suffix:'',  label:'Categories' },
                   { n:'100', suffix:'%', label:'In Stock'   },
                 ].map(({ n, suffix, label }, i) => (
@@ -678,7 +678,7 @@ export default function Home() {
               </div>
               <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:36, fontWeight:900,
                 color:'#fff', marginBottom:10, lineHeight:1.2 }}>
-                147 Products.<br/>12 Categories.<br/>All In Stock.
+                148 Products.<br/>12 Categories.<br/>All In Stock.
               </h2>
               <p style={{ fontSize:15, color:'rgba(255,255,255,.65)', maxWidth:400, lineHeight:1.7 }}>
                 Everything you need for your daily groceries — fresh, quality, and affordable.
