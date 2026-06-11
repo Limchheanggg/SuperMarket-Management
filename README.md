@@ -1,402 +1,357 @@
-<h1 align="center">🛒 AMS Mart — Supermarket Management System</h1>
+<div align="center">
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Frontend-React%2019-61DAFB?style=for-the-badge&logo=react">
-  <img src="https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi">
-  <img src="https://img.shields.io/badge/Database-MySQL-orange?style=for-the-badge&logo=mysql">
-  <img src="https://img.shields.io/badge/Deployed-Railway%20%2B%20Vercel-success?style=for-the-badge">
-</p>
 
-<p align="center">
-  <a href="https://super-market-management-six.vercel.app" target="_blank">🌐 Live Demo</a> &nbsp;|&nbsp;
-  <a href="https://supermarket-management-production-d071.up.railway.app/docs" target="_blank">⚙️ API Docs</a>
-</p>
 
-<hr>
+# 🛒 AMS Mart — Supermarket Management System
 
-<h2>📚 About This Project</h2>
+**A production-ready full-stack supermarket system built for Cambodia**
 
-<p>
-AMS Mart is a complete full-stack <b>Supermarket Management System</b> developed as a university project at the <b>Institute of Technology of Cambodia (ITC)</b>, Department of Applied Mathematics and Statistics.
-</p>
-<p>
-The system supports both customer-facing shopping features and a comprehensive admin panel for managing supermarket operations — all backed by a cloud-hosted MySQL database with 13,026 real sales records.
-</p>
+[![React](https://img.shields.io/badge/React_19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://mysql.com)
+[![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)](https://railway.app)
+[![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com)
 
-<h3>🎯 Main Goals</h3>
-<ul>
-  <li>Build a production-ready full-stack web application</li>
-  <li>Practice REST API design and integration</li>
-  <li>Design a normalized relational database with 12 tables</li>
-  <li>Implement role-based access control (admin, cashier, customer)</li>
-  <li>Deploy a live system accessible from anywhere</li>
-</ul>
+[🌐 **Live Demo**](https://super-market-management-six.vercel.app) &nbsp;·&nbsp; [⚙️ **API Docs**](https://supermarket-management-production-d071.up.railway.app/docs) &nbsp;·&nbsp; [📊 **Admin Panel**](https://super-market-management-six.vercel.app/admin)
 
-<hr>
+---
 
-<h2>👥 Team Members</h2>
+</div>
 
-<table align="center">
-  <tr>
-    <th>Name</th>
-    <th>Student ID</th>
-    <th>Role</th>
-  </tr>
-  <tr>
-    <td><b>KHUN Limchheang</b></td>
-    <td>e20230393</td>
-    <td>Core System Development</td>
-  </tr>
-  <tr>
-    <td><b>CHHAY Lyveng</b></td>
-    <td>e20230135</td>
-    <td>Frontend Development</td>
-  </tr>
-  <tr>
-    <td><b>HORN Hengveasna</b></td>
-    <td>e20230754</td>
-    <td>Database Design</td>
-  </tr>
-  <tr>
-    <td><b>KHEAN Visal</b></td>
-    <td>—</td>
-    <td>Supervisor (TP)</td>
-  </tr>
-</table>
+## 📖 Overview
 
-<hr>
+AMS Mart is a **complete supermarket management system** developed as a university project at the **Institute of Technology of Cambodia (ITC)**, Department of Applied Mathematics and Statistics.
 
-<h2>✨ Features</h2>
+The system bridges the gap between traditional Cambodian supermarket operations and modern digital management — featuring a full online shopping experience for customers and a powerful admin panel for managing every aspect of supermarket operations.
 
-<h3>👤 Customer Side (14 Pages)</h3>
-<ul>
-  <li>🏠 <b>Home</b> — Hero banner, recently added products, best sellers</li>
-  <li>🛍️ <b>Shop</b> — Product grid with search, category filter, sort</li>
-  <li>📦 <b>Product Detail</b> — Images, description, add to cart, wishlist</li>
-  <li>🛒 <b>Cart</b> — Item list, quantity update, subtotal calculation</li>
-  <li>💳 <b>Checkout</b> — ABA / ACLEDA / Cash payment, coupon code support</li>
-  <li>📋 <b>Order History</b> — Transaction list with item details</li>
-  <li>📊 <b>Dashboard</b> — Loyalty points, tier progress, recent orders</li>
-  <li>❤️ <b>Wishlist</b> — Saved products</li>
-  <li>👤 <b>Account Settings</b> — Profile update</li>
-  <li>🔐 <b>Login / Register</b> — JWT authentication</li>
-  <li>ℹ️ <b>About / Contact / FAQ</b></li>
-</ul>
+> 🗄️ Backed by a cloud MySQL database with **13,026 sales records**, **549 users**, and **148 products** — all with realistic Cambodia seasonal patterns from 2024–2026.
 
-<h3>🛠️ Admin Panel (7 Pages)</h3>
-<ul>
-  <li>📊 <b>Dashboard</b> — Revenue today, monthly stats, recent sales, low stock alerts</li>
-  <li>📦 <b>Inventory</b> — Add/edit/delete products, restock, image upload via Cloudinary</li>
-  <li>👥 <b>Users & Shifts</b> — Manage employees, customers, shift scheduling</li>
-  <li>💰 <b>Sales</b> — Transaction list, filter by date/cashier/payment, view details</li>
-  <li>🎖️ <b>Membership</b> — Tier management (Bronze/Silver/Gold/Platinum), coupon management</li>
-  <li>📈 <b>Analytics</b> — Revenue charts, best sellers top 10, payment breakdown</li>
-  <li>🏭 <b>Suppliers</b> — Supplier CRUD management</li>
-</ul>
+---
 
-<hr>
+## 👥 Team
 
-<h2>⚙️ Tech Stack</h2>
+| Name | Student ID | Role |
+|------|-----------|------|
+| **KHUN Limchheang** | e20230393 | Core System & Backend |
+| **CHHAY Lyveng** | e20230135 | Database Design |
+| **HORN Hengveasna** | e20230754 | Testing & Documentation |
+| **KHEAN Visal** | — | Supervisor |
 
-<h3>🎨 Frontend</h3>
-<table>
-  <tr><th>Technology</th><th>Purpose</th></tr>
-  <tr><td>React 19</td><td>UI library</td></tr>
-  <tr><td>Vite 8</td><td>Build tool / dev server</td></tr>
-  <tr><td>React Router DOM</td><td>Client-side routing</td></tr>
-  <tr><td>Tailwind CSS</td><td>Utility-first styling</td></tr>
-  <tr><td>shadcn/ui + Radix UI</td><td>Component library</td></tr>
-  <tr><td>Axios</td><td>HTTP client</td></tr>
-  <tr><td>Lucide + Phosphor</td><td>Icon libraries</td></tr>
-  <tr><td>React Hot Toast</td><td>Notifications</td></tr>
-</table>
+**Institution:** Institute of Technology of Cambodia (ITC)  
+**Department:** Applied Mathematics and Statistics
 
-<h3>🧠 Backend</h3>
-<table>
-  <tr><th>Technology</th><th>Purpose</th></tr>
-  <tr><td>FastAPI</td><td>Python REST framework</td></tr>
-  <tr><td>SQLAlchemy ORM</td><td>Database abstraction</td></tr>
-  <tr><td>PyJWT + bcrypt</td><td>Auth / password hashing</td></tr>
-  <tr><td>Pydantic Settings</td><td>Config / validation</td></tr>
-  <tr><td>CORS Middleware</td><td>Cross-origin requests</td></tr>
-  <tr><td>Cloudinary</td><td>Cloud image storage</td></tr>
-  <tr><td>PyMySQL</td><td>MySQL DB connector</td></tr>
-</table>
+---
 
-<h3>🗄️ Database & Deployment</h3>
-<table>
-  <tr><th>Technology</th><th>Purpose</th></tr>
-  <tr><td>MySQL</td><td>Relational database (12 tables)</td></tr>
-  <tr><td>JWT (HS256)</td><td>24h access tokens</td></tr>
-  <tr><td>Railway</td><td>Backend + MySQL hosting</td></tr>
-  <tr><td>Vercel</td><td>Frontend hosting</td></tr>
-  <tr><td>GitHub</td><td>Version control / CI/CD</td></tr>
-</table>
+## ✨ What's Inside
 
-<hr>
+### 👤 Customer Portal — 14 Pages
 
-<h2>🏗️ System Architecture</h2>
+| Page | Features |
+|------|---------|
+| 🏠 Home | Hero banner, recently added products, best sellers |
+| 🛍️ Shop | Product grid, search, filter by category, sort |
+| 📦 Product Detail | Images, description, add to cart, add to wishlist |
+| 🛒 Cart | Item list, quantity update, subtotal |
+| 💳 Checkout | ABA / ACLEDA / Cash, coupon codes, order summary |
+| 📋 Order History | Transaction list, item-level detail modal |
+| 📊 Dashboard | Loyalty points, tier progress, recent orders |
+| ❤️ Wishlist | Saved products, move to cart |
+| 👤 Account | Profile update, name, phone |
+| 🔐 Login / Register | JWT auth, inline validation |
+| ℹ️ About / Contact / FAQ | Store info, team, mission |
 
-<pre>
+### 🛠️ Admin Panel — 7 Pages
+
+| Page | Features |
+|------|---------|
+| 📊 Dashboard | Live revenue, sales count, low stock alerts, recent transactions |
+| 📦 Inventory | Product CRUD, restock, Cloudinary image upload, filters |
+| 👥 Users & Shifts | Employee/customer management, shift scheduling |
+| 💰 Sales | Transaction list, date/cashier/payment filters, item details |
+| 🎖️ Membership | Bronze/Silver/Gold/Platinum tiers, coupon management |
+| 📈 Analytics | Revenue charts, top 10 best sellers, payment breakdown |
+| 🏭 Suppliers | Supplier CRUD |
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+| Technology | Purpose |
+|-----------|---------|
+| React 19 | UI library |
+| Vite 8 | Build tool / dev server |
+| React Router DOM | Client-side routing |
+| Tailwind CSS | Utility-first styling |
+| shadcn/ui + Radix UI | Component library |
+| Axios | HTTP client |
+| Lucide + Phosphor | Icon libraries |
+| React Hot Toast | Notifications |
+
+### Backend
+| Technology | Purpose |
+|-----------|---------|
+| FastAPI | Python REST framework |
+| SQLAlchemy ORM | Database abstraction |
+| PyJWT + bcrypt | Auth / password hashing |
+| Pydantic Settings | Config / validation |
+| CORS Middleware | Cross-origin requests |
+| Cloudinary | Cloud image storage |
+| PyMySQL | MySQL connector |
+
+### Infrastructure
+| Service | Platform | Cost |
+|---------|---------|------|
+| Frontend | Vercel | 🆓 Free |
+| Backend + MySQL | Railway | 🆓 Free |
+| Image Storage | Cloudinary | 🆓 Free |
+
+---
+
+## 🏗️ Architecture
+
+```
 👤 User (Browser)
-      ↓
-🌐 Vercel (Frontend — React + Vite)
-      ↓ Axios HTTP Requests
-⚙️ Railway (Backend — FastAPI + Python)
-      ↓ SQLAlchemy ORM
-🗄️ Railway MySQL (13,026 sales · 549 users · 148 products)
-      ↓
-☁️ Cloudinary (Product image storage)
-</pre>
+      │
+      ▼
+┌─────────────────────────────┐
+│  Vercel — React + Vite      │  Frontend
+│  super-market-management-   │
+│  six.vercel.app             │
+└─────────────┬───────────────┘
+              │ Axios (HTTPS)
+              ▼
+┌─────────────────────────────┐
+│  Railway — FastAPI + Python │  Backend
+│  supermarket-management-    │
+│  production-d071.up...      │
+└──────┬──────────────┬───────┘
+       │ SQLAlchemy   │ Cloudinary SDK
+       ▼              ▼
+┌──────────────┐  ┌──────────────┐
+│ Railway MySQL│  │  Cloudinary  │  Storage
+│ 13,026 sales │  │ Product imgs │
+└──────────────┘  └──────────────┘
+```
 
-<h3>Backend Layered Architecture</h3>
-<pre>
+### Backend Layer Structure
+```
 HTTP Request
-    ↓ FastAPI Router (auth, products, sales, inventory...)
-    ↓ JWT Authentication Middleware
-    ↓ Business Logic (routers/)
-    ↓ SQLAlchemy ORM (models/)
-    ↓ MySQL Database Response
-</pre>
+    ↓  FastAPI Router  (auth, products, sales, inventory, membership...)
+    ↓  JWT Middleware  (role check: admin / cashier / customer)
+    ↓  Business Logic  (routers/)
+    ↓  SQLAlchemy ORM  (models/)
+    ↓  MySQL Response
+```
 
-<hr>
+---
 
-<h2>🗄️ Database Design</h2>
+## 🗄️ Database Design
 
-<h3>12 Tables</h3>
-<table>
-  <tr><th>Table</th><th>Description</th></tr>
-  <tr><td>users</td><td>All users — auth, role management (admin/cashier/customer)</td></tr>
-  <tr><td>Customer</td><td>Customer profiles and loyalty points</td></tr>
-  <tr><td>Membership</td><td>Tier (Bronze/Silver/Gold/Platinum), points, total spent</td></tr>
-  <tr><td>Product</td><td>All products — name, price, category, supplier, image</td></tr>
-  <tr><td>Category</td><td>12 product categories</td></tr>
-  <tr><td>Supplier</td><td>12 suppliers</td></tr>
-  <tr><td>Inventory</td><td>Current stock levels per product</td></tr>
-  <tr><td>StockMovement</td><td>Stock change history (in/out)</td></tr>
-  <tr><td>Sale</td><td>Sales transactions — employee, customer, coupon, payment</td></tr>
-  <tr><td>SaleItem</td><td>Products in each sale (junction table)</td></tr>
-  <tr><td>Coupon</td><td>Promo codes with tier requirements and expiry</td></tr>
-  <tr><td>Employee_Shift</td><td>Employee shift schedules</td></tr>
-</table>
+### 12 Tables
 
-<h3>Key Relationships</h3>
-<pre>
-users        →  Customer       (1:1 via Customer.User_ID)
-users        →  Employee_Shift (1:M via Employee_Shift.user_id)
-users        →  Sale           (1:M via Sale.Employee_ID)
-Customer     →  Sale           (1:M via Sale.Customer_ID)
-Customer     →  Membership     (1:1 via Membership.Customer_ID)
-Category     →  Product        (1:M via Product.Category_ID)
-Supplier     →  Product        (1:M via Product.Supplier_ID)
-Product      →  Inventory      (1:1 via Inventory.Product_ID)
-Product      →  StockMovement  (1:M via StockMovement.Product_ID)
-Sale         →  SaleItem       (1:M via SaleItem.Sale_ID)
-Coupon       →  Sale           (1:M via Sale.Coupon_ID)
-Sale         ↔  Product        (M:M junction: SaleItem)
-</pre>
+| Table | Rows | Description |
+|-------|------|-------------|
+| `users` | 549 | All users — auth + role (admin/cashier/customer) |
+| `Customer` | 550 | Customer profiles + loyalty points |
+| `Membership` | 549 | Tier (Bronze/Silver/Gold/Platinum), points, spent |
+| `Product` | 148 | Products — name, price, category, supplier, image |
+| `Category` | 12 | Product categories |
+| `Supplier` | 12 | Product suppliers |
+| `Inventory` | 148 | Current stock per product |
+| `StockMovement` | 37 | Stock change history (in/out) |
+| `Sale` | 13,026 | Sales transactions |
+| `SaleItem` | 39,220 | Line items per sale (M:M junction) |
+| `Coupon` | 10 | Promo codes with tier requirements |
+| `Employee_Shift` | 260 | Employee shift schedules |
 
-<h3>📊 Database Statistics</h3>
-<ul>
-  <li>13,026 sales records (2024–2026, Cambodia seasonal patterns)</li>
-  <li>39,220 sale items</li>
-  <li>549 users and customers</li>
-  <li>148 products across 12 categories</li>
-  <li>260 employee shift records</li>
-  <li>10 active coupons</li>
-</ul>
+### Relationships
 
-<hr>
+```
+Type  │ Pair                          │ Via
+──────┼───────────────────────────────┼──────────────────────────
+1:1   │ users         ↔ Customer      │ Customer.User_ID
+1:1   │ Product       ↔ Inventory     │ Inventory.Product_ID
+1:1   │ Customer      ↔ Membership    │ Membership.Customer_ID
+1:M   │ users         → Sale          │ Sale.Employee_ID
+1:M   │ users         → Employee_Shift│ Employee_Shift.user_id
+1:M   │ Customer      → Sale          │ Sale.Customer_ID
+1:M   │ Category      → Product       │ Product.Category_ID
+1:M   │ Supplier      → Product       │ Product.Supplier_ID
+1:M   │ Product       → StockMovement │ StockMovement.Product_ID
+1:M   │ Sale          → SaleItem      │ SaleItem.Sale_ID
+1:M   │ Coupon        → Sale          │ Sale.Coupon_ID
+M:M   │ Sale          ↔ Product       │ Junction: SaleItem
+```
 
-<h2>📁 Project Structure</h2>
+---
 
-<pre>
+## 📁 Project Structure
+
+```
 SuperMarket-Management/
 │
-├── supermarket-frontend/          # React + Vite frontend
+├── supermarket-frontend/
 │   ├── src/
-│   │   ├── components/            # Reusable UI components
-│   │   │   └── layout/            # Navbar, Footer, Layout
-│   │   ├── pages/                 # All 14 customer pages
-│   │   │   └── admin/             # 7 admin panel pages
+│   │   ├── components/
+│   │   │   └── layout/           # Navbar, Footer, AdminLayout
+│   │   ├── pages/
+│   │   │   ├── admin/            # 7 admin pages
+│   │   │   └── *.jsx             # 14 customer pages
 │   │   ├── services/
-│   │   │   └── api.js             # Axios API client
-│   │   └── utils/                 # Helper functions
-│   ├── vercel.json                # Vercel SPA routing config
+│   │   │   └── api.js            # Axios instance + all endpoints
+│   │   └── utils/
+│   ├── vercel.json               # SPA routing (rewrites all → /)
 │   └── package.json
 │
-├── supermarket-backend/           # FastAPI Python backend
+├── supermarket-backend/
 │   ├── app/
 │   │   ├── core/
-│   │   │   ├── database.py        # SQLAlchemy engine + session
-│   │   │   ├── config.py          # Environment settings
-│   │   │   └── dependencies.py    # JWT auth dependencies
-│   │   ├── models/                # SQLAlchemy ORM models
-│   │   ├── routers/               # API route handlers
-│   │   │   ├── auth.py
-│   │   │   ├── products.py
-│   │   │   ├── sales.py
-│   │   │   ├── inventory.py
-│   │   │   ├── membership.py
-│   │   │   ├── users.py
-│   │   │   ├── coupons.py
-│   │   │   ├── suppliers.py
-│   │   │   ├── shifts.py
-│   │   │   └── upload.py
-│   │   └── main.py                # FastAPI app + CORS setup
-│   ├── static/images/             # Product images (git-tracked)
-│   ├── nixpacks.toml              # Railway build config
-│   ├── Procfile                   # Railway start command
-│   ├── requirements.txt           # Python dependencies
-│   └── .python-version            # Python 3.11
+│   │   │   ├── database.py       # SQLAlchemy engine + session
+│   │   │   ├── config.py         # Pydantic settings
+│   │   │   └── dependencies.py   # JWT decode + role guards
+│   │   ├── models/               # ORM table definitions
+│   │   ├── routers/
+│   │   │   ├── auth.py           # Login, register, /me
+│   │   │   ├── products.py       # Product CRUD + categories
+│   │   │   ├── sales.py          # Sales CRUD + reports
+│   │   │   ├── inventory.py      # Stock management + restock
+│   │   │   ├── membership.py     # Loyalty tiers + points
+│   │   │   ├── users.py          # Employee + customer management
+│   │   │   ├── coupons.py        # Coupon CRUD + validate
+│   │   │   ├── suppliers.py      # Supplier CRUD
+│   │   │   ├── shifts.py         # Employee shift scheduling
+│   │   │   └── upload.py         # Cloudinary image upload
+│   │   └── main.py               # App init + CORS + router mount
+│   ├── static/images/            # Product images (git-tracked)
+│   ├── nixpacks.toml             # Railway Python build config
+│   ├── Procfile                  # uvicorn start command
+│   ├── requirements.txt          # Python dependencies
+│   └── .python-version           # Pins Python 3.11
 │
 └── README.md
-</pre>
+```
 
-<hr>
+---
 
-<h2>🚀 Getting Started</h2>
+## 🚀 Getting Started
 
-<h3>Prerequisites</h3>
-<ul>
-  <li>Node.js 18+</li>
-  <li>Python 3.11+</li>
-  <li>MySQL 8.0+</li>
-</ul>
+### Prerequisites
+- Node.js 18+
+- Python 3.11+
+- MySQL 8.0+
 
-<h3>Clone the Repository</h3>
+### 1. Clone
 
-<pre>
+```bash
 git clone https://github.com/Limchheanggg/SuperMarket-Management.git
 cd SuperMarket-Management
-</pre>
+```
 
-<h3>Frontend Setup</h3>
+### 2. Backend
 
-<pre>
+```bash
+cd supermarket-backend
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# Create .env file
+cp .env.example .env            # then fill in your values
+
+uvicorn app.main:app --reload --host 0.0.0.0
+# → http://localhost:8000
+# → http://localhost:8000/docs
+```
+
+### 3. Frontend
+
+```bash
 cd supermarket-frontend
 npm install
 npm run dev
-# Runs at http://localhost:5173
-</pre>
+# → http://localhost:5173
+```
 
-<h3>Backend Setup</h3>
+---
 
-<pre>
-cd supermarket-backend
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0
-# Runs at http://localhost:8000
-</pre>
+## ⚙️ Environment Variables
 
-<hr>
-
-<h2>⚙️ Environment Variables</h2>
-
-<h3>Backend <code>.env</code></h3>
-<pre>
+```env
+# Database
 DATABASE_URL=mysql+pymysql://user:password@host:port/dbname
+
+# Auth
 SECRET_KEY=your-secret-key
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
+
+# CORS
 ALLOWED_ORIGINS=*
-</pre>
+```
 
-<hr>
+---
 
-<h2>📖 API Documentation</h2>
+## 📖 API Reference
 
-Once the backend is running, visit: <code>http://localhost:8000/docs</code>
+Full interactive docs at `http://localhost:8000/docs`
 
-<h3>Key Endpoints</h3>
+| Router | Method | Endpoint | Description |
+|--------|--------|---------|-------------|
+| Auth | POST | `/api/auth/login` | Login, get JWT token |
+| Auth | POST | `/api/auth/register` | Create account |
+| Auth | GET/PUT | `/api/auth/me` | Get / update profile |
+| Products | GET | `/api/products/` | List all products |
+| Products | GET | `/api/products/categories` | All categories |
+| Inventory | POST | `/api/inventory/restock` | Restock product |
+| Sales | GET | `/api/sales/` | All transactions |
+| Sales | GET | `/api/sales/reports/summary` | Revenue summary |
+| Sales | GET | `/api/sales/reports/daily` | Today's stats |
+| Membership | GET | `/api/membership/` | All members |
+| Coupons | POST | `/api/coupons/validate` | Validate coupon code |
+| Upload | POST | `/api/upload/` | Upload image → Cloudinary |
 
-<table>
-  <tr><th>Router</th><th>Endpoints</th></tr>
-  <tr><td>Auth</td><td>POST /api/auth/login, /register, GET/PUT /api/auth/me</td></tr>
-  <tr><td>Products</td><td>CRUD /api/products/, /categories, /bestsellers/list</td></tr>
-  <tr><td>Inventory</td><td>GET /api/inventory/, POST /restock, PUT /{id}</td></tr>
-  <tr><td>Sales</td><td>CRUD /api/sales/, /reports/summary, /daily, /monthly</td></tr>
-  <tr><td>Membership</td><td>GET /api/membership/, /register, /add-points/{id}</td></tr>
-  <tr><td>Coupons</td><td>CRUD /api/coupons/, /validate, /active</td></tr>
-  <tr><td>Users</td><td>/api/users/employees, /customers, /cashiers</td></tr>
-  <tr><td>Shifts</td><td>CRUD /api/shifts/</td></tr>
-  <tr><td>Upload</td><td>POST /api/upload/ → Cloudinary</td></tr>
-  <tr><td>Suppliers</td><td>CRUD /api/suppliers/</td></tr>
-</table>
+---
 
-<hr>
+## ✅ Project Status
 
-<h2>🌐 Deployment</h2>
+| Feature | Status |
+|---------|--------|
+| 14 customer pages | ✅ Complete |
+| 7 admin pages | ✅ Complete |
+| 10 API routers / 40+ endpoints | ✅ Complete |
+| MySQL — 12 tables | ✅ Complete |
+| JWT role-based auth | ✅ Complete |
+| Loyalty program (4 tiers) | ✅ Complete |
+| Coupon system | ✅ Complete |
+| Cloudinary image upload | ✅ Complete |
+| Railway backend deployment | ✅ Live |
+| Vercel frontend deployment | ✅ Live |
 
-<p>This project is deployed for free:</p>
+---
 
-<table>
-  <tr><th>Service</th><th>Platform</th><th>Cost</th></tr>
-  <tr><td>Frontend</td><td>Vercel</td><td>🆓 Free</td></tr>
-  <tr><td>Backend + MySQL</td><td>Railway</td><td>🆓 Free tier</td></tr>
-  <tr><td>Image Storage</td><td>Cloudinary</td><td>🆓 Free tier</td></tr>
-</table>
+## 💡 Future Work
 
-<h3>Deploy Frontend (Vercel)</h3>
-<ol>
-  <li>Push to GitHub</li>
-  <li>Connect repo to vercel.com</li>
-  <li>Set Root Directory to <code>supermarket-frontend</code></li>
-  <li>Deploy ✅</li>
-</ol>
+- [ ] Barcode scanner for faster cashier checkout
+- [ ] React Native mobile app for customers
+- [ ] Real ABA / ACLEDA payment gateway integration
+- [ ] AI product recommendations based on purchase history
+- [ ] Multi-branch support for chain supermarkets
+- [ ] Automated supplier reorder notifications
 
-<h3>Deploy Backend (Railway)</h3>
-<ol>
-  <li>Connect repo to railway.app</li>
-  <li>Set Root Directory to <code>supermarket-backend</code></li>
-  <li>Add environment variables</li>
-  <li>Deploy ✅</li>
-</ol>
+---
 
-<hr>
+## 📚 What We Learned
 
-<h2>✅ Current Status</h2>
+- Designing a normalized relational database with 12 tables and 12 relationships
+- Building a RESTful API with FastAPI and SQLAlchemy ORM
+- Implementing JWT authentication with role-based access control
+- Deploying a full-stack app to Railway + Vercel at zero cost
+- Generating realistic e-commerce data with Cambodian seasonal patterns
+- Managing cloud image storage with Cloudinary
 
-<p>
-✅ Frontend — 14 customer pages completed<br>
-✅ Backend — 10 API routers, 40+ endpoints<br>
-✅ MySQL Database — 12 tables, 13,026 sales records<br>
-✅ Authentication — JWT role-based access control<br>
-✅ Admin Dashboard — Full CRUD operations<br>
-✅ Loyalty System — Bronze/Silver/Gold/Platinum tiers<br>
-✅ Image Upload — Cloudinary cloud storage<br>
-✅ Deployed — Railway (backend) + Vercel (frontend)<br>
-</p>
+---
 
-<hr>
+<div align="center">
 
-<h2>💡 Future Improvements</h2>
-<ul>
-  <li>Barcode scanner integration for faster cashier checkout</li>
-  <li>Mobile app (React Native) for customers</li>
-  <li>Real ABA and ACLEDA payment gateway APIs</li>
-  <li>AI-powered product recommendations based on purchase history</li>
-  <li>Multi-branch support for chain supermarkets</li>
-  <li>Automated low-stock reorder notifications to suppliers</li>
-</ul>
-
-<hr>
-
-<h2>🚀 What We Learned</h2>
-<ul>
-  <li>Full-stack web development with React + FastAPI</li>
-  <li>REST API design and integration</li>
-  <li>Relational database design with 12 normalized tables</li>
-  <li>JWT authentication and role-based access control</li>
-  <li>Cloud deployment with Railway and Vercel</li>
-  <li>Realistic data generation with Cambodian seasonal patterns</li>
-  <li>Image management with Cloudinary</li>
-</ul>
-
-<hr>
-
-<p align="center">
-  Built with ❤️ by Group 3 — ITC Applied Mathematics and Statistics 2026
-</p>
+</div>
