@@ -67,7 +67,7 @@ export default function AdminInventory() {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const res = await fetch('/api/upload/', {
+      const res = await fetch('https://supermarket-management-production-d071.up.railway.app/api/upload/', {
         method: 'POST',
         body: formData
       })
