@@ -213,6 +213,11 @@ function ReviewCarousel() {
 }
 
 export default function Home() {
+  const [productCount, setProductCount] = React.useState(148)
+  React.useEffect(() => {
+    fetch('https://supermarket-management-production-d071.up.railway.app/api/products/')
+      .then(r => r.json()).then(d => { if(d?.length) setProductCount(d.length) }).catch(()=>{})
+  }, [])
   const [recentProducts,  setRecentProducts]  = useState([])
   const [popularProducts, setPopularProducts] = useState([])
   const [categories,      setCategories]      = useState([])
@@ -430,7 +435,7 @@ export default function Home() {
               {/* Stats */}
               <div style={{ display:'flex', gap:40, animation:'fadeLeft .7s ease .4s both' }}>
                 {[
-                  { n:'148', suffix:'',  label:'Products'   },
+                  { n:String(productCount), suffix:'',  label:'Products'   },
                   { n:'12',  suffix:'',  label:'Categories' },
                   { n:'100', suffix:'%', label:'In Stock'   },
                 ].map(({ n, suffix, label }, i) => (
@@ -678,7 +683,7 @@ export default function Home() {
               </div>
               <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:36, fontWeight:900,
                 color:'#fff', marginBottom:10, lineHeight:1.2 }}>
-                148 Products.<br/>12 Categories.<br/>All In Stock.
+                {productCount} Products.<br/>12 Categories.<br/>All In Stock.
               </h2>
               <p style={{ fontSize:15, color:'rgba(255,255,255,.65)', maxWidth:400, lineHeight:1.7 }}>
                 Everything you need for your daily groceries — fresh, quality, and affordable.
