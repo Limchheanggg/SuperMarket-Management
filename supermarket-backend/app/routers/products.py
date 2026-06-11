@@ -12,7 +12,6 @@ def serialize(p, cat, db=None):
     stock = inv.Quantity if inv else 0
     return {
         "Product_ID": p.Product_ID,
-        "Barcode": p.Barcode,
         "Name": p.Name,
         "Description": p.Description,
         "Category_ID": p.Category_ID,
@@ -50,11 +49,9 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
 
 @router.post("/")
 def create_product(data: dict, db: Session = Depends(get_db)):
-    existing = db.query(ProductModel).filter(ProductModel.Barcode == data.get("Barcode")).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Barcode already exists")
     product = ProductModel(
-        Barcode=data.get("Barcode"), Name=data.get("Name"),
+        Name=data.get("Name"),
         Description=data.get("Description"), Category_ID=data.get("Category_ID"),
         Brand=data.get("Brand"), Unit=data.get("Unit"),
         Unit_Price=data.get("Unit_Price"), Unit_Mass_Kg=data.get("Unit_Mass_Kg"),
@@ -72,7 +69,7 @@ def update_product(product_id: int, data: dict, db: Session = Depends(get_db)):
     p = db.query(ProductModel).filter(ProductModel.Product_ID == product_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Product not found")
-    for field in ["Barcode","Name","Description","Category_ID","Brand","Unit","Unit_Price","Unit_Mass_Kg","Reorder_Level","Is_Perishable","Product_Image"]:
+    for field in ["Name","Description","Category_ID","Brand","Unit","Unit_Price","Unit_Mass_Kg","Reorder_Level","Is_Perishable","Product_Image"]:
         if field in data:
             setattr(p, field, data[field])
     db.commit()

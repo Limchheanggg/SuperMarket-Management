@@ -5,7 +5,6 @@ class Product(Base):
     __tablename__ = "Product"
 
     Product_ID    = Column(Integer, primary_key=True, autoincrement=True)
-    Barcode       = Column(String(50), unique=True, nullable=False)
     Name          = Column(String(100), nullable=False)
     Description   = Column(Text)
     Category_ID   = Column(Integer, ForeignKey("Category.Category_ID"))

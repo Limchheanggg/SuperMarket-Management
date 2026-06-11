@@ -32,7 +32,7 @@ def get_supplier(supplier_id: int, db: Session = Depends(get_db)):
     if not s:
         raise HTTPException(status_code=404, detail="Supplier not found")
     products = db.execute(text("""
-        SELECT p.Product_ID, p.Name, p.Barcode, p.Unit_Price, p.Unit,
+        SELECT p.Product_ID, p.Name, p.Unit_Price, p.Unit,
                c.Category_Name, COALESCE(inv.Quantity, 0) as Stock
         FROM Product p
         LEFT JOIN Category c ON c.Category_ID = p.Category_ID

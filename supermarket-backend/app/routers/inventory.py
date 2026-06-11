@@ -15,7 +15,6 @@ def get_inventory(db: Session = Depends(get_db)):
         rows = db.execute(text("""
             SELECT
                 p.Product_ID,
-                p.Barcode,
                 p.Name,
                 p.Brand,
                 p.Unit,
