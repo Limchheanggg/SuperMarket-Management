@@ -19,7 +19,7 @@ const EMOJIS = {
 }
 
 const EMPTY = {
-  Name:'', Barcode:'', Category_ID:'', Supplier_ID:'', Brand:'', Unit:'piece',
+  Name:'', Category_ID:'', Supplier_ID:'', Brand:'', Unit:'piece',
   Unit_Price:'', Unit_Mass_Kg:'', Reorder_Level:10,
   Is_Perishable:0, Description:'', Product_Image:'', Quantity:99
 }
@@ -83,7 +83,6 @@ export default function AdminInventory() {
   // ── Save product ────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!form.Name.trim())       { toast.error('Product name required'); return }
-    if (!form.Barcode.trim())    { toast.error('Barcode required'); return }
     if (!form.Unit_Price)        { toast.error('Price required'); return }
     if (!form.Category_ID)       { toast.error('Category required'); return }
     setSaving(true)
@@ -135,7 +134,6 @@ export default function AdminInventory() {
   const filtered = items.filter(i => {
     const q = search.toLowerCase()
     const matchQ = !q || i.Name?.toLowerCase().includes(q) ||
-                   i.Barcode?.toLowerCase().includes(q) ||
                    i.Brand?.toLowerCase().includes(q)
     const matchS = statusF === 'All' || i.Status === statusF
     const matchC = catF    === 'All' || i.Category_Name === catF
@@ -276,7 +274,6 @@ export default function AdminInventory() {
                         </div>
                         <div>
                           <div style={{ fontWeight:700, color:'#0f172a', fontSize:13, marginBottom:2 }}>{item.Name}</div>
-                          <div style={{ fontSize:11, color:'#94a3b8' }}>{item.Barcode} · {item.Brand || '—'}</div>
                         </div>
                       </div>
                     </td>
@@ -359,10 +356,7 @@ export default function AdminInventory() {
                 <input className="inv-input" placeholder="e.g. Jasmine Rice 5kg" value={form.Name}
                   onChange={e=>setForm({...form,Name:e.target.value})} />
               </div>
-              {/* Barcode */}
               <div>
-                <label className="inv-label">Barcode *</label>
-                <input className="inv-input" placeholder="e.g. KH-RG-001" value={form.Barcode}
                   onChange={e=>setForm({...form,Barcode:e.target.value})} />
               </div>
               {/* Brand */}

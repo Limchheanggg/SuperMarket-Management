@@ -326,7 +326,6 @@ export default function ProductDetail() {
               boxShadow:'0 2px 8px rgba(0,0,0,.04)' }}>
               {[
                 ['Brand',         product.Brand || 'AMS Mart'],
-                ['Barcode',       product.Barcode],
                 ['Weight',        product.Unit_Mass_Kg ? `${product.Unit_Mass_Kg} kg` : '—'],
                 ['Current Stock', product.Current_Stock ?? 0],
                 ['Reorder Level', product.Reorder_Level],
@@ -410,7 +409,6 @@ export default function ProductDetail() {
                   ['Category',       product.Category_Name],
                   ['Unit',           product.Unit],
                   ['Weight',         product.Unit_Mass_Kg ? `${product.Unit_Mass_Kg} kg` : '—'],
-                  ['Barcode',        product.Barcode],
                   ['Perishable',     product.Is_Perishable ? 'Yes' : 'No'],
                   ['Reorder Level',  product.Reorder_Level],
                 ].map(([k, v]) => (
