@@ -258,6 +258,14 @@ def create_sale(data: dict, db: Session = Depends(get_db)):
     import json
     customer_info = data.get("customer_info", {})
     note = json.dumps(customer_info) if customer_info else None
+    # Check stock availability before creating sale
+    for item in data.get("items", []):
+        pid = item["Product_ID"]
+        qty = item["qty"]
+        row = db.execute(text("SELECT Quantity FROM Inventory WHERE Product_ID = :pid"), {"pid": pid}).fetchone()
+        if not row or row[0] < qty:
+            raise HTTPException(status_code=400, detail=f"Product {pid} is out of stock or insufficient quantity")
+
     result = db.execute(text("""
         INSERT INTO Sale (Sale_Day, Sale_Month, Sale_Year, Sale_Time,
                           Employee_ID, Customer_ID, Total_Amount, Discount, Tax, Payment_Method, Customer_Note)
