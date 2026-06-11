@@ -67,13 +67,13 @@ export default function AdminInventory() {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const res = await fetch('http://localhost:8000/api/upload/', {
+      const res = await fetch('/api/upload/', {
         method: 'POST',
         body: formData
       })
       if (!res.ok) throw new Error('Upload failed')
       const data = await res.json()
-      setForm(f => ({ ...f, Product_Image: `http://localhost:8000${data.url}` }))
+      setForm(f => ({ ...f, Product_Image: data.url }))
       toast.success('Image uploaded!')
     } catch (err) {
       toast.error('Image upload failed')
