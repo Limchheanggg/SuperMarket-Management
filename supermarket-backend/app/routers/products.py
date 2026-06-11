@@ -49,7 +49,6 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
 
 @router.post("/")
 def create_product(data: dict, db: Session = Depends(get_db)):
-    if existing:
     product = ProductModel(
         Name=data.get("Name"),
         Description=data.get("Description"), Category_ID=data.get("Category_ID"),
