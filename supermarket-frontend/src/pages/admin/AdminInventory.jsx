@@ -205,7 +205,7 @@ export default function AdminInventory() {
         <div style={{ position:'relative', flex:1, minWidth:220 }}>
           <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:15, color:'#94a3b8' }}>🔍</span>
           <input value={search} onChange={e=>setSearch(e.target.value)}
-            placeholder="Search product, barcode, brand..."
+            placeholder="Search product, brand..."
             style={{ width:'100%', paddingLeft:38, padding:'10px 14px 10px 38px', borderRadius:10, border:'1.5px solid #e2e8f0', fontSize:13, outline:'none', boxSizing:'border-box', fontFamily:"'Plus Jakarta Sans',sans-serif" }} />
         </div>
         {/* Status filter */}
@@ -357,7 +357,6 @@ export default function AdminInventory() {
                   onChange={e=>setForm({...form,Name:e.target.value})} />
               </div>
               <div>
-                  onChange={e=>setForm({...form,Barcode:e.target.value})} />
               </div>
               {/* Brand */}
               <div>
