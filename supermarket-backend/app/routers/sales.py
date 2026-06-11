@@ -214,7 +214,13 @@ def get_my_sales(user_id: int, db: Session = Depends(get_db)):
         ORDER BY s.Sale_Year DESC, s.Sale_Month DESC, s.Sale_Day DESC, s.Sale_Time DESC
         LIMIT 500
     """), {"uid": user_id}).fetchall()
-    return [dict(r._mapping) for r in rows]
+    result = []
+    for r in rows:
+        d = dict(r._mapping)
+        d["date"] = f"{d['Sale_Year']}-{str(d['Sale_Month']).zfill(2)}-{str(d['Sale_Day']).zfill(2)}"
+        d["Sale_ID_fmt"] = f"S{d['Sale_ID']}"
+        result.append(d)
+    return result
 
 @router.get("/{sale_id}")
 def get_sale(sale_id: int, db: Session = Depends(get_db)):
