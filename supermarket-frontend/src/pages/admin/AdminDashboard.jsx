@@ -144,7 +144,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div ref={kpiRef} style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:24 }}>
+      <div ref={kpiRef} style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:16, marginBottom:24 }}>
         {KPI.map((k,i) => (
           <div key={k.label} className="kpi-card" style={{ background:k.bg, border:`1.5px solid ${k.color}22`,
             }}>
@@ -167,7 +167,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Middle row */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 300px', gap:20, marginBottom:20 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:20, marginBottom:20 }}>
 
         {/* Recent Sales */}
         <div className="ad-card" style={{ }}>
@@ -250,7 +250,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Bottom Stats */}
-      <div ref={botRef} style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16 }}>
+      <div ref={botRef} style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:16 }}>
         {[
           { label:'Total Products',  value: total,                             color:'#0891b2', bg:'#ecfeff', icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> },
           { label:'Monthly Sales',   value: summary?.monthly_sales??0,         color:'#7c3aed', bg:'#f5f3ff', icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
