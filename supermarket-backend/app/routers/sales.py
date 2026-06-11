@@ -89,6 +89,7 @@ def get_cashiers(db: Session = Depends(get_db)):
         SELECT DISTINCT u.full_name as name
         FROM Sale s
         JOIN users u ON u.id = s.Employee_ID
+        WHERE u.role IN ('cashier', 'employee')
         ORDER BY name
     """)).fetchall()
     return [r.name for r in rows]
@@ -287,11 +288,9 @@ def create_sale(data: dict, db: Session = Depends(get_db)):
 
         # Deduct stock from Inventory
         db.execute(text("""
-            INSERT INTO Inventory (Product_ID, Quantity, Last_Updated)
-            VALUES (:pid, 0, NOW())
-            ON DUPLICATE KEY UPDATE
-                Quantity = GREATEST(0, Quantity - :qty),
-                Last_Updated = NOW()
+            UPDATE Inventory
+            SET Quantity = GREATEST(0, Quantity - :qty), Last_Updated = NOW()
+            WHERE Product_ID = :pid
         """), {"pid": pid, "qty": qty})
 
         # Log stock movement
@@ -304,19 +303,21 @@ def create_sale(data: dict, db: Session = Depends(get_db)):
     cid = data.get("customer_id")
     if cid:
         total = float(data.get("total", 0))
-        pts = int(total)
+        tax = float(data.get("tax", 0))
+        subtotal = round(total - tax, 2)  # points based on subtotal before tax
+        pts = round(subtotal)  # 1 point per $1 spent before tax
         db.execute(text("""
             UPDATE Membership
             SET Points = Points + :pts,
-                Total_Spent = Total_Spent + :spent,
+                Total_Spent = Total_Spent + :subtotal,
                 Tier = CASE
-                    WHEN Total_Spent + :spent >= 500 THEN 'Platinum'
-                    WHEN Total_Spent + :spent >= 200 THEN 'Gold'
-                    WHEN Total_Spent + :spent >= 50  THEN 'Silver'
+                    WHEN Total_Spent + :subtotal >= 500 THEN 'Platinum'
+                    WHEN Total_Spent + :subtotal >= 200 THEN 'Gold'
+                    WHEN Total_Spent + :subtotal >= 50  THEN 'Silver'
                     ELSE 'Bronze'
                 END
             WHERE Customer_ID = :cid
-        """), {"pts": pts, "spent": total, "cid": cid})
+        """), {"pts": pts, "subtotal": subtotal, "cid": cid})
         # Also update Customer loyalty points
         db.execute(text("""
             UPDATE Customer SET Loyalty_Points = Loyalty_Points + :pts WHERE Customer_ID = :cid

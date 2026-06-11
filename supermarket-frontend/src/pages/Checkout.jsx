@@ -94,9 +94,16 @@ export default function Checkout() {
 
     setLoading(true);
     try {
-      await createSale({
-        customer_id: user?.customer_id || null,
-        cashier_id: user?.id || null,
+      let cid = user?.customer_id || null
+      if (!cid && user?.id) {
+        try {
+          const memRes = await API.get(`/api/membership/me?user_id=${user.id}`)
+          cid = memRes.data?.Customer_ID || null
+        } catch {}
+      }
+      const saleData = {
+        customer_id: cid,
+        cashier_id: ["cashier","employee"].includes(user?.role) ? user?.id : 527,
         items: cartItems.map((i) => ({
           Product_ID: i.Product_ID,
           qty: i.qty,
@@ -112,7 +119,9 @@ export default function Checkout() {
           phone:   user?.phone || "",
           notes:   notes,
         },
-      });
+      }
+      console.log("Sale data:", JSON.stringify(saleData))
+      await createSale(saleData);
       clearCart();
       toast.success("Order placed successfully!");
       try {

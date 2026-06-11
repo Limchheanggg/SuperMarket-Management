@@ -312,6 +312,25 @@ export default function AdminSales() {
               })}
             </div>
 
+            {/* Customer Info */}
+            {selectedSale.customerName && selectedSale.customerName !== 'Walk-in' && (
+              <div style={{ background:'#f0f9ff', borderRadius:12, padding:'14px 16px', marginBottom:16, border:'1px solid #bae6fd' }}>
+                <div style={{ fontSize:11, fontWeight:700, color:'#0369a1', textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>Customer Information</div>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                  {[
+                    ['Name',    selectedSale.customerName],
+                    ['Email',   selectedSale.customerEmail],
+                    ['Phone',   selectedSale.customerPhone],
+                    ['Notes',   selectedSale.customerNotes || 'None'],
+                  ].map(([l,v]) => (
+                    <div key={l} style={{ background:'#fff', borderRadius:8, padding:'10px 12px', border:'1px solid #e0f2fe' }}>
+                      <div style={{ fontSize:11, color:'#94a3b8', fontWeight:600, marginBottom:3 }}>{l}</div>
+                      <div style={{ fontSize:13, fontWeight:700, color:'#0f172a' }}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {/* Items */}
             <h4 style={{ fontSize:14, fontWeight:800, color:'#0f172a', marginBottom:10 }}>🛒 Items Purchased</h4>
             {detailLoading ? (
