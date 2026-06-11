@@ -69,8 +69,8 @@ export default function AdminDashboard() {
   const [inventory,   setInventory]   = useState([])
   const [recentSales, setRecentSales] = useState([])
   const [loading,     setLoading]     = useState(true)
-  const [kpiRef, kpiVisible]   = useInView()
-  const [botRef, botVisible]   = useInView()
+  const kpiRef = null
+  const botRef = null
 
   useEffect(() => {
     Promise.all([
