@@ -18,7 +18,7 @@ export const getMe = () => API.get("/api/auth/me");
 export const updateMe = (data) => API.put("/api/auth/me", data);
 
 // Products
-export const getProducts = (params) => API.get("/api/products", { params });
+export const getProducts = (params) => API.get("/api/products/", { params });
 export const getProduct = (id) => API.get(`/api/products/${id}`);
 export const getCategories = () => API.get("/api/products/categories");
 export const createProduct = (data) => API.post("/api/products/", data);
