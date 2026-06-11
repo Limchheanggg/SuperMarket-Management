@@ -59,7 +59,7 @@ const team = [
     role: "Database Design",
     id: "e20230135",
     color: "#c0272d",
-    photo: "http://localhost:8000/static/images/ChhayLyveng.jpg",
+    photo: "https://supermarket-management-production-d071.up.railway.app/static/images/ChhayLyveng.jpg",
   },
   {
     init: "KL",
@@ -67,7 +67,7 @@ const team = [
     role: "Core System",
     id: "e20230393",
     color: "#1d4ed8",
-    photo: "http://localhost:8000/static/images/KhunLimchheang.jpg",
+    photo: "https://supermarket-management-production-d071.up.railway.app/static/images/KhunLimchheang.jpg",
   },
   {
     init: "HH",
@@ -75,7 +75,7 @@ const team = [
     role: "Testing & Documentation",
     id: "e20230754",
     color: "#15803d",
-    photo: "http://localhost:8000/static/images/HornHengVesana.jpg",
+    photo: "https://supermarket-management-production-d071.up.railway.app/static/images/HornHengVesana.jpg",
   },
   {
     init: "KV",
@@ -83,7 +83,7 @@ const team = [
     role: "Supervisor",
     id: "Professor",
     color: "#7c3aed",
-    photo: "http://localhost:8000/static/images/KheanVisal.png",
+    photo: "https://supermarket-management-production-d071.up.railway.app/static/images/KheanVisal.png",
   },
 ];
 
