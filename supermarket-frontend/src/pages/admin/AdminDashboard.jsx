@@ -99,7 +99,7 @@ export default function AdminDashboard() {
   ]
 
   return (
-    <div style={{ padding:28, fontFamily:"'Plus Jakarta Sans',sans-serif", minHeight:'100vh', background:'#f4f6fa' }}>
+    <div style={{ padding:28, fontFamily:"'Plus Jakarta Sans',sans-serif", background:'#f4f6fa' }}>
       <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet"/>
       <style>{`
         @keyframes fadeUp  { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
