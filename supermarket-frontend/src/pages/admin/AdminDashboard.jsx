@@ -71,6 +71,7 @@ export default function AdminDashboard() {
   const [loading,     setLoading]     = useState(true)
   const kpiRef = null
   const botRef = null
+  const kpiVisible = true
   const botVisible = true
 
   useEffect(() => {
