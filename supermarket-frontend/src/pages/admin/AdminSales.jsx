@@ -287,26 +287,31 @@ export default function AdminSales() {
           onClick={e => { if(e.target===e.currentTarget) setSelected(null) }}>
           <div style={{ background:'#fff', borderRadius:18, padding:32, width:'100%', maxWidth:560, boxShadow:'0 8px 40px rgba(0,0,0,.15)', maxHeight:'90vh', overflowY:'auto' }}>
 
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
-              <h3 style={{ fontSize:20, fontWeight:800, color:'#0f172a' }}>🧾 Sale {selectedSale.Sale_ID_fmt}</h3>
-              <button onClick={() => setSelected(null)} style={{ background:'none', border:'none', fontSize:22, cursor:'pointer', color:'#94a3b8' }}>✕</button>
+            {/* Header */}
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24, paddingBottom:16, borderBottom:'1.5px solid #f1f5f9' }}>
+              <div>
+                <div style={{ fontSize:11, fontWeight:700, color:'#c0272d', textTransform:'uppercase', letterSpacing:1.5, marginBottom:4 }}>Transaction Receipt</div>
+                <h3 style={{ fontSize:22, fontWeight:900, color:'#0f172a', margin:0, fontFamily:"'Playfair Display',serif" }}>{selectedSale.Sale_ID_fmt}</h3>
+              </div>
+              <button onClick={() => setSelected(null)} style={{ background:'#f1f5f9', border:'none', borderRadius:10, width:36, height:36, cursor:'pointer', fontSize:16, color:'#64748b', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700 }}>✕</button>
             </div>
 
-            {/* Sale info grid */}
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:20 }}>
+            {/* Info grid */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:20 }}>
               {[
-                ['📅 Date',       selectedSale.date],
-                ['⏰ Time',       selectedSale.time],
-                ['👤 Customer',   selectedSale.customer],
-                ['👨‍💼 Cashier',    selectedSale.cashier],
-                ['💳 Payment',    selectedSale.Payment_Method],
-                ['📦 Items',      `${selectedSale.item_count} item${selectedSale.item_count!==1?'s':''}`],
+                ['Date',     selectedSale.date],
+                ['Time',     selectedSale.time],
+                ['Customer', selectedSale.customer],
+                ['Cashier',  selectedSale.cashier],
+                ['Payment',  selectedSale.Payment_Method],
+                ['Items',    `${selectedSale.item_count} item${selectedSale.item_count!==1?'s':''}`],
               ].map(([label, value]) => {
-                const mc = label.includes('Payment') ? (METHOD_COLORS[value] || {}) : {}
+                const isPayment = label === 'Payment'
+                const mc = isPayment ? (METHOD_COLORS[value] || {}) : {}
                 return (
-                  <div key={label} style={{ padding:'10px 14px', background:'#f8fafc', borderRadius:10, border:'1px solid #e5e7eb' }}>
-                    <div style={{ fontSize:11, color:'#94a3b8', marginBottom:3, fontWeight:600 }}>{label}</div>
-                    <strong style={{ fontSize:14, color: mc.color || '#0f172a' }}>{value}</strong>
+                  <div key={label} style={{ padding:'12px 14px', background:'#f8fafc', borderRadius:10, border:'1px solid #f1f5f9' }}>
+                    <div style={{ fontSize:10, color:'#94a3b8', marginBottom:4, fontWeight:700, textTransform:'uppercase', letterSpacing:1 }}>{label}</div>
+                    <div style={{ fontSize:14, fontWeight:700, color: mc.color || '#0f172a', background: isPayment && mc.bg ? mc.bg : 'transparent', display:'inline-block', padding: isPayment ? '2px 10px' : '0', borderRadius: isPayment ? 99 : 0 }}>{value}</div>
                   </div>
                 )
               })}
@@ -315,37 +320,38 @@ export default function AdminSales() {
             {/* Customer Info */}
             {selectedSale.customerName && selectedSale.customerName !== 'Walk-in' && (
               <div style={{ background:'#f0f9ff', borderRadius:12, padding:'14px 16px', marginBottom:16, border:'1px solid #bae6fd' }}>
-                <div style={{ fontSize:11, fontWeight:700, color:'#0369a1', textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>Customer Information</div>
+                <div style={{ fontSize:10, fontWeight:700, color:'#0369a1', textTransform:'uppercase', letterSpacing:1.5, marginBottom:10 }}>Customer Information</div>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
                   {[
-                    ['Name',    selectedSale.customerName],
-                    ['Email',   selectedSale.customerEmail],
-                    ['Phone',   selectedSale.customerPhone],
-                    ['Notes',   selectedSale.customerNotes || 'None'],
+                    ['Name',  selectedSale.customerName],
+                    ['Email', selectedSale.customerEmail],
+                    ['Phone', selectedSale.customerPhone],
+                    ['Notes', selectedSale.customerNotes || '—'],
                   ].map(([l,v]) => (
                     <div key={l} style={{ background:'#fff', borderRadius:8, padding:'10px 12px', border:'1px solid #e0f2fe' }}>
-                      <div style={{ fontSize:11, color:'#94a3b8', fontWeight:600, marginBottom:3 }}>{l}</div>
-                      <div style={{ fontSize:13, fontWeight:700, color:'#0f172a' }}>{v}</div>
+                      <div style={{ fontSize:10, color:'#94a3b8', fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:3 }}>{l}</div>
+                      <div style={{ fontSize:13, fontWeight:600, color:'#0f172a' }}>{v}</div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-            {/* Items */}
-            <h4 style={{ fontSize:14, fontWeight:800, color:'#0f172a', marginBottom:10 }}>🛒 Items Purchased</h4>
+
+            {/* Items table */}
+            <div style={{ fontSize:10, fontWeight:700, color:'#0f172a', textTransform:'uppercase', letterSpacing:1.5, marginBottom:10 }}>Items Purchased</div>
             {detailLoading ? (
-              <div style={{ textAlign:'center', padding:24, color:'#94a3b8' }}>⏳ Loading items...</div>
+              <div style={{ textAlign:'center', padding:24, color:'#94a3b8', fontSize:13 }}>Loading items...</div>
             ) : detailItems.length === 0 ? (
               <div style={{ textAlign:'center', padding:20, color:'#94a3b8', background:'#f8fafc', borderRadius:10, fontSize:13 }}>No item details available</div>
             ) : (
-              <div style={{ border:'1.5px solid #e5e7eb', borderRadius:12, overflow:'hidden', marginBottom:20 }}>
-                <div style={{ background:'#f8fafc', padding:'9px 14px', display:'grid', gridTemplateColumns:'1fr auto auto', gap:12, fontSize:12, fontWeight:700, color:'#374151', borderBottom:'1px solid #e5e7eb' }}>
+              <div style={{ borderRadius:12, overflow:'hidden', border:'1.5px solid #f1f5f9', marginBottom:20 }}>
+                <div style={{ background:'#0f172a', padding:'10px 16px', display:'grid', gridTemplateColumns:'1fr auto auto', gap:12, fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1 }}>
                   <span>Product</span><span style={{ textAlign:'right' }}>Qty × Price</span><span style={{ textAlign:'right' }}>Subtotal</span>
                 </div>
                 {detailItems.map((item, i) => (
-                  <div key={i} style={{ display:'grid', gridTemplateColumns:'1fr auto auto', gap:12, padding:'11px 14px', borderBottom: i<detailItems.length-1?'1px solid #f3f4f6':'none', background: i%2===0?'#fff':'#fafafa', fontSize:13 }}>
+                  <div key={i} style={{ display:'grid', gridTemplateColumns:'1fr auto auto', gap:12, padding:'12px 16px', borderBottom: i<detailItems.length-1?'1px solid #f8fafc':'none', background: i%2===0?'#fff':'#fafafa', fontSize:13 }}>
                     <span style={{ fontWeight:600, color:'#0f172a' }}>{item.Name}</span>
-                    <span style={{ color:'#64748b', textAlign:'right', whiteSpace:'nowrap' }}>{item.Quantity} × ${item.Unit_Price.toFixed(2)}</span>
+                    <span style={{ color:'#94a3b8', textAlign:'right', whiteSpace:'nowrap' }}>{item.Quantity} × ${item.Unit_Price.toFixed(2)}</span>
                     <strong style={{ color:'#16a34a', textAlign:'right' }}>${item.Subtotal.toFixed(2)}</strong>
                   </div>
                 ))}
@@ -353,23 +359,23 @@ export default function AdminSales() {
             )}
 
             {/* Totals */}
-            <div style={{ borderTop:'2px solid #e5e7eb', paddingTop:14 }}>
+            <div style={{ background:'#f8fafc', borderRadius:12, padding:'14px 16px', border:'1.5px solid #f1f5f9' }}>
               {[
-                ['Subtotal', `$${(selectedSale.Total_Amount - (selectedSale.Tax||0)).toFixed(2)}`],
-                ['Tax',      `$${(selectedSale.Tax||0).toFixed(2)}`],
-                ...(selectedSale.Discount > 0 ? [['Discount', `-$${selectedSale.Discount.toFixed(2)}`]] : []),
-              ].map(([l,v]) => (
-                <div key={l} style={{ display:'flex', justifyContent:'space-between', fontSize:13, color:'#64748b', marginBottom:6 }}>
-                  <span>{l}</span><span>{v}</span>
+                ['Subtotal', `$${(selectedSale.Total_Amount - (selectedSale.Tax||0)).toFixed(2)}`, '#374151'],
+                ['Tax (10%)', `$${(selectedSale.Tax||0).toFixed(2)}`, '#374151'],
+                ...(selectedSale.Discount > 0 ? [['Discount', `-$${selectedSale.Discount.toFixed(2)}`, '#c0272d']] : []),
+              ].map(([l,v,c]) => (
+                <div key={l} style={{ display:'flex', justifyContent:'space-between', fontSize:13, color:c||'#64748b', marginBottom:8 }}>
+                  <span>{l}</span><span style={{ fontWeight:600 }}>{v}</span>
                 </div>
               ))}
-              <div style={{ display:'flex', justifyContent:'space-between', fontWeight:800, fontSize:18, color:'#16a34a', marginTop:10, paddingTop:10, borderTop:'1px solid #e5e7eb' }}>
-                <span>Total</span><span>${selectedSale.Total_Amount.toFixed(2)}</span>
+              <div style={{ display:'flex', justifyContent:'space-between', fontWeight:900, fontSize:20, color:'#0f172a', marginTop:12, paddingTop:12, borderTop:'2px solid #e5e7eb' }}>
+                <span>Total</span><span style={{ color:'#16a34a' }}>${selectedSale.Total_Amount.toFixed(2)}</span>
               </div>
             </div>
 
             <button onClick={() => setSelected(null)}
-              style={{ width:'100%', marginTop:20, padding:'12px', borderRadius:12, border:'none', background:'linear-gradient(135deg,#15803d,#22c55e)', color:'#fff', fontWeight:700, fontSize:14, cursor:'pointer' }}>
+              style={{ width:'100%', marginTop:16, padding:'13px', borderRadius:12, border:'none', background:'#0f172a', color:'#fff', fontWeight:700, fontSize:14, cursor:'pointer', letterSpacing:.5 }}>
               Close
             </button>
           </div>
