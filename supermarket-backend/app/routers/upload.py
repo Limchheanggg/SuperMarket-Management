@@ -5,7 +5,7 @@ import cloudinary.uploader
 cloudinary.config(
     cloud_name="dtdfjnzby",
     api_key="932228833245684",
-    api_secret="ZMjyvuIDVr9YJf_o-gQ1IOReJHs"
+    api_secret="ZMjyvuiDVr9YJf_o-gQ1lOReJHs"
 )
 
 router = APIRouter()
