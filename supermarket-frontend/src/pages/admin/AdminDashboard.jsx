@@ -145,7 +145,7 @@ export default function AdminDashboard() {
       <div ref={kpiRef} style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:24 }}>
         {KPI.map((k,i) => (
           <div key={k.label} className="kpi-card" style={{ background:k.bg, border:`1.5px solid ${k.color}22`,
-            opacity: kpiVisible?1:0, animation: kpiVisible?`fadeUp .5s ease ${i*.08}s forwards`:'none' }}>
+            animation:`fadeUp .5s ease ${i*.08}s forwards` }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:16 }}>
               <div style={{ width:46, height:46, borderRadius:14, background:`${k.color}22`,
                 display:'flex', alignItems:'center', justifyContent:'center', color:k.color }}>
@@ -256,7 +256,7 @@ export default function AdminDashboard() {
           { label:'Yearly Sales',    value: summary?.yearly_sales??0,          color:'#db2777', bg:'#fdf2f8', icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> },
         ].map((s,i) => (
           <div key={s.label} className="ad-card" style={{ display:'flex', alignItems:'center', gap:16,
-            opacity: botVisible?1:0, animation: botVisible?`fadeUp .5s ease ${i*.08}s forwards`:'none' }}>
+            animation:`fadeUp .5s ease ${i*.08}s forwards` }}>
             <div style={{ width:50, height:50, borderRadius:14, background:s.bg,
               display:'flex', alignItems:'center', justifyContent:'center', color:s.color, flexShrink:0 }}>
               {s.icon}
