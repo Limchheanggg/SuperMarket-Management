@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import API from "../services/api";
 
 function useInView(threshold = 0.15) {
   const ref = useRef();
@@ -87,12 +88,20 @@ const team = [
   },
 ];
 
-const stats = [
-  { value: "147", suffix: "", label: "Products", icon: "📦" },
+const [stats, setStats] = useState([
+  { value: "...", suffix: "", label: "Products", icon: "📦" },
   { value: "12", suffix: "", label: "Categories", icon: "🗂️" },
   { value: "12", suffix: "", label: "Suppliers", icon: "🚚" },
   { value: "2026", suffix: "", label: "Founded", icon: "📅" },
-];
+]);
+useEffect(() => {
+  API.get('/api/products/').then(res => {
+    const count = res.data?.length || 0;
+    setStats(s => s.map(item => item.label === "Products" ? {...item, value: String(count)} : item));
+  }).catch(() => {
+    setStats(s => s.map(item => item.label === "Products" ? {...item, value: "148"} : item));
+  });
+}, []);
 
 const values = [
   {
