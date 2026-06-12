@@ -32,7 +32,7 @@ The system bridges the gap between traditional Cambodian supermarket operations 
 
 | Name | Student ID | Role |
 |------|-----------|------|
-| **KHUN Limchheang** | e20230393 | Core System & Backend |
+| **KHUN Limchheang** | e20230393 | Core System  |
 | **CHHAY Lyveng** | e20230135 | Database Design |
 | **HORN Hengveasna** | e20230754 | Testing & Documentation |
 | **KHEAN Visal** | — | Supervisor |
@@ -152,8 +152,8 @@ HTTP Request
 
 | Table | Rows | Description |
 |-------|------|-------------|
-| `users` | 549 | All users — auth + role (admin/cashier/customer) |
-| `Customer` | 550+ | Customer profiles + loyalty points |
+| `users` | 550+ | All users — auth + role (admin/manager/cashier/customer) |
+| `Customer` | 520+ | Customer profiles + loyalty points |
 | `Membership` | 550+ | Tier (Bronze/Silver/Gold/Platinum), points, spent |
 | `Product` | 140+ | Products — name, price, category, supplier, image |
 | `Category` | 12 | Product categories |
