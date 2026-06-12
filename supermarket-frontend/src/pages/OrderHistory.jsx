@@ -228,12 +228,13 @@ export default function OrderHistory() {
             )}
 
             <div style={{ borderTop:'1px solid #f0f0f0', paddingTop:16 }}>
-              {[['Subtotal',`$${(Number(selected.Total_Amount||0)-Number(selected.Tax||0)).toFixed(2)}`],
+              {[['Subtotal',`$${(Number(selected.Total_Amount||0)-Number(selected.Tax||0)+Number(selected.Discount||0)).toFixed(2)}`],
+                ...(Number(selected.Discount||0) > 0 ? [[selected.Coupon_Code ? `Discount (${selected.Coupon_Code})` : 'Discount', `-$${Number(selected.Discount||0).toFixed(2)}`, '#c0272d']] : []),
                 ...(Number(selected.Tax||0) > 0 ? [['Tax (10%)',`$${Number(selected.Tax||0).toFixed(2)}`]] : [])
-              ].map(([l,v]) => (
+              ].map(([l,v,c]) => (
                 <div key={l} style={{ display:'flex', justifyContent:'space-between', fontSize:14,
-                  color:'#6b7280', marginBottom:6 }}>
-                  <span>{l}</span><span>{v}</span>
+                  color:c||'#6b7280', marginBottom:6 }}>
+                  <span>{l}</span><span style={{ fontWeight: c?700:400 }}>{v}</span>
                 </div>
               ))}
               <div style={{ display:'flex', justifyContent:'space-between', fontWeight:900, fontSize:18,
