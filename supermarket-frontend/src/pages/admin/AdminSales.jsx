@@ -10,6 +10,21 @@ const METHOD_COLORS = {
   Wing:     { bg:'#fef9c3', color:'#ca8a04', border:'#fde047' },
 }
 
+function Icon({ name, size=16, color='currentColor' }) {
+  const p = { width:size, height:size, viewBox:'0 0 24 24', fill:'none', stroke:color, strokeWidth:1.8, strokeLinecap:'round', strokeLinejoin:'round' }
+  switch (name) {
+    case 'receipt': return <svg {...p}><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="13" y2="15"/></svg>
+    case 'dollar': return <svg {...p}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    case 'bar-chart': return <svg {...p}><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+    case 'trend-up': return <svg {...p}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+    case 'filter': return <svg {...p}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+    case 'loader': return <svg {...p}><circle cx="12" cy="12" r="9" opacity=".25"/><path d="M21 12a9 9 0 0 0-9-9"/></svg>
+    case 'search': return <svg {...p}><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16" y2="16"/></svg>
+    case 'user': return <svg {...p}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    default: return null
+  }
+}
+
 export default function AdminSales() {
   const [sales, setSales]           = useState([])
   const [loading, setLoading]       = useState(true)
@@ -110,13 +125,16 @@ export default function AdminSales() {
       {/* KPI Row */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14, marginBottom:24 }}>
         {[
-          ['Total Transactions', summary?.total_transactions||0,                          '#6366f1','linear-gradient(135deg,#eef2ff,#e0e7ff)','🧾'],
-          ['Monthly Revenue',   `$${(summary?.monthly_revenue||0).toFixed(2)}`,           '#16a34a','linear-gradient(135deg,#f0fdf4,#dcfce7)','💰'],
-          ['Monthly Sales',      summary?.monthly_sales||0,                               '#d97706','linear-gradient(135deg,#fffbeb,#fef3c7)','📊'],
-          ['Avg Transaction',   `$${(summary?.average_transaction||0).toFixed(2)}`,       '#db2777','linear-gradient(135deg,#fdf2f8,#fce7f3)','📈'],
+          ['Total Transactions', summary?.total_transactions||0,                          '#6366f1','linear-gradient(135deg,#eef2ff,#e0e7ff)','receipt'],
+          ['Monthly Revenue',   `$${(summary?.monthly_revenue||0).toFixed(2)}`,           '#16a34a','linear-gradient(135deg,#f0fdf4,#dcfce7)','dollar'],
+          ['Monthly Sales',      summary?.monthly_sales||0,                               '#d97706','linear-gradient(135deg,#fffbeb,#fef3c7)','bar-chart'],
+          ['Avg Transaction',   `$${(summary?.average_transaction||0).toFixed(2)}`,       '#db2777','linear-gradient(135deg,#fdf2f8,#fce7f3)','trend-up'],
         ].map(([l,v,c,bg,icon]) => (
           <div key={l} style={{ background:bg, borderRadius:14, padding:'18px 20px', border:`1.5px solid ${c}22` }}>
-            <div style={{ fontSize:11, color:'#64748b', marginBottom:4, fontWeight:600 }}>{icon} {l}</div>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+              <span style={{ fontSize:11, color:'#64748b', fontWeight:700, textTransform:'uppercase', letterSpacing:.5 }}>{l}</span>
+              <Icon name={icon} size={16} color={c}/>
+            </div>
             <div style={{ fontSize:26, fontWeight:800, color:c }}>{v}</div>
           </div>
         ))}
@@ -125,7 +143,7 @@ export default function AdminSales() {
       {/* ── FILTERS ── */}
       <div style={{ background:'#fff', borderRadius:16, padding:20, border:'1.5px solid #e5e7eb', marginBottom:20, boxShadow:'0 2px 8px rgba(0,0,0,.04)' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
-          <h3 style={{ fontSize:15, fontWeight:800, color:'#0f172a' }}>🔍 Filters</h3>
+          <h3 style={{ fontSize:15, fontWeight:800, color:'#0f172a', display:'flex', alignItems:'center', gap:8 }}><Icon name="filter" size={16} color="#6366f1"/> Filters</h3>
           {activeFilters > 0 && (
             <button onClick={handleClearFilters}
               style={{ fontSize:12, color:'#dc2626', fontWeight:700, background:'#fef2f2', border:'1px solid #fecaca', borderRadius:8, padding:'4px 12px', cursor:'pointer' }}>
@@ -134,20 +152,19 @@ export default function AdminSales() {
           )}
         </div>
 
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:12 }}>
-          {/* Date From */}
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:12 }}>
+          {/* Date Range */}
           <div>
-            <label style={{ fontSize:12, fontWeight:700, color:'#374151', display:'block', marginBottom:5 }}>From Date</label>
-            <input type="date" value={dateFrom} min="2024-06-10" max={dateTo || new Date().toISOString().split("T")[0]}
-              onChange={e => setDateFrom(e.target.value)}
-              style={{ width:'100%', padding:'9px 12px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:13, outline:'none', boxSizing:'border-box' }} />
-          </div>
-          {/* Date To */}
-          <div>
-            <label style={{ fontSize:12, fontWeight:700, color:'#374151', display:'block', marginBottom:5 }}>To Date</label>
-            <input type="date" value={dateTo} min={dateFrom || "2024-06-10"} max={new Date().toISOString().split("T")[0]}
-              onChange={e => setDateTo(e.target.value)}
-              style={{ width:'100%', padding:'9px 12px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:13, outline:'none', boxSizing:'border-box' }} />
+            <label style={{ fontSize:12, fontWeight:700, color:'#374151', display:'block', marginBottom:5 }}>Date Range</label>
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <input type="date" value={dateFrom} min="2024-06-10" max={dateTo || new Date().toISOString().split("T")[0]}
+                onChange={e => setDateFrom(e.target.value)}
+                style={{ width:'100%', padding:'9px 6px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:12, outline:'none', boxSizing:'border-box' }} />
+              <span style={{ color:'#cbd5e1', fontSize:12 }}>-</span>
+              <input type="date" value={dateTo} min={dateFrom || "2024-06-10"} max={new Date().toISOString().split("T")[0]}
+                onChange={e => setDateTo(e.target.value)}
+                style={{ width:'100%', padding:'9px 6px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:12, outline:'none', boxSizing:'border-box' }} />
+            </div>
           </div>
           {/* Payment Method */}
           <div>
@@ -167,42 +184,43 @@ export default function AdminSales() {
               {cashiers.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
-          {/* Min Amount */}
+          {/* Amount Range */}
           <div>
-            <label style={{ fontSize:12, fontWeight:700, color:'#374151', display:'block', marginBottom:5 }}>Min Amount ($)</label>
-            <input type="number" min="0" step="0.01" value={minAmount} onChange={e => setMinAmount(e.target.value)}
-              placeholder="e.g. 5.00"
-              style={{ width:'100%', padding:'9px 12px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:13, outline:'none', boxSizing:'border-box' }} />
-          </div>
-          {/* Max Amount */}
-          <div>
-            <label style={{ fontSize:12, fontWeight:700, color:'#374151', display:'block', marginBottom:5 }}>Max Amount ($)</label>
-            <input type="number" min="0" step="0.01" value={maxAmount} onChange={e => setMaxAmount(e.target.value)}
-              placeholder="e.g. 100.00"
-              style={{ width:'100%', padding:'9px 12px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:13, outline:'none', boxSizing:'border-box' }} />
+            <label style={{ fontSize:12, fontWeight:700, color:'#374151', display:'block', marginBottom:5 }}>Amount Range ($)</label>
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <input type="number" min="0" step="0.01" value={minAmount} onChange={e => setMinAmount(e.target.value)}
+                placeholder="Min"
+                style={{ width:'100%', padding:'9px 6px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:12, outline:'none', boxSizing:'border-box' }} />
+              <span style={{ color:'#cbd5e1', fontSize:12 }}>-</span>
+              <input type="number" min="0" step="0.01" value={maxAmount} onChange={e => setMaxAmount(e.target.value)}
+                placeholder="Max"
+                style={{ width:'100%', padding:'9px 6px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:12, outline:'none', boxSizing:'border-box' }} />
+            </div>
           </div>
         </div>
 
-        {/* Quick date shortcuts */}
-        <div style={{ display:'flex', gap:8, marginBottom:12, flexWrap:'wrap' }}>
-          <span style={{ fontSize:12, color:'#64748b', alignSelf:'center', fontWeight:600 }}>Quick:</span>
-          {[
-            ['Today',      today,                    today],
-            ['This Week',  (() => { const d=new Date(); d.setDate(d.getDate()-d.getDay()); return d.toISOString().split('T')[0] })(), today],
-            ['This Month', today.slice(0,7)+'-01',   today],
-            ['This Year',  today.slice(0,4)+'-01-01',today],
-          ].map(([label, from, to]) => (
-            <button key={label} onClick={() => { setDateFrom(from); setDateTo(to) }}
-              style={{ padding:'5px 12px', borderRadius:8, border:'1.5px solid #e5e7eb', background: dateFrom===from&&dateTo===to ? '#f0fdf4' : '#fff', color: dateFrom===from&&dateTo===to ? '#16a34a' : '#374151', fontSize:12, fontWeight:600, cursor:'pointer' }}>
-              {label}
-            </button>
-          ))}
-        </div>
+        {/* Quick date shortcuts + Apply */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12 }}>
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+            <span style={{ fontSize:12, color:'#64748b', alignSelf:'center', fontWeight:600 }}>Quick:</span>
+            {[
+              ['Today',      today,                    today],
+              ['This Week',  (() => { const d=new Date(); d.setDate(d.getDate()-d.getDay()); return d.toISOString().split('T')[0] })(), today],
+              ['This Month', today.slice(0,7)+'-01',   today],
+              ['This Year',  today.slice(0,4)+'-01-01',today],
+            ].map(([label, from, to]) => (
+              <button key={label} onClick={() => { setDateFrom(from); setDateTo(to) }}
+                style={{ padding:'5px 12px', borderRadius:8, border:'1.5px solid #e5e7eb', background: dateFrom===from&&dateTo===to ? '#f0fdf4' : '#fff', color: dateFrom===from&&dateTo===to ? '#16a34a' : '#374151', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                {label}
+              </button>
+            ))}
+          </div>
 
-        <button onClick={handleApplyFilters}
-          style={{ padding:'10px 28px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#15803d,#22c55e)', color:'#fff', fontWeight:700, fontSize:14, cursor:'pointer', boxShadow:'0 4px 12px rgba(21,128,61,.3)' }}>
-          Apply Filters
-        </button>
+          <button onClick={handleApplyFilters}
+            style={{ padding:'10px 28px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#15803d,#22c55e)', color:'#fff', fontWeight:700, fontSize:14, cursor:'pointer', boxShadow:'0 4px 12px rgba(21,128,61,.3)' }}>
+            Apply Filters
+          </button>
+        </div>
       </div>
 
       {/* Results summary */}
@@ -229,12 +247,12 @@ export default function AdminSales() {
           <tbody>
             {loading ? (
               <tr><td colSpan={9} style={{ padding:48, textAlign:'center', color:'#94a3b8' }}>
-                <div style={{ fontSize:36, marginBottom:10 }}>⏳</div>
+                <div style={{ display:'flex', justifyContent:'center', marginBottom:10 }}><Icon name="loader" size={32}/></div>
                 <p>Loading sales...</p>
               </td></tr>
             ) : sales.length === 0 ? (
               <tr><td colSpan={9} style={{ padding:48, textAlign:'center', color:'#94a3b8' }}>
-                <div style={{ fontSize:40, marginBottom:10 }}>🔍</div>
+                <div style={{ display:'flex', justifyContent:'center', marginBottom:10 }}><Icon name="search" size={36}/></div>
                 <p>No sales found for the selected filters.</p>
               </td></tr>
             ) : sales.map(s => {
@@ -249,7 +267,7 @@ export default function AdminSales() {
                   <td style={{ padding:'12px 14px' }}>
                     <div style={{ display:'flex', alignItems:'center', gap:7 }}>
                       <div style={{ width:28, height:28, borderRadius:9, background:'#f0fdf4', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, color:'#16a34a', flexShrink:0 }}>
-                        {s.customer === 'Walk-in' ? '👤' : s.customer[0].toUpperCase()}
+                        {s.customer === 'Walk-in' ? <Icon name="user" size={14} color="#16a34a"/> : s.customer[0].toUpperCase()}
                       </div>
                       <span style={{ color: s.customer==='Walk-in' ? '#94a3b8' : '#0f172a', fontStyle: s.customer==='Walk-in' ? 'italic' : 'normal', fontSize:13 }}>
                         {s.customer}
