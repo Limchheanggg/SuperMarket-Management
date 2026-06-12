@@ -255,7 +255,7 @@ export default function AdminUsers() {
                       <td style={{ padding:'11px 14px' }}>
                         {canAdmin
                           ? <span style={{ padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:700, background:'#fef3c7', color:'#d97706', border:'1px solid #fcd34d' }}>⚙️ Admin</span>
-                          : <span style={{ padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:700, background:'#f0fdf4', color:'#16a34a', border:'1px solid #86efac' }}>🛒 Shop</span>
+                          : <span style={{ padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:700, background:'#f0fdf4', color:'#16a34a', border:'1px solid #86efac' }}>Shop</span>
                         }
                       </td>
                       <td style={{ padding:'11px 14px' }}>
@@ -528,7 +528,7 @@ export default function AdminUsers() {
           onClick={e => { if(e.target===e.currentTarget) setUserModal(null) }}>
           <div style={{ background:'#fff', borderRadius:18, padding:32, width:'100%', maxWidth:460, boxShadow:'0 8px 40px rgba(0,0,0,.15)' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:22 }}>
-              <h3 style={{ fontSize:18, fontWeight:800, color:'#0f172a' }}>{userModal==='add'?'+ Add User':'✏️ Edit User'}</h3>
+              <h3 style={{ fontSize:18, fontWeight:800, color:'#0f172a' }}>{userModal==='add'?'+ Add User':'Edit User'}</h3>
               <button onClick={() => setUserModal(null)} style={{ background:'none', border:'none', fontSize:20, cursor:'pointer', color:'#94a3b8' }}>✕</button>
             </div>
             {[['full_name','Full Name','e.g. Sophea CHAN'],['email','Email','user@email.com'],['phone','Phone','+855 12 345 678']].map(([key,label,ph]) => (
@@ -547,7 +547,7 @@ export default function AdminUsers() {
               <div style={{ marginTop:8, padding:'7px 12px', borderRadius:8, fontSize:12,
                 background: ['admin','manager'].includes(form.role)?'#fef3c7':'#f0fdf4',
                 color: ['admin','manager'].includes(form.role)?'#d97706':'#15803d' }}>
-                {['admin','manager'].includes(form.role)?'⚙️ Can access Admin Panel':'🛒 Shop access only'}
+                {['admin','manager'].includes(form.role)?'Can access Admin Panel':'Shop access only'}
               </div>
             </div>
             <div style={{ marginBottom:22 }}>
@@ -560,7 +560,7 @@ export default function AdminUsers() {
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={handleSaveUser} disabled={saving}
                 style={{ flex:1, padding:'12px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#15803d,#22c55e)', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:14, opacity:saving?0.7:1 }}>
-                {saving?'⏳ Saving…':'✅ Save'}
+                {saving?'Saving…':'Save'}
               </button>
               <button onClick={() => setUserModal(null)}
                 style={{ flex:1, padding:'12px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#f8fafc', fontWeight:700, cursor:'pointer', fontSize:14 }}>
@@ -641,7 +641,7 @@ export default function AdminUsers() {
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={handleSaveShift} disabled={saving}
                 style={{ flex:1, padding:'12px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:14, opacity:saving?0.7:1 }}>
-                {saving?'⏳ Saving…':'✅ Save Shift'}
+                {saving?'Saving…':'Save Shift'}
               </button>
               <button onClick={() => setShiftModal(null)}
                 style={{ flex:1, padding:'12px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#f8fafc', fontWeight:700, cursor:'pointer', fontSize:14 }}>
