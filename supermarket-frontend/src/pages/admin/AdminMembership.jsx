@@ -3,10 +3,37 @@ import API from '../../services/api'
 import toast from 'react-hot-toast'
 
 const TIER_COLORS = {
-  Bronze:   { bg:'#fff7ed', color:'#ea580c', border:'#fed7aa', icon:'🥉' },
-  Silver:   { bg:'#f8fafc', color:'#64748b', border:'#cbd5e1', icon:'🥈' },
-  Gold:     { bg:'#fefce8', color:'#ca8a04', border:'#fde047', icon:'🥇' },
-  Platinum: { bg:'#f5f3ff', color:'#7c3aed', border:'#c4b5fd', icon:'💎' },
+  Bronze:   { bg:'#fff7ed', color:'#ea580c', border:'#fed7aa' },
+  Silver:   { bg:'#f8fafc', color:'#64748b', border:'#cbd5e1' },
+  Gold:     { bg:'#fefce8', color:'#ca8a04', border:'#fde047' },
+  Platinum: { bg:'#f5f3ff', color:'#7c3aed', border:'#c4b5fd' },
+}
+
+function Icon({ name, size=16, color='currentColor' }) {
+  const p = { width:size, height:size, viewBox:'0 0 24 24', fill:'none', stroke:color, strokeWidth:1.8, strokeLinecap:'round', strokeLinejoin:'round' }
+  switch (name) {
+    case 'users': return <svg {...p}><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    case 'star': return <svg {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    case 'ticket': return <svg {...p}><path d="M3 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2z"/><line x1="13" y1="5" x2="13" y2="19" strokeDasharray="2 2"/></svg>
+    case 'loader': return <svg {...p}><circle cx="12" cy="12" r="9" opacity=".25"/><path d="M21 12a9 9 0 0 0-9-9"/></svg>
+    case 'check': return <svg {...p}><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/></svg>
+    case 'x': return <svg {...p}><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+    case 'alert': return <svg {...p}><path d="M10.3 3.86 1.8 18a1 1 0 0 0 .86 1.5h18.7a1 1 0 0 0 .86-1.5L13.7 3.86a1 1 0 0 0-1.74 0z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="16.5" r=".6" fill={color} stroke="none"/></svg>
+    default: return null
+  }
+}
+
+function TierIcon({ tier, size=14 }) {
+  const c = TIER_COLORS[tier]?.color || '#94a3b8'
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ display:'inline-block', verticalAlign:'-2px', marginRight:4 }}>
+      <path d="M9 13.5 7 22l5-3 5 3-2-8.5" fill={c} opacity=".25" stroke={c} strokeWidth="1.5" strokeLinejoin="round"/>
+      <circle cx="12" cy="9" r="6" fill={c} opacity=".15" stroke={c} strokeWidth="1.8"/>
+      {tier==='Platinum'
+        ? <path d="M9 9l1.5 1.5L15 7" stroke={c} strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+        : <circle cx="12" cy="9" r="2" fill={c}/>}
+    </svg>
+  )
 }
 
 const EMPTY_COUPON = {
@@ -56,6 +83,7 @@ export default function AdminMembership() {
   const [pointsForm, setPointsForm] = useState({ points:0, total_spent:0 })
   const [couponModal, setCouponModal] = useState(null)
   const [couponForm, setCouponForm] = useState(EMPTY_COUPON)
+  const [deleteConfirm, setDeleteConfirm] = useState(null)
 
   useEffect(() => { fetchMembers(); fetchCoupons() }, [])
 
@@ -108,10 +136,8 @@ export default function AdminMembership() {
     } catch { toast.error('Failed') }
   }
 
-  const handleDeleteMember = async (id) => {
-    if (!window.confirm('Remove this member?')) return
-    try { await API.delete(`/api/membership/${id}`); toast.success('Removed'); fetchMembers() }
-    catch { toast.error('Failed') }
+  const handleDeleteMember = (id, name) => {
+    setDeleteConfirm({ type:'member', id, name })
   }
 
   const handleSaveCoupon = async () => {
@@ -127,10 +153,18 @@ export default function AdminMembership() {
     finally { setSaving(false) }
   }
 
-  const handleDeleteCoupon = async (id) => {
-    if (!window.confirm('Delete this coupon?')) return
-    try { await API.delete(`/api/coupons/${id}`); toast.success('Deleted'); fetchCoupons() }
-    catch { toast.error('Failed') }
+  const handleDeleteCoupon = (id, name) => {
+    setDeleteConfirm({ type:'coupon', id, name })
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return
+    const { type, id } = deleteConfirm
+    try {
+      if (type === 'member') { await API.delete(`/api/membership/${id}`); toast.success('Removed'); fetchMembers() }
+      else { await API.delete(`/api/coupons/${id}`); toast.success('Deleted'); fetchCoupons() }
+    } catch { toast.error('Failed') }
+    finally { setDeleteConfirm(null) }
   }
 
   const toggleCoupon = async (c) => {
@@ -195,15 +229,18 @@ export default function AdminMembership() {
       {/* Tier Stats */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:14, marginBottom:24 }}>
         {[
-          ['Total',    stats.total,    '#6366f1','linear-gradient(135deg,#eef2ff,#e0e7ff)','👥'],
-          ['Bronze',   stats.bronze,   '#ea580c','linear-gradient(135deg,#fff7ed,#fed7aa)','🥉'],
-          ['Silver',   stats.silver,   '#64748b','linear-gradient(135deg,#f8fafc,#e2e8f0)','🥈'],
-          ['Gold',     stats.gold,     '#ca8a04','linear-gradient(135deg,#fefce8,#fef08a)','🥇'],
-          ['Platinum', stats.platinum, '#7c3aed','linear-gradient(135deg,#f5f3ff,#ede9fe)','💎'],
-        ].map(([l,v,c,bg,icon]) => (
+          ['Total',    stats.total,    '#6366f1','linear-gradient(135deg,#eef2ff,#e0e7ff)'],
+          ['Bronze',   stats.bronze,   '#ea580c','linear-gradient(135deg,#fff7ed,#fed7aa)'],
+          ['Silver',   stats.silver,   '#64748b','linear-gradient(135deg,#f8fafc,#e2e8f0)'],
+          ['Gold',     stats.gold,     '#ca8a04','linear-gradient(135deg,#fefce8,#fef08a)'],
+          ['Platinum', stats.platinum, '#7c3aed','linear-gradient(135deg,#f5f3ff,#ede9fe)'],
+        ].map(([l,v,c,bg]) => (
           <div key={l} style={{ background:bg, borderRadius:14, padding:'16px 18px', border:`1.5px solid ${c}22`, cursor:'pointer' }}
             onClick={() => { setTab('members'); setTierFilter(l==='Total'?'All':l) }}>
-            <div style={{ fontSize:11, color:'#64748b', marginBottom:4, fontWeight:600 }}>{icon} {l}</div>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+              <span style={{ fontSize:11, color:'#64748b', fontWeight:700, textTransform:'uppercase', letterSpacing:.5 }}>{l}</span>
+              {l==='Total' ? <Icon name="users" size={16} color={c}/> : <TierIcon tier={l} size={16}/>}
+            </div>
             <div style={{ fontSize:28, fontWeight:800, color:c }}>{v}</div>
           </div>
         ))}
@@ -255,11 +292,11 @@ export default function AdminMembership() {
               <tbody>
                 {loading ? (
                   <tr><td colSpan={7} style={{ padding:40, textAlign:'center', color:'#94a3b8' }}>
-                    <div style={{ fontSize:32, marginBottom:8 }}>⏳</div>Loading members...
+                    <div style={{ display:'flex', justifyContent:'center', marginBottom:8 }}><Icon name="loader" size={28}/></div>Loading members...
                   </td></tr>
                 ) : filtered.length === 0 ? (
                   <tr><td colSpan={7} style={{ padding:40, textAlign:'center', color:'#94a3b8' }}>
-                    <div style={{ fontSize:36, marginBottom:10 }}>⭐</div>
+                    <div style={{ display:'flex', justifyContent:'center', marginBottom:10 }}><Icon name="star" size={32}/></div>
                     <p>{members.length === 0 ? 'No members yet.' : 'No members match your search.'}</p>
                   </td></tr>
                 ) : filtered.map(m => {
@@ -296,7 +333,7 @@ export default function AdminMembership() {
                             style={{ padding:'5px 10px', borderRadius:7, border:'1.5px solid #fcd34d', background:'#fefce8', color:'#ca8a04', cursor:'pointer', fontSize:11, fontWeight:700 }}>
                             + Points
                           </button>
-                          <button onClick={() => handleDeleteMember(m.id)}
+                          <button onClick={() => handleDeleteMember(m.id, m.full_name)}
                             style={{ padding:'5px 10px', borderRadius:7, border:'1.5px solid #fca5a5', background:'#fee2e2', color:'#dc2626', cursor:'pointer', fontSize:11, fontWeight:700 }}>
                             Remove
                           </button>
@@ -417,7 +454,7 @@ export default function AdminMembership() {
                               style={{ padding:'5px 10px', borderRadius:7, border:'1.5px solid #93c5fd', background:'#dbeafe', color:'#1d4ed8', cursor:'pointer', fontSize:11, fontWeight:700 }}>
                               Edit
                             </button>
-                            <button onClick={() => handleDeleteCoupon(c.Coupon_ID)}
+                            <button onClick={() => handleDeleteCoupon(c.Coupon_ID, c.Code)}
                               style={{ padding:'5px 10px', borderRadius:7, border:'1.5px solid #fca5a5', background:'#fee2e2', color:'#dc2626', cursor:'pointer', fontSize:11, fontWeight:700 }}>
                               Del
                             </button>
@@ -467,8 +504,8 @@ export default function AdminMembership() {
             </div>
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={handleRegister} disabled={saving||!selectedUser}
-                style={{ flex:1, padding:'12px', borderRadius:10, border:'none', background: selectedUser?'linear-gradient(135deg,#d97706,#f59e0b)':'#e5e7eb', color: selectedUser?'#fff':'#9ca3af', fontWeight:700, cursor: selectedUser?'pointer':'not-allowed', fontSize:14 }}>
-                {saving ? '⏳ Registering…' : '⭐ Register'}
+                style={{ flex:1, padding:'12px', borderRadius:10, border:'none', background: selectedUser?'linear-gradient(135deg,#d97706,#f59e0b)':'#e5e7eb', color: selectedUser?'#fff':'#9ca3af', fontWeight:700, cursor: selectedUser?'pointer':'not-allowed', fontSize:14, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                {saving ? <><Icon name="loader" size={14}/> Registering…</> : <><Icon name="star" size={14}/> Register</>}
               </button>
               <button onClick={() => setShowModal(false)}
                 style={{ flex:1, padding:'12px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#f8fafc', fontWeight:700, cursor:'pointer', fontSize:14 }}>
@@ -600,12 +637,45 @@ export default function AdminMembership() {
 
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={handleSaveCoupon} disabled={saving}
-                style={{ flex:1, padding:'12px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:14, opacity:saving?0.7:1 }}>
-                {saving ? '⏳ Saving…' : '✅ Save Coupon'}
+                style={{ flex:1, padding:'12px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:14, opacity:saving?0.7:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                {saving ? <><Icon name="loader" size={14}/> Saving…</> : <><Icon name="check" size={14}/> Save Coupon</>}
               </button>
               <button onClick={() => setCouponModal(null)}
                 style={{ flex:1, padding:'12px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#f8fafc', fontWeight:700, cursor:'pointer', fontSize:14 }}>
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {deleteConfirm && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.6)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }}
+          onClick={e => { if(e.target===e.currentTarget) setDeleteConfirm(null) }}>
+          <div style={{ background:'#fff', borderRadius:20, padding:32, width:'100%', maxWidth:380, boxShadow:'0 20px 60px rgba(0,0,0,.2)', textAlign:'center' }}>
+            <div style={{ width:56, height:56, borderRadius:'50%', background:'#fef2f2', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 18px', border:'2px solid #fecaca' }}>
+              <Icon name="alert" size={26} color="#ef4444"/>
+            </div>
+            <h3 style={{ fontSize:18, fontWeight:800, color:'#0f172a', marginBottom:8 }}>
+              {deleteConfirm.type === 'member' ? 'Remove Member?' : 'Delete Coupon?'}
+            </h3>
+            <p style={{ fontSize:13, color:'#64748b', marginBottom:6 }}>
+              {deleteConfirm.type === 'member'
+                ? 'This will remove their membership and reset loyalty progress. They can be re-registered later.'
+                : 'This coupon will be permanently deleted and can no longer be redeemed.'}
+            </p>
+            <p style={{ fontSize:14, fontWeight:800, color:'#dc2626', margin:'10px 0 24px', background:'#fff0f0', padding:'8px 16px', borderRadius:10, border:'1px solid #fecaca' }}>
+              {deleteConfirm.name}
+            </p>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={() => setDeleteConfirm(null)}
+                style={{ flex:1, padding:'12px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#f8fafc', fontWeight:700, cursor:'pointer', fontSize:14 }}>
+                Cancel
+              </button>
+              <button onClick={confirmDelete}
+                style={{ flex:1, padding:'12px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#dc2626,#ef4444)', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:14 }}>
+                {deleteConfirm.type === 'member' ? 'Remove' : 'Delete'}
               </button>
             </div>
           </div>
