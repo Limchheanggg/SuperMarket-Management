@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import API from '../../services/api'
 import toast from 'react-hot-toast'
+import PaymentIcon from '../../components/PaymentIcon'
 
 const METHOD_COLORS = {
   Cash:     { bg:'#f0fdf4', color:'#16a34a', border:'#86efac' },
   Card:     { bg:'#dbeafe', color:'#1d4ed8', border:'#93c5fd' },
   'QR Code':{ bg:'#f5f3ff', color:'#7c3aed', border:'#c4b5fd' },
   ABA:      { bg:'#fff7ed', color:'#ea580c', border:'#fed7aa' },
-  Wing:     { bg:'#fef9c3', color:'#ca8a04', border:'#fde047' },
+  Aceleda:  { bg:'#f0fdf4', color:'#15803d', border:'#86efac' },
 }
 
 function Icon({ name, size=16, color='currentColor' }) {
@@ -284,7 +285,8 @@ export default function AdminSales() {
                     ${s.Total_Amount.toFixed(2)}
                   </td>
                   <td style={{ padding:'12px 14px' }}>
-                    <span style={{ padding:'4px 10px', borderRadius:99, fontSize:11, fontWeight:700, background:mc.bg, color:mc.color, border:`1px solid ${mc.border}`, whiteSpace:'nowrap' }}>
+                    <span style={{ padding:'4px 10px', borderRadius:99, fontSize:11, fontWeight:700, background:mc.bg, color:mc.color, border:`1px solid ${mc.border}`, whiteSpace:'nowrap', display:'inline-flex', alignItems:'center', gap:5 }}>
+                      <PaymentIcon method={s.Payment_Method} size={12} color={mc.color}/>
                       {s.Payment_Method}
                     </span>
                   </td>
@@ -331,7 +333,7 @@ export default function AdminSales() {
                 return (
                   <div key={label} style={{ padding:'12px 14px', background:'#f8fafc', borderRadius:10, border:'1px solid #f1f5f9' }}>
                     <div style={{ fontSize:10, color:'#94a3b8', marginBottom:4, fontWeight:700, textTransform:'uppercase', letterSpacing:1 }}>{label}</div>
-                    <div style={{ fontSize:14, fontWeight:700, color: mc.color || '#0f172a', background: isPayment && mc.bg ? mc.bg : 'transparent', display:'inline-block', padding: isPayment ? '2px 10px' : '0', borderRadius: isPayment ? 99 : 0 }}>{value}</div>
+                    <div style={{ fontSize:14, fontWeight:700, color: mc.color || '#0f172a', background: isPayment && mc.bg ? mc.bg : 'transparent', display:'inline-flex', alignItems:'center', gap:6, padding: isPayment ? '2px 10px' : '0', borderRadius: isPayment ? 99 : 0 }}>{isPayment && <PaymentIcon method={value} size={13} color={mc.color}/>}{value}</div>
                   </div>
                 )
               })}

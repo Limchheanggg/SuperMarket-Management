@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import API from "../../services/api";
+import PaymentIcon from "../../components/PaymentIcon";
 
 function useInView(t=0.1){const ref=useRef();const[v,setV]=useState(false);useEffect(()=>{const o=new IntersectionObserver(([e])=>{if(e.isIntersecting)setV(true)},{threshold:t});if(ref.current)o.observe(ref.current);return()=>o.disconnect()},[]);return[ref,v]}
 
@@ -344,7 +345,7 @@ export default function AdminReports() {
                 <div key={i} style={{marginBottom:16}}>
                   <div style={{display:'flex',justifyContent:'space-between',marginBottom:6,fontSize:13}}>
                     <div style={{display:'flex',alignItems:'center',gap:8}}>
-                      <div style={{width:10,height:10,borderRadius:'50%',background:c}}/>
+                      <PaymentIcon method={p.label} size={14} color={c}/>
                       <span style={{fontWeight:700,color:'#374151'}}>{p.label}</span>
                     </div>
                     <span style={{fontWeight:800,color:c}}>${p.value.toFixed(2)} <span style={{color:'#94a3b8',fontWeight:400}}>({pct}%)</span></span>
