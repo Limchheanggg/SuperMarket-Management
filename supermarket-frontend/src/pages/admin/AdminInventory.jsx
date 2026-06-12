@@ -6,6 +6,7 @@ const STATUS_CFG = {
   'In Stock':     { bg:'#dcfce7', color:'#15803d', border:'#86efac', dot:'#22c55e' },
   'Low Stock':    { bg:'#fef9c3', color:'#a16207', border:'#fde047', dot:'#eab308' },
   'Out of Stock': { bg:'#fee2e2', color:'#dc2626', border:'#fca5a5', dot:'#ef4444' },
+  'Inactive':     { bg:'#f1f5f9', color:'#64748b', border:'#cbd5e1', dot:'#94a3b8' },
 }
 
 const UNITS = ['piece','pack','kg','g','bottle','can','box','bag','bunch','tray','roll','sachet','tube','jar','carton']
@@ -275,7 +276,8 @@ export default function AdminInventory() {
             </thead>
             <tbody>
               {filtered.map((item, idx) => {
-                const sc  = STATUS_CFG[item.Status] || STATUS_CFG['In Stock']
+                const sc  = item.Is_Active === 0 ? STATUS_CFG['Inactive'] : (STATUS_CFG[item.Status] || STATUS_CFG['In Stock'])
+                const statusLabel = item.Is_Active === 0 ? 'Inactive' : item.Status
                 return (
                   <tr key={item.Product_ID} className="inv-row"
                     style={{ borderBottom:'1px solid #f1f5f9', background: idx%2===0 ? '#fff' : '#fafbfc', transition:'background .15s' }}>
@@ -318,7 +320,7 @@ export default function AdminInventory() {
                     {/* Status */}
                     <td style={{ padding:'13px 16px' }}>
                       <span style={{ padding:'5px 12px', borderRadius:99, fontSize:11, fontWeight:700, background:sc.bg, color:sc.color, border:`1px solid ${sc.border}` }}>
-                        {item.Status}
+                        {statusLabel}
                       </span>
                     </td>
                     {/* Actions */}
