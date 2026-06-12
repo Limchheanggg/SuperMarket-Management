@@ -10,9 +10,10 @@ router = APIRouter()
 
 
 @router.get("/", dependencies=[Depends(require_admin)])
-def get_inventory(db: Session = Depends(get_db)):
+def get_inventory(include_inactive: bool = False, db: Session = Depends(get_db)):
     try:
-        rows = db.execute(text("""
+        where_clause = "" if include_inactive else "WHERE (p.Is_Active = 1 OR p.Is_Active IS NULL)"
+        rows = db.execute(text(f"""
             SELECT
                 p.Product_ID,
                 p.Name,
@@ -23,11 +24,13 @@ def get_inventory(db: Session = Depends(get_db)):
                 p.Is_Perishable,
                 p.Product_Image,
                 p.Category_ID,
+                COALESCE(p.Is_Active, 1) as Is_Active,
                 COALESCE(c.Category_Name, 'General') as Category_Name,
                 COALESCE(inv.Quantity, 0) as Quantity
             FROM Product p
             LEFT JOIN Category c    ON c.Category_ID  = p.Category_ID
             LEFT JOIN Inventory inv ON inv.Product_ID = p.Product_ID
+            {where_clause}
             ORDER BY p.Name
         """)).fetchall()
 
