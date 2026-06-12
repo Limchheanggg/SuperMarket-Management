@@ -311,7 +311,7 @@ export default function AdminSales() {
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24, paddingBottom:16, borderBottom:'1.5px solid #f1f5f9' }}>
               <div>
                 <div style={{ fontSize:11, fontWeight:700, color:'#c0272d', textTransform:'uppercase', letterSpacing:1.5, marginBottom:4 }}>Transaction Receipt</div>
-                <h3 style={{ fontSize:22, fontWeight:900, color:'#0f172a', margin:0, fontFamily:"'Playfair Display',serif" }}>{selectedSale.Sale_ID_fmt}</h3>
+                <h3 style={{ fontSize:22, fontWeight:900, color:'#0f172a', margin:0, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{selectedSale.Sale_ID_fmt}</h3>
               </div>
               <button onClick={() => setSelected(null)} style={{ background:'#f1f5f9', border:'none', borderRadius:10, width:36, height:36, cursor:'pointer', fontSize:16, color:'#64748b', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700 }}>✕</button>
             </div>
@@ -383,7 +383,7 @@ export default function AdminSales() {
               {[
                 ['Subtotal', `$${(selectedSale.Total_Amount - (selectedSale.Tax||0)).toFixed(2)}`, '#374151'],
                 ['Tax (10%)', `$${(selectedSale.Tax||0).toFixed(2)}`, '#374151'],
-                ...(selectedSale.Discount > 0 ? [['Discount', `-$${selectedSale.Discount.toFixed(2)}`, '#c0272d']] : []),
+                ...(selectedSale.Discount > 0 ? [[selectedSale.Coupon_Code ? `Discount (${selectedSale.Coupon_Code})` : 'Discount', `-$${selectedSale.Discount.toFixed(2)}`, '#c0272d']] : []),
               ].map(([l,v,c]) => (
                 <div key={l} style={{ display:'flex', justifyContent:'space-between', fontSize:13, color:c||'#64748b', marginBottom:8 }}>
                   <span>{l}</span><span style={{ fontWeight:600 }}>{v}</span>
