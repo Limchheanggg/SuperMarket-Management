@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom'
 import { getSales } from '../services/api'
 import API from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import PaymentIcon from '../components/PaymentIcon'
 
 const METHOD_COLORS = {
   Cash:          { bg:'#f0fdf4', color:'#16a34a', border:'#86efac' },
   'QR Code':     { bg:'#f5f3ff', color:'#7c3aed', border:'#c4b5fd' },
   'Bank Transfer':{ bg:'#eff6ff', color:'#1d4ed8', border:'#93c5fd' },
   ABA:           { bg:'#fff7ed', color:'#ea580c', border:'#fed7aa' },
+  Acleda:        { bg:'#f0fdf4', color:'#15803d', border:'#86efac' },
 }
 
 export default function OrderHistory() {
@@ -135,7 +137,8 @@ export default function OrderHistory() {
                       </td>
                       <td>
                         <span style={{ padding:'4px 10px', borderRadius:99, fontSize:11, fontWeight:700,
-                          background:mc.bg, color:mc.color, border:`1px solid ${mc.border}` }}>
+                          background:mc.bg, color:mc.color, border:`1px solid ${mc.border}`, display:'inline-flex', alignItems:'center', gap:5 }}>
+                          <PaymentIcon method={o.Payment_Method||o.method||'Cash'} size={16}/>
                           {o.Payment_Method||o.method||'Cash'}
                         </span>
                       </td>
@@ -176,7 +179,7 @@ export default function OrderHistory() {
                 ['Customer',selected.customer||'Walk-in'],['Cashier',selected.cashier||'Staff']].map(([l,v]) => (
                 <div key={l} style={{ background:'#f9fafb', borderRadius:10, padding:'12px 14px' }}>
                   <div style={{ fontSize:11, color:'#94a3b8', fontWeight:600, marginBottom:3 }}>{l}</div>
-                  <strong style={{ fontSize:13, color:'#0f172a' }}>{v}</strong>
+                  <strong style={{ fontSize:13, color:'#0f172a', display:'inline-flex', alignItems:'center', gap:6 }}>{l==='Payment' && <PaymentIcon method={v} size={16}/>}{v}</strong>
                 </div>
               ))}
             </div>
@@ -195,7 +198,7 @@ export default function OrderHistory() {
                 ].map(([l,v]) => (
                   <div key={l} style={{ background:'#fff', borderRadius:8, padding:'10px 12px', border:'1px solid #e0f2fe' }}>
                     <div style={{ fontSize:11, color:'#94a3b8', fontWeight:600, marginBottom:3 }}>{l}</div>
-                    <div style={{ fontSize:13, fontWeight:700, color:'#0f172a' }}>{v}</div>
+                    <div style={{ fontSize:13, fontWeight:700, color:'#0f172a', display:'inline-flex', alignItems:'center', gap:6 }}>{l==='Payment' && <PaymentIcon method={v} size={16}/>}{v}</div>
                   </div>
                 ))}
               </div>

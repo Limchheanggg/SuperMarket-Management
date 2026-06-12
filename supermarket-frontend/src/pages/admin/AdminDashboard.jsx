@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import API from '../../services/api'
 
+import PaymentIcon from '../../components/PaymentIcon'
 function useInView() {
   const ref = useRef(); const [v, setV] = useState(false)
   useEffect(() => {
@@ -198,7 +199,7 @@ export default function AdminDashboard() {
               </div>
               <div style={{ textAlign:'right' }}>
                 <div style={{ fontSize:14, fontWeight:800, color:'#16a34a' }}>${Number(s.Total_Amount||0).toFixed(2)}</div>
-                <div style={{ fontSize:11, color:'#94a3b8' }}>{s.Payment_Method}</div>
+                <div style={{ fontSize:11, color:'#94a3b8', display:'flex', alignItems:'center', justifyContent:'flex-end', gap:4 }}><PaymentIcon method={s.Payment_Method} size={14}/>{s.Payment_Method}</div>
               </div>
             </div>
           ))}

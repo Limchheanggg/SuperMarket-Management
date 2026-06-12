@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { createSale } from "../services/api";
 import API from "../services/api";
 import toast from "react-hot-toast";
+import PaymentIcon from "../components/PaymentIcon";
 
 const PAY_MAP = {
   'ABA':    'ABA',
@@ -361,8 +362,12 @@ export default function Checkout() {
                             fontSize: 14,
                             fontWeight: payMethod === method ? 700 : 500,
                             color: payMethod === method ? "#15803d" : "#374151",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
                           }}
                         >
+                          <PaymentIcon method={method} size={20}/>
                           {method}
                         </span>
                         {payMethod === method && (
