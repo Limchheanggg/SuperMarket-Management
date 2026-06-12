@@ -112,6 +112,7 @@ export default function Checkout() {
         total: parseFloat(grandTotal.toFixed(2)),
         tax: parseFloat(tax.toFixed(2)),
         discount: parseFloat(discount.toFixed(2)),
+        coupon: couponResult?.code || null,
         payment_method: PAY_MAP[payMethod] || "Cash",
         customer_info: {
           name:    user?.name  || user?.full_name || "",
