@@ -15,3 +15,4 @@ class Product(Base):
     Reorder_Level = Column(Integer, default=10)
     Is_Perishable = Column(Integer, default=0)
     Product_Image = Column(Text)   # ← Text instead of String(255)
+    Is_Active     = Column(Integer, default=1)
