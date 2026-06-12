@@ -32,7 +32,6 @@ export default function AdminInventory() {
   const [loading, setLoading]     = useState(true)
   const [search, setSearch]       = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
-  const [showInactive, setShowInactive] = useState(false)
   const [statusF, setStatusF]     = useState('All')
   const [catF, setCatF]           = useState('All')
   const [modal, setModal]         = useState(null)  // null | 'add' | 'edit' | 'restock' | 'view'
@@ -144,7 +143,7 @@ export default function AdminInventory() {
     const q = search.toLowerCase()
     const matchQ = !q || i.Name?.toLowerCase().includes(q) ||
                    i.Brand?.toLowerCase().includes(q)
-    const matchActive = showInactive || statusF === 'Inactive' || i.Is_Active !== 0
+    const matchActive = statusF === 'Inactive' || i.Is_Active !== 0
     const matchS = statusF === 'All' ? true : statusF === 'Inactive' ? i.Is_Active === 0 : i.Status === statusF
     const matchC = catF    === 'All' || i.Category_Name === catF
     return matchQ && matchS && matchC && matchActive
@@ -231,12 +230,6 @@ export default function AdminInventory() {
           <option value="All">All Categories</option>
           {cats.map(c => <option key={c.Category_ID}>{c.Category_Name}</option>)}
         </select>
-        {/* Show inactive toggle */}
-        <label style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, fontWeight:600, color:'#64748b', cursor:'pointer', whiteSpace:'nowrap' }}>
-          <input type="checkbox" checked={showInactive} onChange={e=>setShowInactive(e.target.checked)}
-            style={{ width:15, height:15, accentColor:'#c0272d', cursor:'pointer' }} />
-          Show deactivated
-        </label>
         {/* Clear */}
         {(search || statusF !== 'All' || catF !== 'All') && (
           <button onClick={() => { setSearch(''); setStatusF('All'); setCatF('All') }} className="inv-btn"
