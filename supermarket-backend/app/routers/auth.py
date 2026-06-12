@@ -6,6 +6,7 @@ from ..models.user import User as UserModel
 from ..core.config import settings
 from ..core.dependencies import decode_token
 import bcrypt
+import re
 import jwt
 import datetime
 from typing import Optional
