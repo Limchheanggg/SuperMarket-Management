@@ -161,8 +161,8 @@ export default function OrderHistory() {
             animation:'scaleIn .25s cubic-bezier(.34,1.56,.64,1) forwards' }}>
 
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
-              <h3 style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:900, color:'#0f172a', margin:0 }}>
-                Order #{selected.Sale_ID_fmt||selected.Sale_ID}
+              <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:19, fontWeight:800, letterSpacing:.3, color:'#0f172a', margin:0 }}>
+                Order <span style={{ color:'#c0272d' }}>#{selected.Sale_ID_fmt||selected.Sale_ID}</span>
               </h3>
               <button onClick={()=>setSelected(null)} style={{ width:32, height:32, borderRadius:8,
                 border:'none', background:'#f3f4f6', cursor:'pointer', display:'flex',
@@ -229,7 +229,8 @@ export default function OrderHistory() {
 
             <div style={{ borderTop:'1px solid #f0f0f0', paddingTop:16 }}>
               {[['Subtotal',`$${(Number(selected.Total_Amount||0)-Number(selected.Tax||0)).toFixed(2)}`],
-                ['Tax (10%)',`$${Number(selected.Tax||0).toFixed(2)}`]].map(([l,v]) => (
+                ...(Number(selected.Tax||0) > 0 ? [['Tax (10%)',`$${Number(selected.Tax||0).toFixed(2)}`]] : [])
+              ].map(([l,v]) => (
                 <div key={l} style={{ display:'flex', justifyContent:'space-between', fontSize:14,
                   color:'#6b7280', marginBottom:6 }}>
                   <span>{l}</span><span>{v}</span>
