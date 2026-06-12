@@ -39,6 +39,8 @@ def create_employee(data: dict, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
+    if user.role in STAFF_ROLES:
+        ensure_default_shift(db, user.id)
     return {"id": user.id, "full_name": user.full_name, "email": user.email, "role": user.role}
 
 @router.put("/employees/{user_id}", dependencies=[Depends(require_admin)])
@@ -52,6 +54,8 @@ def update_employee(user_id: int, data: dict, db: Session = Depends(get_db)):
     if "password"  in data and data["password"]:
         user.password = hash_password(data["password"])
     db.commit()
+    if user.role in STAFF_ROLES:
+        ensure_default_shift(db, user.id)
     return {"id": user.id, "full_name": user.full_name, "email": user.email, "role": user.role}
 
 @router.delete("/employees/{user_id}", dependencies=[Depends(require_admin)])
