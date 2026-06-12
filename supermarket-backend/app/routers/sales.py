@@ -78,7 +78,7 @@ def get_sales(
         d['Discount']     = float(d['Discount'] or 0)
         d['Tax']          = float(d['Tax'] or 0)
         d['date']         = f"{d['Sale_Year']}-{str(d['Sale_Month']).zfill(2)}-{str(d['Sale_Day']).zfill(2)}"
-        d['time']         = str(d['Sale_Time'])[:5] if d['Sale_Time'] else '—'
+        d['time']         = (lambda t: f"{int(str(t).split(':')[0]):02d}:{str(t).split(':')[1]}")(d['Sale_Time']) if d['Sale_Time'] else '—'
         d['Sale_ID_fmt']  = f"S{str(d['Sale_ID']).zfill(4)}"
         result.append(d)
     return result
@@ -229,10 +229,12 @@ def get_sale(sale_id: int, db: Session = Depends(get_db)):
                s.Discount, s.Tax, s.Sale_Day, s.Sale_Month, s.Sale_Year,
                s.Sale_Time, s.Customer_Note,
                COALESCE(CONCAT(c.First_Name,' ',c.Last_Name),'Walk-in') as customer,
-               COALESCE(u.full_name,'Staff') as cashier
+               COALESCE(u.full_name,'Staff') as cashier,
+               cp.Code as coupon_code
         FROM Sale s
         LEFT JOIN Customer c ON c.Customer_ID = s.Customer_ID
         LEFT JOIN users u    ON u.id           = s.Employee_ID
+        LEFT JOIN Coupon cp  ON cp.Coupon_ID   = s.Coupon_ID
         WHERE s.Sale_ID = :id
     """), {"id": sale_id}).fetchone()
     if not sale:
@@ -245,7 +247,7 @@ def get_sale(sale_id: int, db: Session = Depends(get_db)):
     return {
         "Sale_ID":        sale.Sale_ID,
         "date":           f"{sale.Sale_Day}/{sale.Sale_Month}/{sale.Sale_Year}",
-        "time":           str(sale.Sale_Time)[:5] if sale.Sale_Time else '—',
+        "time":           (lambda t: f"{int(str(t).split(':')[0]):02d}:{str(t).split(':')[1]}")(sale.Sale_Time) if sale.Sale_Time else '—',
         "Total_Amount":   float(sale.Total_Amount),
         "Payment_Method": sale.Payment_Method,
         "Discount":       float(sale.Discount or 0),
@@ -253,6 +255,7 @@ def get_sale(sale_id: int, db: Session = Depends(get_db)):
         "customer":       sale.customer,
         "cashier":        sale.cashier,
         "Customer_Note":  sale.Customer_Note,
+        "Coupon_Code":    sale.coupon_code,
         "items":          [{"Name": i.Name, "Quantity": i.Quantity,
                             "Unit_Price": float(i.Unit_Price),
                             "Subtotal": float(i.Subtotal)} for i in items],
@@ -272,10 +275,17 @@ def create_sale(data: dict, db: Session = Depends(get_db)):
         if not row or row[0] < qty:
             raise HTTPException(status_code=400, detail=f"Product {pid} is out of stock or insufficient quantity")
 
+    coupon_code = data.get("coupon")
+    coupon_id = None
+    if coupon_code:
+        crow = db.execute(text("SELECT Coupon_ID FROM Coupon WHERE Code=:code"), {"code": coupon_code}).fetchone()
+        if crow:
+            coupon_id = crow.Coupon_ID
+
     result = db.execute(text("""
         INSERT INTO Sale (Sale_Day, Sale_Month, Sale_Year, Sale_Time,
-                          Employee_ID, Customer_ID, Total_Amount, Discount, Tax, Payment_Method, Customer_Note)
-        VALUES (:d,:m,:y,:t,:eid,:cid,:total,:disc,:tax,:method,:note)
+                          Employee_ID, Customer_ID, Total_Amount, Discount, Tax, Payment_Method, Customer_Note, Coupon_ID)
+        VALUES (:d,:m,:y,:t,:eid,:cid,:total,:disc,:tax,:method,:note,:coupon_id)
     """), {
         "d": now.day, "m": now.month, "y": now.year, "t": now.strftime("%H:%M:%S"),
         "eid":    data.get("cashier_id") or 1,
@@ -285,9 +295,14 @@ def create_sale(data: dict, db: Session = Depends(get_db)):
         "tax":    data.get("tax", 0),
         "method": data.get("payment_method", "Cash"),
         "note":   note,
+        "coupon_id": coupon_id,
     })
     db.commit()
     sale_id = result.lastrowid
+
+    if coupon_id:
+        db.execute(text("UPDATE Coupon SET Uses_Count = Uses_Count + 1 WHERE Coupon_ID=:cid"), {"cid": coupon_id})
+        db.commit()
     for item in data.get("items", []):
         pid = item["Product_ID"]
         qty = item["qty"]
