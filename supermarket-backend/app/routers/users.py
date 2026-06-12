@@ -5,6 +5,21 @@ from ..core.dependencies import require_admin
 from ..models.user import User as UserModel
 from ..models.customer import Customer as CustomerModel
 import bcrypt
+from sqlalchemy import text
+from datetime import date
+
+STAFF_ROLES = ('employee', 'cashier', 'manager')
+
+def ensure_default_shift(db, user_id):
+    existing = db.execute(text("SELECT id FROM Employee_Shift WHERE user_id=:uid LIMIT 1"), {"uid": user_id}).first()
+    if existing:
+        return
+    db.execute(text("""
+        INSERT INTO Employee_Shift (user_id, shift_name, shift_date, start_time, end_time, status, note)
+        VALUES (:uid, 'Morning', :sdate, '06:00', '14:00', 'scheduled', 'Auto-generated schedule')
+    """), {"uid": user_id, "sdate": date.today()})
+    db.commit()
+
 
 router = APIRouter()
 
