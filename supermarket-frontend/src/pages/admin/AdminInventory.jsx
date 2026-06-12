@@ -144,10 +144,10 @@ export default function AdminInventory() {
     const q = search.toLowerCase()
     const matchQ = !q || i.Name?.toLowerCase().includes(q) ||
                    i.Brand?.toLowerCase().includes(q)
-    const matchActive = showInactive || i.Is_Active !== 0
-    const matchS = statusF === 'All' || i.Status === statusF
+    const matchActive = showInactive || statusF === 'Inactive' || i.Is_Active !== 0
+    const matchS = statusF === 'All' ? true : statusF === 'Inactive' ? i.Is_Active === 0 : i.Status === statusF
     const matchC = catF    === 'All' || i.Category_Name === catF
-    return matchQ && matchS && matchC
+    return matchQ && matchS && matchC && matchActive
   })
 
   const stats = {
@@ -223,6 +223,7 @@ export default function AdminInventory() {
           style={{ padding:'10px 14px', borderRadius:10, border:'1.5px solid #e2e8f0', fontSize:13, outline:'none', background:'#fff', fontFamily:"'Plus Jakarta Sans',sans-serif", cursor:'pointer' }}>
           <option value="All">All Status</option>
           <option>In Stock</option><option>Low Stock</option><option>Out of Stock</option>
+          <option>Inactive</option>
         </select>
         {/* Category filter */}
         <select value={catF} onChange={e=>setCatF(e.target.value)}
@@ -572,7 +573,7 @@ export default function AdminInventory() {
                   fontWeight:700, fontSize:14, cursor:'pointer',
                   fontFamily:"'Plus Jakarta Sans',sans-serif",
                   boxShadow:'0 4px 14px rgba(220,38,38,.35)' }}>
-                Delete
+                Deactivate
               </button>
             </div>
           </div>
