@@ -69,6 +69,7 @@ def get_unregistered_customers(db: Session = Depends(get_db)):
             CONCAT(c.First_Name, ' ', c.Last_Name) as full_name
         FROM Customer c
         WHERE c.Customer_ID NOT IN (SELECT Customer_ID FROM Membership)
+          AND c.User_ID IS NOT NULL
         ORDER BY c.First_Name
         LIMIT 200
     """)).fetchall()
