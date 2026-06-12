@@ -11,12 +11,40 @@ const STATUS_CFG = {
 
 const UNITS = ['piece','pack','kg','g','bottle','can','box','bag','bunch','tray','roll','sachet','tube','jar','carton']
 
-const EMOJIS = {
-  'Rice & Grains':'🍚','Instant Noodles':'🍜','Cooking Oil':'🫙',
-  'Sauces & Condiments':'🧄','Canned & Preserved':'🥫','Snacks & Biscuits':'🍪',
-  'Beverages':'🧃','Dairy & Eggs':'🥚','Frozen Foods':'🧊','Fresh Produce':'🥦',
-  'Meat & Seafood':'🥩','Personal Care':'💊','Household':'🏠',
-  'Baby & Kids':'👶','Health & Wellness':'💉',
+function Icon({ name, size=16, color='currentColor' }) {
+  const p = { width:size, height:size, viewBox:'0 0 24 24', fill:'none', stroke:color, strokeWidth:1.8, strokeLinecap:'round', strokeLinejoin:'round' }
+  switch (name) {
+    case 'package': return <svg {...p}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+    case 'check': return <svg {...p}><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/></svg>
+    case 'alert': return <svg {...p}><path d="M10.3 3.86 1.8 18a1 1 0 0 0 .86 1.5h18.7a1 1 0 0 0 .86-1.5L13.7 3.86a1 1 0 0 0-1.74 0z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="16.5" r=".6" fill={color} stroke="none"/></svg>
+    case 'xcircle': return <svg {...p}><circle cx="12" cy="12" r="9"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+    case 'search': return <svg {...p}><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16" y2="16"/></svg>
+    case 'loader': return <svg {...p}><circle cx="12" cy="12" r="9" opacity=".25"/><path d="M21 12a9 9 0 0 0-9-9"/></svg>
+    case 'x': return <svg {...p}><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+    default: return null
+  }
+}
+
+function CategoryIcon({ name, size=14, color='#16a34a' }) {
+  const p = { width:size, height:size, viewBox:'0 0 24 24', fill:'none', stroke:color, strokeWidth:1.8, strokeLinecap:'round', strokeLinejoin:'round' }
+  switch (name) {
+    case 'Rice & Grains': return <svg {...p}><path d="M12 2c2 3 4 6 4 9a4 4 0 0 1-8 0c0-3 2-6 4-9z"/><line x1="12" y1="15" x2="12" y2="22"/></svg>
+    case 'Instant Noodles': return <svg {...p}><path d="M4 10h16l-1.5 9a2 2 0 0 1-2 1.7H7.5a2 2 0 0 1-2-1.7L4 10z"/><path d="M5 10c1-3 4-5 7-5s6 2 7 5"/><path d="M9 13c.5 1 1.5 1 2 0M13 13c.5 1 1.5 1 2 0"/></svg>
+    case 'Cooking Oil': return <svg {...p}><path d="M9 2h6v3l2 2v13a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V7l2-2V2z"/><line x1="7" y1="11" x2="17" y2="11"/></svg>
+    case 'Sauces & Condiments': return <svg {...p}><path d="M10 2h4v3l3 2v12a3 3 0 0 1-3 3h-4a3 3 0 0 1-3-3V7l3-2V2z"/><line x1="8" y1="13" x2="16" y2="13"/></svg>
+    case 'Canned & Preserved': return <svg {...p}><rect x="5" y="4" width="14" height="16" rx="2"/><ellipse cx="12" cy="4" rx="7" ry="1.5"/><line x1="5" y1="9" x2="19" y2="9"/></svg>
+    case 'Snacks & Biscuits': return <svg {...p}><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1" fill={color} stroke="none"/><circle cx="14" cy="9" r="1" fill={color} stroke="none"/><circle cx="15" cy="14" r="1" fill={color} stroke="none"/><circle cx="10" cy="15" r="1" fill={color} stroke="none"/></svg>
+    case 'Beverages': return <svg {...p}><path d="M6 8h12l-1.5 11a2 2 0 0 1-2 1.7h-5a2 2 0 0 1-2-1.7L6 8z"/><path d="M5 8h14"/><path d="M14 8V5a2 2 0 0 0-2-2"/></svg>
+    case 'Dairy & Eggs': return <svg {...p}><path d="M12 3C9 7 7 10.5 7 14a5 5 0 0 0 10 0c0-3.5-2-7-5-11z"/></svg>
+    case 'Frozen Foods': return <svg {...p}><line x1="12" y1="2" x2="12" y2="22"/><line x1="4" y1="7" x2="20" y2="17"/><line x1="20" y1="7" x2="4" y2="17"/></svg>
+    case 'Fresh Produce': return <svg {...p}><path d="M12 21c-4-1-7-5-7-9a7 7 0 0 1 7-7c4 0 7 3 7 7 0 4-3 8-7 9z"/><path d="M12 5c2 2 2 6 0 8"/></svg>
+    case 'Meat & Seafood': return <svg {...p}><path d="M14 4c3 0 5.5 2.5 5.5 5.5 0 2-1 4-3 6l-6.5 6.5a2 2 0 0 1-3-3L13 12c-2-2-3-4-3-6A2.5 2.5 0 0 1 14 4z"/></svg>
+    case 'Personal Care': return <svg {...p}><path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10z"/></svg>
+    case 'Household': return <svg {...p}><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9"/><line x1="10" y1="20" x2="10" y2="15"/><line x1="14" y1="20" x2="14" y2="15"/></svg>
+    case 'Baby & Kids': return <svg {...p}><circle cx="12" cy="8" r="4"/><path d="M5 21c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>
+    case 'Health & Wellness': return <svg {...p}><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    default: return <svg {...p}><circle cx="12" cy="12" r="9"/></svg>
+  }
 }
 
 const EMPTY = {
@@ -180,7 +208,9 @@ export default function AdminInventory() {
       {/* ── HEADER ── */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:24 }}>
         <div>
-          <h1 style={{ fontSize:26, fontWeight:800, color:'#0f172a', marginBottom:3 }}>📦 Inventory Management</h1>
+          <h1 style={{ fontSize:26, fontWeight:800, color:'#0f172a', marginBottom:3, display:'flex', alignItems:'center', gap:10 }}>
+            <Icon name="package" size={24} color="#6366f1"/> Inventory Management
+          </h1>
           <p style={{ color:'#64748b', fontSize:14 }}>Manage products, stock levels and reorders</p>
         </div>
         <button onClick={openAdd} className="inv-btn"
@@ -192,16 +222,16 @@ export default function AdminInventory() {
       {/* ── STATS ── */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14, marginBottom:22 }}>
         {[
-          ['Total Products', stats.total,   '#6366f1', '📦', 'linear-gradient(135deg,#eef2ff,#e0e7ff)'],
-          ['In Stock',       stats.inStock, '#16a34a', '✅', 'linear-gradient(135deg,#f0fdf4,#dcfce7)'],
-          ['Low Stock',      stats.low,     '#d97706', '⚠️', 'linear-gradient(135deg,#fffbeb,#fef3c7)'],
-          ['Out of Stock',   stats.out,     '#dc2626', '❌', 'linear-gradient(135deg,#fef2f2,#fee2e2)'],
+          ['Total Products', stats.total,   '#6366f1', 'package', 'linear-gradient(135deg,#eef2ff,#e0e7ff)'],
+          ['In Stock',       stats.inStock, '#16a34a', 'check', 'linear-gradient(135deg,#f0fdf4,#dcfce7)'],
+          ['Low Stock',      stats.low,     '#d97706', 'alert', 'linear-gradient(135deg,#fffbeb,#fef3c7)'],
+          ['Out of Stock',   stats.out,     '#dc2626', 'xcircle', 'linear-gradient(135deg,#fef2f2,#fee2e2)'],
         ].map(([l,v,c,icon,bg]) => (
           <div key={l} style={{ background:bg, borderRadius:14, padding:'18px 20px', border:`1.5px solid ${c}22`, cursor:'pointer' }}
             onClick={() => setStatusF(l === 'Total Products' ? 'All' : l)}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
               <span style={{ fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:.5 }}>{l}</span>
-              <span style={{ fontSize:18 }}>{icon}</span>
+              <Icon name={icon} size={18} color={c}/>
             </div>
             <div style={{ fontSize:32, fontWeight:800, color:c }}>{v}</div>
           </div>
@@ -212,7 +242,7 @@ export default function AdminInventory() {
       <div style={{ background:'#fff', borderRadius:14, padding:'16px 18px', marginBottom:18, border:'1.5px solid #e2e8f0', display:'flex', gap:12, flexWrap:'wrap', alignItems:'center', boxShadow:'0 2px 8px rgba(0,0,0,.03)' }}>
         {/* Search */}
         <div style={{ position:'relative', flex:1, minWidth:220 }}>
-          <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:15, color:'#94a3b8' }}>🔍</span>
+          <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', display:'flex', color:'#94a3b8' }}><Icon name="search" size={15}/></span>
           <input value={search} onChange={e=>setSearch(e.target.value)}
             placeholder="Search product, brand..."
             style={{ width:'100%', paddingLeft:38, padding:'10px 14px 10px 38px', borderRadius:10, border:'1.5px solid #e2e8f0', fontSize:13, outline:'none', boxSizing:'border-box', fontFamily:"'Plus Jakarta Sans',sans-serif" }} />
@@ -234,7 +264,7 @@ export default function AdminInventory() {
         {(search || statusF !== 'All' || catF !== 'All') && (
           <button onClick={() => { setSearch(''); setStatusF('All'); setCatF('All') }} className="inv-btn"
             style={{ padding:'10px 16px', borderRadius:10, border:'1.5px solid #fecaca', background:'#fef2f2', color:'#dc2626', fontSize:12, fontWeight:700 }}>
-            ✕ Clear
+            <Icon name="x" size={12}/> Clear
           </button>
         )}
         <span style={{ marginLeft:'auto', fontSize:13, color:'#64748b', fontWeight:600 }}>
@@ -246,12 +276,12 @@ export default function AdminInventory() {
       <div style={{ background:'#fff', borderRadius:16, overflow:'hidden', border:'1.5px solid #e2e8f0', boxShadow:'0 2px 12px rgba(0,0,0,.04)' }}>
         {loading ? (
           <div style={{ padding:60, textAlign:'center', color:'#94a3b8' }}>
-            <div style={{ fontSize:40, marginBottom:12 }}>⏳</div>
+            <div style={{ display:'flex', justifyContent:'center', marginBottom:12 }}><Icon name="loader" size={36}/></div>
             <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif" }}>Loading inventory...</p>
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ padding:60, textAlign:'center', color:'#94a3b8' }}>
-            <div style={{ fontSize:48, marginBottom:12 }}>📦</div>
+            <div style={{ display:'flex', justifyContent:'center', marginBottom:12 }}><Icon name="package" size={48}/></div>
             <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:15, fontWeight:600, marginBottom:6 }}>
               {items.length === 0 ? 'No products yet' : 'No products match your filters'}
             </p>
@@ -290,7 +320,8 @@ export default function AdminInventory() {
                     </td>
                     {/* Category */}
                     <td style={{ padding:'13px 16px' }}>
-                      <span style={{ padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:600, background:'#f0fdf4', color:'#16a34a', border:'1px solid #bbf7d0' }}>
+                      <span style={{ padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:600, background:'#f0fdf4', color:'#16a34a', border:'1px solid #bbf7d0', display:'inline-flex', alignItems:'center', gap:5 }}>
+                        <CategoryIcon name={item.Category_Name} size={12} color="#16a34a"/>
                         {item.Category_Name}
                       </span>
                     </td>
@@ -364,7 +395,7 @@ export default function AdminInventory() {
                   {modal==='add' ? 'Fill in product details below' : `Editing: ${form.Name}`}
                 </p>
               </div>
-              <button onClick={() => setModal(null)} style={{ background:'#f1f5f9', border:'none', borderRadius:10, width:36, height:36, cursor:'pointer', fontSize:18, color:'#64748b' }}>✕</button>
+              <button onClick={() => setModal(null)} style={{ background:'#f1f5f9', border:'none', borderRadius:10, width:36, height:36, cursor:'pointer', color:'#64748b', display:'flex', alignItems:'center', justifyContent:'center' }}><Icon name="x" size={16}/></button>
             </div>
 
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
@@ -487,8 +518,10 @@ export default function AdminInventory() {
           onClick={e => { if(e.target===e.currentTarget) setModal(null) }}>
           <div style={{ background:'#fff', borderRadius:20, padding:32, width:'100%', maxWidth:420, boxShadow:'0 20px 60px rgba(0,0,0,.2)' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
-              <h3 style={{ fontSize:18, fontWeight:800, color:'#0f172a' }}>📦 Restock Product</h3>
-              <button onClick={() => setModal(null)} style={{ background:'#f1f5f9', border:'none', borderRadius:10, width:36, height:36, cursor:'pointer', fontSize:18, color:'#64748b' }}>✕</button>
+              <h3 style={{ fontSize:18, fontWeight:800, color:'#0f172a', display:'flex', alignItems:'center', gap:8 }}>
+                <Icon name="package" size={18} color="#16a34a"/> Restock Product
+              </h3>
+              <button onClick={() => setModal(null)} style={{ background:'#f1f5f9', border:'none', borderRadius:10, width:36, height:36, cursor:'pointer', color:'#64748b', display:'flex', alignItems:'center', justifyContent:'center' }}><Icon name="x" size={16}/></button>
             </div>
 
             {/* Product info */}
