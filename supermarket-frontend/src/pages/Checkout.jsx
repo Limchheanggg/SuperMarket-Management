@@ -8,7 +8,7 @@ import toast from "react-hot-toast";
 
 const PAY_MAP = {
   'ABA':    'ABA',
-  'Aceleda': 'Aceleda',
+  'Acleda': 'Acleda',
   'Cash':   'Cash',
 };
 
@@ -316,7 +316,7 @@ export default function Checkout() {
                     gap: 10,
                   }}
                 >
-                  {["ABA", "Aceleda", "Cash"].map(
+                  {["ABA", "Acleda", "Cash"].map(
                     (method) => (
                       <div
                         key={method}

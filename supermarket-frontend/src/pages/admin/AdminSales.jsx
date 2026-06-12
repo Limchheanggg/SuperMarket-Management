@@ -8,7 +8,7 @@ const METHOD_COLORS = {
   Card:     { bg:'#dbeafe', color:'#1d4ed8', border:'#93c5fd' },
   'QR Code':{ bg:'#f5f3ff', color:'#7c3aed', border:'#c4b5fd' },
   ABA:      { bg:'#fff7ed', color:'#ea580c', border:'#fed7aa' },
-  Aceleda:  { bg:'#f0fdf4', color:'#15803d', border:'#86efac' },
+  Acleda:   { bg:'#f0fdf4', color:'#15803d', border:'#86efac' },
 }
 
 function Icon({ name, size=16, color='currentColor' }) {
@@ -286,7 +286,7 @@ export default function AdminSales() {
                   </td>
                   <td style={{ padding:'12px 14px' }}>
                     <span style={{ padding:'4px 10px', borderRadius:99, fontSize:11, fontWeight:700, background:mc.bg, color:mc.color, border:`1px solid ${mc.border}`, whiteSpace:'nowrap', display:'inline-flex', alignItems:'center', gap:5 }}>
-                      <PaymentIcon method={s.Payment_Method} size={12} color={mc.color}/>
+                      <PaymentIcon method={s.Payment_Method} size={18}/>
                       {s.Payment_Method}
                     </span>
                   </td>
@@ -333,7 +333,7 @@ export default function AdminSales() {
                 return (
                   <div key={label} style={{ padding:'12px 14px', background:'#f8fafc', borderRadius:10, border:'1px solid #f1f5f9' }}>
                     <div style={{ fontSize:10, color:'#94a3b8', marginBottom:4, fontWeight:700, textTransform:'uppercase', letterSpacing:1 }}>{label}</div>
-                    <div style={{ fontSize:14, fontWeight:700, color: mc.color || '#0f172a', background: isPayment && mc.bg ? mc.bg : 'transparent', display:'inline-flex', alignItems:'center', gap:6, padding: isPayment ? '2px 10px' : '0', borderRadius: isPayment ? 99 : 0 }}>{isPayment && <PaymentIcon method={value} size={13} color={mc.color}/>}{value}</div>
+                    <div style={{ fontSize:14, fontWeight:700, color: mc.color || '#0f172a', background: isPayment && mc.bg ? mc.bg : 'transparent', display:'inline-flex', alignItems:'center', gap:6, padding: isPayment ? '2px 10px' : '0', borderRadius: isPayment ? 99 : 0 }}>{isPayment && <PaymentIcon method={value} size={20}/>}{value}</div>
                   </div>
                 )
               })}
