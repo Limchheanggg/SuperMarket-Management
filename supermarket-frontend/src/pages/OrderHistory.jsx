@@ -35,9 +35,9 @@ export default function OrderHistory() {
       setSelected(prev => ({
         ...prev,
         ...res.data,
-        customerName:    info.name    || res.data.customer || user?.name || 'Walk-in',
-        customerEmail:   info.email   || user?.email || 'N/A',
-        customerPhone:   info.phone   || user?.phone || 'N/A',
+        customerName:    res.data.customer || user?.name || info.name || 'Walk-in',
+        customerEmail:   user?.email || info.email || 'N/A',
+        customerPhone:   user?.phone || info.phone || 'N/A',
         customerNotes:   info.notes   || '',
         customerAddress: info.address || 'N/A',
       }))
