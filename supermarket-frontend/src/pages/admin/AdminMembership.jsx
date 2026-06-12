@@ -15,7 +15,7 @@ function Icon({ name, size=16, color='currentColor' }) {
     case 'users': return <svg {...p}><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
     case 'star': return <svg {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
     case 'ticket': return <svg {...p}><path d="M3 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2z"/><line x1="13" y1="5" x2="13" y2="19" strokeDasharray="2 2"/></svg>
-    case 'loader': return <svg {...p}><circle cx="12" cy="12" r="9" opacity=".25"/><path d="M21 12a9 9 0 0 0-9-9"/></svg>
+    case 'loader': return <svg {...p} style={{animation:'spin 1s linear infinite'}}><circle cx="12" cy="12" r="9" opacity=".25"/><path d="M21 12a9 9 0 0 0-9-9"/></svg>
     case 'check': return <svg {...p}><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/></svg>
     case 'x': return <svg {...p}><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
     case 'alert': return <svg {...p}><path d="M10.3 3.86 1.8 18a1 1 0 0 0 .86 1.5h18.7a1 1 0 0 0 .86-1.5L13.7 3.86a1 1 0 0 0-1.74 0z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="16.5" r=".6" fill={color} stroke="none"/></svg>
@@ -368,7 +368,7 @@ export default function AdminMembership() {
 
           {couponLoading ? (
             <div style={{ textAlign:'center', padding:60, color:'#94a3b8' }}>
-              <div style={{ fontSize:36, marginBottom:12 }}>⏳</div>
+              <div style={{ display:'flex', justifyContent:'center', marginBottom:12 }}><Icon name="loader" size={36}/></div>
               <p>Loading coupons...</p>
             </div>
           ) : coupons.length === 0 ? (

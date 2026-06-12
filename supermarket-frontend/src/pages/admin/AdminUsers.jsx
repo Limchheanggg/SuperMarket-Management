@@ -214,7 +214,12 @@ export default function AdminUsers() {
               <tbody>
                 {loading ? (
                   <tr><td colSpan={7} style={{ padding:40, textAlign:'center', color:'#94a3b8' }}>
-                    <div style={{ fontSize:32, marginBottom:8 }}>⏳</div>Loading users...
+                    <div style={{ display:'flex', justifyContent:'center', marginBottom:8 }}>
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{animation:'spin 1s linear infinite'}}>
+                        <circle cx="12" cy="12" r="9" opacity=".25"/><path d="M21 12a9 9 0 0 0-9-9"/>
+                      </svg>
+                    </div>
+                    Loading users...
                   </td></tr>
                 ) : paginated.length === 0 ? (
                   <tr><td colSpan={7} style={{ padding:40, textAlign:'center', color:'#94a3b8' }}>

@@ -19,7 +19,7 @@ function Icon({ name, size=16, color='currentColor' }) {
     case 'alert': return <svg {...p}><path d="M10.3 3.86 1.8 18a1 1 0 0 0 .86 1.5h18.7a1 1 0 0 0 .86-1.5L13.7 3.86a1 1 0 0 0-1.74 0z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="16.5" r=".6" fill={color} stroke="none"/></svg>
     case 'xcircle': return <svg {...p}><circle cx="12" cy="12" r="9"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
     case 'search': return <svg {...p}><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16" y2="16"/></svg>
-    case 'loader': return <svg {...p}><circle cx="12" cy="12" r="9" opacity=".25"/><path d="M21 12a9 9 0 0 0-9-9"/></svg>
+    case 'loader': return <svg {...p} style={{animation:'spin 1s linear infinite'}}><circle cx="12" cy="12" r="9" opacity=".25"/><path d="M21 12a9 9 0 0 0-9-9"/></svg>
     case 'x': return <svg {...p}><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
     default: return null
   }
@@ -500,8 +500,8 @@ export default function AdminInventory() {
 
             <div style={{ display:'flex', gap:12, marginTop:24 }}>
               <button onClick={handleSave} disabled={saving} className="inv-btn"
-                style={{ flex:1, padding:'13px', borderRadius:11, border:'none', background: saving?'#e2e8f0':'linear-gradient(135deg,#15803d,#22c55e)', color: saving?'#94a3b8':'#fff', fontWeight:700, fontSize:15, boxShadow: saving?'none':'0 4px 14px rgba(21,128,61,.3)' }}>
-                {saving ? '⏳ Saving…' : modal==='add' ? '✅ Add Product' : '✅ Save Changes'}
+                style={{ flex:1, padding:'13px', borderRadius:11, border:'none', background: saving?'#e2e8f0':'linear-gradient(135deg,#15803d,#22c55e)', color: saving?'#94a3b8':'#fff', fontWeight:700, fontSize:15, boxShadow: saving?'none':'0 4px 14px rgba(21,128,61,.3)', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                {saving ? <><Icon name="loader" size={14}/> Saving…</> : modal==='add' ? <><Icon name="check" size={14}/> Add Product</> : <><Icon name="check" size={14}/> Save Changes</>}
               </button>
               <button onClick={() => setModal(null)} className="inv-btn"
                 style={{ padding:'13px 24px', borderRadius:11, border:'1.5px solid #e2e8f0', background:'#f8fafc', fontWeight:700, fontSize:14, color:'#374151' }}>
