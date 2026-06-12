@@ -138,13 +138,15 @@ export default function AdminSales() {
           {/* Date From */}
           <div>
             <label style={{ fontSize:12, fontWeight:700, color:'#374151', display:'block', marginBottom:5 }}>From Date</label>
-            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+            <input type="date" value={dateFrom} min="2024-06-10" max={dateTo || new Date().toISOString().split("T")[0]}
+              onChange={e => setDateFrom(e.target.value)}
               style={{ width:'100%', padding:'9px 12px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:13, outline:'none', boxSizing:'border-box' }} />
           </div>
           {/* Date To */}
           <div>
             <label style={{ fontSize:12, fontWeight:700, color:'#374151', display:'block', marginBottom:5 }}>To Date</label>
-            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+            <input type="date" value={dateTo} min={dateFrom || "2024-06-10"} max={new Date().toISOString().split("T")[0]}
+              onChange={e => setDateTo(e.target.value)}
               style={{ width:'100%', padding:'9px 12px', borderRadius:9, border:'1.5px solid #e5e7eb', fontSize:13, outline:'none', boxSizing:'border-box' }} />
           </div>
           {/* Payment Method */}
