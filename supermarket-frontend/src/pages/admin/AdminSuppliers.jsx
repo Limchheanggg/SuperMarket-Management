@@ -6,6 +6,17 @@ const empty = {
   Company_Name: '', Contact_Person: '', Phone: '', Email: '', City: '', Country: 'Cambodia'
 }
 
+const Icon = ({ name, size=18, color='currentColor', style }) => {
+  const p = { width:size, height:size, viewBox:'0 0 24 24', fill:'none', stroke:color, strokeWidth:1.8, strokeLinecap:'round', strokeLinejoin:'round', style }
+  switch(name) {
+    case 'search': return <svg {...p}><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    case 'alert':  return <svg {...p}><path d="M12 9v4M12 16.5h.01"/><path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.7 3.86a2 2 0 0 0-3.4 0z"/></svg>
+    case 'check':  return <svg {...p}><path d="M20 6 9 17l-5-5"/></svg>
+    case 'loader': return <svg {...p}><circle cx="12" cy="12" r="9" opacity=".25"/><path d="M21 12a9 9 0 0 0-9-9"/></svg>
+    default: return null
+  }
+}
+
 export default function AdminSuppliers() {
   const [suppliers, setSuppliers]   = useState([])
   const [loading, setLoading]       = useState(true)
@@ -15,6 +26,7 @@ export default function AdminSuppliers() {
   const [editing, setEditing]       = useState(null)
   const [form, setForm]             = useState(empty)
   const [saving, setSaving]         = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(null)
 
   const load = async () => {
     try {
@@ -59,13 +71,17 @@ export default function AdminSuppliers() {
     finally { setSaving(false) }
   }
 
-  const del = async (s) => {
-    if (!confirm(`Delete ${s.Company_Name}? Products will be unlinked.`)) return
+  const del = (s) => {
+    setDeleteConfirm({ supplier: s, title:'Delete Supplier', message:`Are you sure you want to delete "${s.Company_Name}"? Its products will be unlinked.` })
+  }
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return
     try {
-      await API.delete(`/api/suppliers/${s.Supplier_ID}`)
+      await API.delete(`/api/suppliers/${deleteConfirm.supplier.Supplier_ID}`)
       toast.success('Supplier deleted')
       load()
     } catch { toast.error('Failed to delete') }
+    finally { setDeleteConfirm(null) }
   }
 
   const filtered = suppliers.filter(s =>
@@ -107,10 +123,15 @@ export default function AdminSuppliers() {
       {/* Search */}
       <div style={{ background:'#fff', borderRadius:12, padding:16, marginBottom:16,
         boxShadow:'0 1px 3px rgba(0,0,0,0.08)' }}>
-        <input value={search} onChange={e=>setSearch(e.target.value)}
-          placeholder="🔍 Search by company, contact, or city..."
-          style={{ width:'100%', padding:'10px 14px', border:'1px solid #e5e7eb',
-            borderRadius:8, fontSize:14, boxSizing:'border-box', outline:'none' }}/>
+        <div style={{ position:'relative' }}>
+          <div style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', pointerEvents:'none' }}>
+            <Icon name="search" size={16}/>
+          </div>
+          <input value={search} onChange={e=>setSearch(e.target.value)}
+            placeholder="Search by company, contact, or city..."
+            style={{ width:'100%', padding:'10px 14px 10px 38px', border:'1px solid #e5e7eb',
+              borderRadius:8, fontSize:14, boxSizing:'border-box', outline:'none' }}/>
+        </div>
       </div>
 
       {/* Table */}
@@ -194,8 +215,9 @@ export default function AdminSuppliers() {
             <div style={{ display:'flex', gap:12, marginTop:24 }}>
               <button onClick={save} disabled={saving} style={{ flex:1, background:'#16a34a',
                 color:'#fff', border:'none', borderRadius:8, padding:'12px', fontWeight:600,
-                cursor:'pointer', fontSize:15 }}>
-                {saving ? 'Saving...' : '✅ Save'}
+                cursor:'pointer', fontSize:15, display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
+                <Icon name={saving ? 'loader' : 'check'} size={16} color="#fff" style={saving ? {animation:'spin 1s linear infinite'} : {}}/>
+                {saving ? 'Saving...' : 'Save'}
               </button>
               <button onClick={() => setShowModal(false)} style={{ flex:1, background:'#f3f4f6',
                 color:'#374151', border:'none', borderRadius:8, padding:'12px', fontWeight:600,
@@ -260,6 +282,29 @@ export default function AdminSuppliers() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {deleteConfirm && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,.55)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}
+          onClick={() => setDeleteConfirm(null)}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:'#fff', borderRadius:18, padding:28, maxWidth:380, width:'90%', boxShadow:'0 20px 60px rgba(0,0,0,.25)', textAlign:'center' }}>
+            <div style={{ width:56, height:56, borderRadius:16, background:'#fef2f2', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px', color:'#dc2626' }}>
+              <Icon name="alert" size={28}/>
+            </div>
+            <h3 style={{ margin:'0 0 8px', fontSize:17, fontWeight:800, color:'#0f172a' }}>{deleteConfirm.title}</h3>
+            <p style={{ margin:'0 0 22px', fontSize:13.5, color:'#64748b', lineHeight:1.5 }}>{deleteConfirm.message}</p>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={() => setDeleteConfirm(null)}
+                style={{ flex:1, padding:'11px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#f8fafc', fontWeight:700, cursor:'pointer', fontSize:14 }}>
+                Cancel
+              </button>
+              <button onClick={confirmDelete}
+                style={{ flex:1, padding:'11px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#dc2626,#ef4444)', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:14 }}>
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}

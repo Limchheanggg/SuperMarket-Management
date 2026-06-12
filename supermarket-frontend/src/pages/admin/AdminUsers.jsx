@@ -25,6 +25,16 @@ const STATUS_COLORS = {
 
 const PAGE_SIZE = 20
 
+const Icon = ({ name, size=18, color='currentColor' }) => {
+  const p = { width:size, height:size, viewBox:'0 0 24 24', fill:'none', stroke:color, strokeWidth:1.8, strokeLinecap:'round', strokeLinejoin:'round' }
+  switch(name) {
+    case 'search': return <svg {...p}><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    case 'alert':  return <svg {...p}><path d="M12 9v4M12 16.5h.01"/><path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.7 3.86a2 2 0 0 0-3.4 0z"/></svg>
+    case 'gear':   return <svg {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    default: return null
+  }
+}
+
 export default function AdminUsers() {
   const [tab, setTab]           = useState('users')
   const [users, setUsers]       = useState([])
@@ -38,6 +48,7 @@ export default function AdminUsers() {
   const [form, setForm]         = useState({ full_name:'', email:'', phone:'', role:'employee', password:'' })
   const [shiftForm, setShiftForm] = useState({ user_id:'', shift_name:'Morning', shift_date:'', start_time:'06:00', end_time:'14:00', status:'scheduled', note:'' })
   const [saving, setSaving]     = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(null)
 
   const today    = new Date().toISOString().split('T')[0]
   const tomorrow = new Date(Date.now()+86400000).toISOString().split('T')[0]
@@ -80,10 +91,8 @@ export default function AdminUsers() {
     finally { setSaving(false) }
   }
 
-  const handleDeleteUser = async (id) => {
-    if (!window.confirm('Delete this user?')) return
-    try { await API.delete(`/api/users/employees/${id}`); toast.success('Deleted'); fetchAll() }
-    catch { toast.error('Failed to delete') }
+  const handleDeleteUser = (u) => {
+    setDeleteConfirm({ type:'user', id:u.id, title:'Delete User', message:`Are you sure you want to delete "${u.full_name}"? This action cannot be undone.` })
   }
 
   // ── Shift CRUD ─────────────────────────────────────────────
@@ -100,10 +109,19 @@ export default function AdminUsers() {
     finally { setSaving(false) }
   }
 
-  const handleDeleteShift = async (id) => {
-    if (!window.confirm('Delete this shift?')) return
-    try { await API.delete(`/api/shifts/${id}`); toast.success('Shift deleted'); fetchAll() }
-    catch { toast.error('Failed') }
+  const handleDeleteShift = (id) => {
+    setDeleteConfirm({ type:'shift', id, title:'Delete Shift', message:'Are you sure you want to delete this shift? This action cannot be undone.' })
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return
+    const { type, id } = deleteConfirm
+    try {
+      if (type === 'user') { await API.delete(`/api/users/employees/${id}`); toast.success('User deleted') }
+      else { await API.delete(`/api/shifts/${id}`); toast.success('Shift deleted') }
+      fetchAll()
+    } catch { toast.error('Failed to delete') }
+    finally { setDeleteConfirm(null) }
   }
 
   const applyTemplate = (t) => setShiftForm(f => ({ ...f, shift_name:t.name, start_time:t.start, end_time:t.end }))
@@ -178,9 +196,14 @@ export default function AdminUsers() {
         <>
           {/* Search + Role filters */}
           <div style={{ display:'flex', gap:10, marginBottom:18, flexWrap:'wrap', alignItems:'center' }}>
-            <input value={search} onChange={e=>setSearch(e.target.value)}
-              placeholder="🔍 Search by name or email..."
-              style={{ flex:1, minWidth:220, padding:'10px 14px', borderRadius:10, border:'1.5px solid #e5e7eb', fontSize:13, outline:'none', boxSizing:'border-box' }} />
+            <div style={{ position:'relative', flex:1, minWidth:220 }}>
+              <div style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', pointerEvents:'none' }}>
+                <Icon name="search" size={16}/>
+              </div>
+              <input value={search} onChange={e=>setSearch(e.target.value)}
+                placeholder="Search by name or email..."
+                style={{ width:'100%', padding:'10px 14px 10px 38px', borderRadius:10, border:'1.5px solid #e5e7eb', fontSize:13, outline:'none', boxSizing:'border-box' }} />
+            </div>
             {['All','admin','manager','cashier','employee','customer'].map(r => {
               const rc = ROLE_COLORS[r] || { bg:'#f1f5f9', color:'#374151', border:'#e2e8f0' }
               return (
@@ -223,7 +246,7 @@ export default function AdminUsers() {
                   </td></tr>
                 ) : paginated.length === 0 ? (
                   <tr><td colSpan={7} style={{ padding:40, textAlign:'center', color:'#94a3b8' }}>
-                    <div style={{ fontSize:32, marginBottom:8 }}>🔍</div>No users match your search.
+                    <div style={{ display:'flex', justifyContent:'center', marginBottom:8 }}><Icon name="search" size={32} color="#cbd5e1"/></div>No users match your search.
                   </td></tr>
                 ) : paginated.map((u, idx) => {
                   const rc = ROLE_COLORS[u.role] || ROLE_COLORS.customer
@@ -259,7 +282,7 @@ export default function AdminUsers() {
                       </td>
                       <td style={{ padding:'11px 14px' }}>
                         {canAdmin
-                          ? <span style={{ padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:700, background:'#fef3c7', color:'#d97706', border:'1px solid #fcd34d' }}>⚙️ Admin</span>
+                          ? <span style={{ padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:700, background:'#fef3c7', color:'#d97706', border:'1px solid #fcd34d', display:'inline-flex', alignItems:'center', gap:4 }}><Icon name="gear" size={11}/>Admin</span>
                           : <span style={{ padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:700, background:'#f0fdf4', color:'#16a34a', border:'1px solid #86efac' }}>Shop</span>
                         }
                       </td>
@@ -275,7 +298,7 @@ export default function AdminUsers() {
                               +Shift
                             </button>
                           )}
-                          <button onClick={() => handleDeleteUser(u.id)}
+                          <button onClick={() => handleDeleteUser(u)}
                             style={{ padding:'4px 10px', borderRadius:7, border:'1.5px solid #fca5a5', background:'#fee2e2', color:'#dc2626', cursor:'pointer', fontSize:11, fontWeight:700 }}>
                             Del
                           </button>
@@ -651,6 +674,29 @@ export default function AdminUsers() {
               <button onClick={() => setShiftModal(null)}
                 style={{ flex:1, padding:'12px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#f8fafc', fontWeight:700, cursor:'pointer', fontSize:14 }}>
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteConfirm && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,.55)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}
+          onClick={() => setDeleteConfirm(null)}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:'#fff', borderRadius:18, padding:28, maxWidth:380, width:'90%', boxShadow:'0 20px 60px rgba(0,0,0,.25)', textAlign:'center' }}>
+            <div style={{ width:56, height:56, borderRadius:16, background:'#fef2f2', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px', color:'#dc2626' }}>
+              <Icon name="alert" size={28}/>
+            </div>
+            <h3 style={{ margin:'0 0 8px', fontSize:17, fontWeight:800, color:'#0f172a' }}>{deleteConfirm.title}</h3>
+            <p style={{ margin:'0 0 22px', fontSize:13.5, color:'#64748b', lineHeight:1.5 }}>{deleteConfirm.message}</p>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={() => setDeleteConfirm(null)}
+                style={{ flex:1, padding:'11px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#f8fafc', fontWeight:700, cursor:'pointer', fontSize:14 }}>
+                Cancel
+              </button>
+              <button onClick={confirmDelete}
+                style={{ flex:1, padding:'11px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#dc2626,#ef4444)', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:14 }}>
+                Delete
               </button>
             </div>
           </div>
