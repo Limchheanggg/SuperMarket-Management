@@ -79,6 +79,17 @@ def delete_employee(user_id: int, db: Session = Depends(get_db)):
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    customer = db.execute(text("SELECT Customer_ID FROM Customer WHERE User_ID=:uid"), {"uid": user_id}).fetchone()
+    if customer:
+        cid = customer.Customer_ID
+        db.execute(text("DELETE FROM Membership WHERE Customer_ID=:cid"), {"cid": cid})
+        sale_count = db.execute(text("SELECT COUNT(*) FROM Sale WHERE Customer_ID=:cid"), {"cid": cid}).scalar()
+        if sale_count == 0:
+            db.execute(text("DELETE FROM Customer WHERE Customer_ID=:cid"), {"cid": cid})
+        else:
+            db.execute(text("UPDATE Customer SET User_ID=NULL WHERE Customer_ID=:cid"), {"cid": cid})
+
     db.delete(user)
     db.commit()
     return {"message": "User deleted"}
