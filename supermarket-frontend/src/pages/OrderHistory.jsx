@@ -119,7 +119,7 @@ export default function OrderHistory() {
                   const mc = METHOD_COLORS[o.Payment_Method||o.method]||{ bg:'#f3f4f6', color:'#374151', border:'#e5e7eb' }
                   return (
                     <tr key={i} className="order-row" style={{ animation:`fadeUp .4s ease ${i*.04}s both` }}>
-                      <td style={{ fontWeight:700, color:'#c0272d', fontFamily:"'Playfair Display',serif" }}>
+                      <td style={{ fontWeight:700, color:'#c0272d', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                         #{o.Sale_ID_fmt||o.Sale_ID}
                       </td>
                       <td style={{ color:'#6b7280' }}>{o.date}</td>
@@ -130,7 +130,7 @@ export default function OrderHistory() {
                         </span>
                       </td>
                       <td style={{ fontWeight:800, color:'#0f172a', fontSize:15,
-                        fontFamily:"'Playfair Display',serif" }}>
+                        fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                         ${Number(o.Total_Amount||0).toFixed(2)}
                       </td>
                       <td>
@@ -238,7 +238,7 @@ export default function OrderHistory() {
               ))}
               <div style={{ display:'flex', justifyContent:'space-between', fontWeight:900, fontSize:18,
                 marginTop:12, paddingTop:12, borderTop:'1px solid #f0f0f0' }}>
-                <span style={{ fontFamily:"'Playfair Display',serif", color:'#0f172a' }}>Total</span>
+                <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", color:'#0f172a' }}>Total</span>
                 <span style={{ color:'#c0272d' }}>${Number(selected.Total_Amount||0).toFixed(2)}</span>
               </div>
             </div>
