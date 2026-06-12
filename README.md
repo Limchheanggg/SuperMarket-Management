@@ -153,14 +153,14 @@ HTTP Request
 | Table | Rows | Description |
 |-------|------|-------------|
 | `users` | 549 | All users — auth + role (admin/cashier/customer) |
-| `Customer` | 550 | Customer profiles + loyalty points |
-| `Membership` | 549 | Tier (Bronze/Silver/Gold/Platinum), points, spent |
-| `Product` | 148 | Products — name, price, category, supplier, image |
+| `Customer` | 550+ | Customer profiles + loyalty points |
+| `Membership` | 550+ | Tier (Bronze/Silver/Gold/Platinum), points, spent |
+| `Product` | 140+ | Products — name, price, category, supplier, image |
 | `Category` | 12 | Product categories |
 | `Supplier` | 12 | Product suppliers |
-| `Inventory` | 148 | Current stock per product |
+| `Inventory` | 140+ | Current stock per product |
 | `StockMovement` | 37 | Stock change history (in/out) |
-| `Sale` | 13,026 | Sales transactions |
+| `Sale` | 13,000+ | Sales transactions |
 | `SaleItem` | 39,220 | Line items per sale (M:M junction) |
 | `Coupon` | 10 | Promo codes with tier requirements |
 | `Employee_Shift` | 260 | Employee shift schedules |
