@@ -46,8 +46,15 @@ def user_to_dict(user, db=None):
                 d["membership_tier"] = mem.Tier
     return d
 
+PHONE_RE = re.compile(r'^(0\d{8,9}|\+855\d{8,9})$')
+
 @router.post("/register")
 def register(data: dict, db: Session = Depends(get_db)):
+    phone_clean = re.sub(r'[\s\-]', '', (data.get("phone") or "").strip())
+    if not phone_clean:
+        raise HTTPException(status_code=400, detail="Phone number is required")
+    if not PHONE_RE.match(phone_clean):
+        raise HTTPException(status_code=400, detail="Phone number must be in format 0XXXXXXXX or +855XXXXXXXX (digits only)")
     if db.query(UserModel).filter(UserModel.email == data["email"]).first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
@@ -55,7 +62,7 @@ def register(data: dict, db: Session = Depends(get_db)):
         full_name=data.get("name", ""),
         email=data["email"],
         password=hash_password(data["password"]),
-        phone=data.get("phone", ""),
+        phone=phone_clean,
         role=data.get("role", "customer")
     )
     db.add(user)
