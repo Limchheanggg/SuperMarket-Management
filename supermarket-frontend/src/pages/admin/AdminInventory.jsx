@@ -31,6 +31,7 @@ export default function AdminInventory() {
   const [loading, setLoading]     = useState(true)
   const [search, setSearch]       = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [showInactive, setShowInactive] = useState(false)
   const [statusF, setStatusF]     = useState('All')
   const [catF, setCatF]           = useState('All')
   const [modal, setModal]         = useState(null)  // null | 'add' | 'edit' | 'restock' | 'view'
@@ -46,7 +47,7 @@ export default function AdminInventory() {
     setLoading(true)
     try {
       const [iRes, cRes, sRes] = await Promise.all([
-        API.get('/api/inventory/'),
+        API.get('/api/inventory/', { params: { include_inactive: true } }),
         API.get('/api/products/categories'),
         API.get('/api/suppliers/'),
       ])
@@ -111,10 +112,17 @@ export default function AdminInventory() {
     if (!deleteConfirm) return
     try {
       await API.delete(`/api/products/${deleteConfirm.id}`)
-      toast.success(`${deleteConfirm.name} deleted successfully`)
+      toast.success(`${deleteConfirm.name} deactivated`)
       setDeleteConfirm(null)
       fetchAll()
-    } catch(e) { toast.error(e.response?.data?.detail || "Delete failed"); setDeleteConfirm(null) }
+    } catch(e) { toast.error(e.response?.data?.detail || "Action failed"); setDeleteConfirm(null) }
+  }
+  const handleRestore = async (id, name) => {
+    try {
+      await API.put(`/api/products/${id}/restore`)
+      toast.success(`${name} restored`)
+      fetchAll()
+    } catch(e) { toast.error(e.response?.data?.detail || "Restore failed") }
   }
 
   // ── Restock ──────────────────────────────────────────────────────────
@@ -135,6 +143,7 @@ export default function AdminInventory() {
     const q = search.toLowerCase()
     const matchQ = !q || i.Name?.toLowerCase().includes(q) ||
                    i.Brand?.toLowerCase().includes(q)
+    const matchActive = showInactive || i.Is_Active !== 0
     const matchS = statusF === 'All' || i.Status === statusF
     const matchC = catF    === 'All' || i.Category_Name === catF
     return matchQ && matchS && matchC
@@ -220,6 +229,12 @@ export default function AdminInventory() {
           <option value="All">All Categories</option>
           {cats.map(c => <option key={c.Category_ID}>{c.Category_Name}</option>)}
         </select>
+        {/* Show inactive toggle */}
+        <label style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, fontWeight:600, color:'#64748b', cursor:'pointer', whiteSpace:'nowrap' }}>
+          <input type="checkbox" checked={showInactive} onChange={e=>setShowInactive(e.target.checked)}
+            style={{ width:15, height:15, accentColor:'#c0272d', cursor:'pointer' }} />
+          Show deactivated
+        </label>
         {/* Clear */}
         {(search || statusF !== 'All' || catF !== 'All') && (
           <button onClick={() => { setSearch(''); setStatusF('All'); setCatF('All') }} className="inv-btn"
@@ -317,10 +332,17 @@ export default function AdminInventory() {
                           style={{ padding:'5px 11px', borderRadius:7, border:'1.5px solid #93c5fd', background:'#dbeafe', color:'#1d4ed8', fontSize:11, fontWeight:700 }}>
                           Edit
                         </button>
-                        <button onClick={() => handleDelete(item.Product_ID, item.Name)} className="inv-btn"
-                          style={{ padding:'5px 11px', borderRadius:7, border:'1.5px solid #fca5a5', background:'#fee2e2', color:'#dc2626', fontSize:11, fontWeight:700 }}>
-                          Del
-                        </button>
+                        {item.Is_Active === 0 ? (
+                          <button onClick={() => handleRestore(item.Product_ID, item.Name)} className="inv-btn"
+                            style={{ padding:'5px 11px', borderRadius:7, border:'1.5px solid #86efac', background:'#f0fdf4', color:'#15803d', fontSize:11, fontWeight:700 }}>
+                            Restore
+                          </button>
+                        ) : (
+                          <button onClick={() => handleDelete(item.Product_ID, item.Name)} className="inv-btn"
+                            style={{ padding:'5px 11px', borderRadius:7, border:'1.5px solid #fca5a5', background:'#fee2e2', color:'#dc2626', fontSize:11, fontWeight:700 }}>
+                            Del
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -528,13 +550,13 @@ export default function AdminInventory() {
                 <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
               </svg>
             </div>
-            <h3 style={{ fontSize:20, fontWeight:800, color:'#0f172a', marginBottom:10 }}>Delete Product</h3>
-            <p style={{ fontSize:14, color:'#64748b', marginBottom:8 }}>Are you sure you want to delete</p>
+            <h3 style={{ fontSize:20, fontWeight:800, color:'#0f172a', marginBottom:10 }}>Deactivate Product</h3>
+            <p style={{ fontSize:14, color:'#64748b', marginBottom:8 }}>Are you sure you want to deactivate</p>
             <p style={{ fontSize:15, fontWeight:800, color:'#c0272d', marginBottom:24,
               background:'#fff0f0', padding:'8px 16px', borderRadius:10, border:'1px solid #fecaca' }}>
               {deleteConfirm.name}
             </p>
-            <p style={{ fontSize:12, color:'#94a3b8', marginBottom:28 }}>This action cannot be undone.</p>
+            <p style={{ fontSize:12, color:'#94a3b8', marginBottom:28 }}>It will be hidden from the shop but sales history is preserved. You can restore it anytime.</p>
             <div style={{ display:'flex', gap:12 }}>
               <button onClick={()=>setDeleteConfirm(null)}
                 style={{ flex:1, padding:'12px', borderRadius:12, border:'1.5px solid #e5e7eb',
