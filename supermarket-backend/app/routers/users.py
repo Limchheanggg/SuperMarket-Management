@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 from ..core.database import get_db
 from ..core.dependencies import require_admin
@@ -27,7 +27,8 @@ def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 @router.get("/employees", dependencies=[Depends(require_admin)])
-def get_employees(db: Session = Depends(get_db)):
+def get_employees(response: Response, db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "no-store"
     users = db.query(UserModel).all()
     return [
         {
