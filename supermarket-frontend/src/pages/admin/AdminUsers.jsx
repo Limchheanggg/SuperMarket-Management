@@ -162,7 +162,7 @@ export default function AdminUsers() {
 
       {/* Tabs */}
       <div style={{ display:'flex', gap:4, marginBottom:20, background:'#f1f5f9', borderRadius:12, padding:4, width:'fit-content' }}>
-        {[['users','👥 Users'],['shifts','📅 Shifts']].map(([key,label]) => (
+        {[['users','Users'],['shifts','Shifts']].map(([key,label]) => (
           <button key={key} onClick={() => setTab(key)}
             style={{ padding:'9px 20px', borderRadius:9, border:'none', cursor:'pointer', fontSize:13, fontWeight:700,
               background: tab===key ? '#fff' : 'transparent',
@@ -239,7 +239,7 @@ export default function AdminUsers() {
                             <strong style={{ color:'#0f172a', fontSize:13 }}>{u.full_name}</strong>
                             {['employee','cashier'].includes(u.role) && (
                               <div style={{ fontSize:10, color:'#94a3b8', marginTop:1 }}>
-                                {shifts.filter(s=>s.user_id===u.id&&s.shift_date===today).length > 0 ? '🟢 On shift' : '⚪ Off today'}
+                                {shifts.filter(s=>s.user_id===u.id&&s.shift_date===today).length > 0 ? 'On shift' : 'Off today'}
                               </div>
                             )}
                           </div>
@@ -577,7 +577,7 @@ export default function AdminUsers() {
           onClick={e => { if(e.target===e.currentTarget) setShiftModal(null) }}>
           <div style={{ background:'#fff', borderRadius:18, padding:32, width:'100%', maxWidth:500, boxShadow:'0 8px 40px rgba(0,0,0,.15)', maxHeight:'90vh', overflowY:'auto' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:22 }}>
-              <h3 style={{ fontSize:18, fontWeight:800, color:'#0f172a' }}>{shiftModal==='add'?'📅 New Shift':'✏️ Edit Shift'}</h3>
+              <h3 style={{ fontSize:18, fontWeight:800, color:'#0f172a' }}>{shiftModal==='add'?'New Shift':'Edit Shift'}</h3>
               <button onClick={() => setShiftModal(null)} style={{ background:'none', border:'none', fontSize:20, cursor:'pointer', color:'#94a3b8' }}>✕</button>
             </div>
 
