@@ -219,7 +219,7 @@ export default function AdminReports() {
           <div style={{fontSize:11,color:'#64748b',fontWeight:700,textTransform:'uppercase',letterSpacing:1.5,marginBottom:6}}>
             Today — {daily?.date}
           </div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:40,fontWeight:900,color:'#fff',marginBottom:4,lineHeight:1}}>
+          <div style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:40,fontWeight:900,color:'#fff',marginBottom:4,lineHeight:1}}>
             ${daily?.total_revenue?.toFixed(2)||'0.00'}
           </div>
           <div style={{fontSize:13,color:'#64748b'}}>Total Revenue Today</div>
@@ -234,7 +234,7 @@ export default function AdminReports() {
             onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,.1)'}
             onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,.06)'}>
             <div style={{display:'flex',justifyContent:'center',marginBottom:10}}>{s.icon}</div>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:900,color:'#fff',marginBottom:4}}>{s.value}</div>
+            <div style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:26,fontWeight:900,color:'#fff',marginBottom:4}}>{s.value}</div>
             <div style={{fontSize:12,color:'#64748b'}}>{s.label}</div>
           </div>
         ))}
@@ -249,7 +249,7 @@ export default function AdminReports() {
               <div style={{fontSize:11,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',letterSpacing:1}}>{k.label}</div>
               <Sparkline data={k.spark} color={k.color}/>
             </div>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:28,fontWeight:900,color:'#0f172a',lineHeight:1,marginBottom:6}}>{k.value}</div>
+            <div style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:28,fontWeight:900,color:'#0f172a',lineHeight:1,marginBottom:6}}>{k.value}</div>
             <div style={{fontSize:11,color:k.color,fontWeight:700}}>Live data</div>
           </div>
         ))}
@@ -376,7 +376,7 @@ export default function AdminReports() {
                 <div style={{color,opacity:.8}}>{icon}</div>
                 {label}
               </div>
-              <strong style={{fontSize:14,color,fontFamily:"'Playfair Display',serif"}}>{value}</strong>
+              <strong style={{fontSize:14,color,fontFamily:"'Plus Jakarta Sans',sans-serif"}}>{value}</strong>
             </div>
           ))}
         </div>
