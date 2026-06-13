@@ -1,0 +1,129 @@
+Table Category {
+  Category_ID int [pk, increment]
+  Category_Name varchar(100)
+}
+
+Table Supplier {
+  Supplier_ID int [pk, increment]
+  Company_Name varchar(100)
+  Contact_Person varchar(100)
+  Phone varchar(30)
+  Email varchar(100)
+  City varchar(100)
+  Country varchar(100)
+}
+
+Table Coupon {
+  Coupon_ID int [pk, increment]
+  Code varchar(20)
+  Description varchar(255)
+  Discount_Type varchar(20)
+  Discount_Value float
+  Min_Purchase float
+  Tier_Required varchar(20)
+  Uses_Limit int
+  Uses_Count int
+  Expiry_Date date
+  Is_Active tinyint
+  Created_At timestamp
+}
+
+Table Product {
+  Product_ID int [pk, increment]
+  Name varchar(100)
+  Description text
+  Category_ID int [ref: > Category.Category_ID]
+  Brand varchar(100)
+  Unit varchar(20)
+  Unit_Price decimal(10,2)
+  Unit_Mass_Kg decimal(10,3)
+  Reorder_Level int
+  Is_Perishable tinyint
+  Product_Image longtext
+  Supplier_ID int [ref: > Supplier.Supplier_ID]
+  Is_Active tinyint
+}
+
+Table Inventory {
+  Inventory_ID int [pk, increment]
+  Product_ID int [ref: > Product.Product_ID]
+  Quantity int
+  Last_Updated datetime
+}
+
+Table users {
+  id int [pk, increment]
+  full_name varchar(100)
+  email varchar(100) [unique]
+  password varchar(255)
+  phone varchar(20)
+  role varchar(20)
+}
+
+Table Customer {
+  Customer_ID int [pk, increment]
+  First_Name varchar(50)
+  Last_Name varchar(50)
+  email varchar(255)
+  Join_Day tinyint
+  Join_Month tinyint
+  Join_Year year
+  Loyalty_Points int
+  password varchar(255)
+  User_ID int [ref: > users.id]
+}
+
+Table Membership {
+  Membership_ID int [pk, increment]
+  Customer_ID int [ref: - Customer.Customer_ID]
+  Tier varchar(20)
+  Points int
+  Total_Spent float
+  Joined_At datetime
+}
+
+Table Sale {
+  Sale_ID int [pk, increment]
+  Sale_Day tinyint
+  Sale_Month tinyint
+  Sale_Year year
+  Sale_Time time
+  Employee_ID int [ref: > users.id]
+  Customer_ID int [ref: > Customer.Customer_ID]
+  Coupon_ID int [ref: > Coupon.Coupon_ID]
+  Payment_Method varchar(20)
+  Discount decimal(5,2)
+  Tax decimal(5,2)
+  Total_Amount decimal(12,2)
+  Customer_Note text
+}
+
+Table SaleItem {
+  Item_ID int [pk, increment]
+  Sale_ID int [ref: > Sale.Sale_ID]
+  Product_ID int [ref: > Product.Product_ID]
+  Quantity int
+  Unit_Price float
+  Subtotal float
+}
+
+Table StockMovement {
+  Movement_ID int [pk, increment]
+  Product_ID int [ref: > Product.Product_ID]
+  Movement_Type varchar(20)
+  Quantity int
+  Note varchar(255)
+  Created_At datetime
+}
+
+Table Employee_Shift {
+  id int [pk, increment]
+  user_id int [ref: > users.id]
+  shift_name varchar(50)
+  shift_date date
+  start_time time
+  end_time time
+  status varchar(20)
+  note varchar(255)
+  created_at timestamp
+}
