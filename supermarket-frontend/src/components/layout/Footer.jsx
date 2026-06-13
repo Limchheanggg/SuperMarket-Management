@@ -170,7 +170,7 @@ export default function Footer() {
                       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                       <polyline points="22,6 12,13 2,6" />
                     </svg>,
-                    "hello@amsmart.kh",
+                    "limchheang@amsmart.kh",
                   ],
                   [
                     <svg
@@ -290,7 +290,7 @@ export default function Footer() {
           }}
         >
           <p style={{ fontSize: 12, color: "#4b5563" }}>
-            © 2025 AMS Mart — Group 3 · CHHAY Lyveng · KHUN Limchheang · HORN
+            © 2026 AMS Mart — Group 3 · CHHAY Lyveng · KHUN Limchheang · HORN
             Hengveasna
           </p>
           <div style={{ display: "flex", gap: 8 }}>
