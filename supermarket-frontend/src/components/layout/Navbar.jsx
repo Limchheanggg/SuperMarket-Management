@@ -30,6 +30,16 @@ const ChevronDown = () => (
     <path d="m6 9 6 6 6-6"/>
   </svg>
 )
+const MenuIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+  </svg>
+)
+const CloseIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+)
 const AdminIcon = () => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="3"/>
@@ -103,6 +113,9 @@ export default function Navbar() {
   const [scrolled,   setScrolled]   = useState(false)
   const [categories, setCategories] = useState([])
   const [userOpen,   setUserOpen]   = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  useEffect(() => { setMobileOpen(false) }, [location.pathname])
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 8)
@@ -182,6 +195,39 @@ export default function Navbar() {
         .nb-admin-btn:hover { background:#a01f24; transform:translateY(-1px); box-shadow:0 6px 18px rgba(192,39,45,0.38); }
 
         /* Category bar */
+
+        /* ── Mobile ── */
+        .nb-hamburger { display:none; width:40px; height:40px; border-radius:10px; align-items:center; justify-content:center; border:1.5px solid #e8ecf4; background:#fff; cursor:pointer; color:#0d1240; flex-shrink:0; }
+        .nb-mobile-menu { display:none; }
+        @media (max-width: 900px) {
+          .nb-topbar { display:none; }
+          .nb-search { display:none; }
+          .nb-nav { display:none; }
+          .nb-admin-btn span.nb-admin-label { display:none; }
+          .nb-admin-btn { padding:9px 12px; }
+          .nb-hamburger { display:flex; }
+          .nb-header-inner { gap:10px; padding:0 14px; }
+          .nb-logo-sub { display:none; }
+          .nb-user-btn span:not(.nb-avatar) { display:none; }
+          .nb-user-wrap { display:none; }
+          .nb-admin-btn { display:none; }
+          .nb-actions a[title="Wishlist"] { display:none; }
+          .nb-logo-text { display:none; }
+          .nb-mobile-menu.open {
+            display:flex; flex-direction:column; gap:4px;
+            background:#fff; border-bottom:2px solid #e8ecf4; padding:14px;
+            animation:dropIn .18s ease;
+          }
+          .nb-mobile-search { display:flex; background:#f4f6f9; border-radius:10px; border:1.5px solid #e8ecf4; overflow:hidden; margin-bottom:6px; }
+          .nb-mobile-search input { flex:1; border:none; background:transparent; padding:11px 15px; font-family:'Barlow',sans-serif; font-size:14px; color:#1e2545; outline:none; }
+          .nb-mobile-search button { background:#0d1240; color:#fff; border:none; padding:0 18px; cursor:pointer; }
+          .nb-mobile-link { font-family:'Barlow',sans-serif; font-size:15px; font-weight:700; color:#1e2545; text-decoration:none; padding:12px 10px; border-radius:8px; display:flex; align-items:center; gap:10px; }
+          .nb-mobile-link:hover, .nb-mobile-link.active { background:#eef2fa; color:#0d1240; }
+          .nb-mobile-link.red { color:#c0272d; }
+          .nb-mobile-sep { height:1px; background:#e8ecf4; margin:6px 0; }
+          .nb-mobile-meta { display:flex; flex-direction:column; gap:8px; padding:10px; font-family:'Barlow',sans-serif; font-size:12px; color:#8896b3; }
+          .nb-mobile-meta span { display:flex; align-items:center; gap:6px; }
+        }
       `}</style>
 
       {/* ── TOP BAR ── */}
@@ -309,12 +355,67 @@ export default function Navbar() {
 
             {user && ADMIN_ROLES.includes(user.role) && (
               <Link to="/admin" className="nb-admin-btn">
-                <AdminIcon /> Admin Panel
+                <AdminIcon /> <span className="nb-admin-label">Admin Panel</span>
               </Link>
             )}
+
+            {/* Mobile hamburger */}
+            <button className="nb-hamburger" onClick={() => setMobileOpen(o => !o)} aria-label="Menu">
+              {mobileOpen ? <CloseIcon /> : <MenuIcon />}
+            </button>
           </div>
         </div>
       </header>
+
+      {/* ── MOBILE MENU ── */}
+      <div className={`nb-mobile-menu${mobileOpen ? ' open' : ''}`}>
+        <form className="nb-mobile-search" onSubmit={handleSearch}>
+          <input
+            placeholder="Search products or brands..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <button type="submit"><SearchIcon /></button>
+        </form>
+
+        {[['/', 'Home'],['/shop','Shop'],['/about','About'],['/contact','Contact']].map(([to, label]) => (
+          <Link key={to} to={to} className={`nb-mobile-link${location.pathname === to ? ' active' : ''}`}>
+            {label}
+          </Link>
+        ))}
+
+        <div className="nb-mobile-sep" />
+
+        <Link to="/wishlist" className="nb-mobile-link"><HeartIcon /> Wishlist</Link>
+        <Link to="/cart" className="nb-mobile-link"><CartIcon /> Cart{cartCount > 0 ? ` (${cartCount})` : ''}</Link>
+
+        {user ? (
+          <>
+            <Link to="/dashboard" className="nb-mobile-link"><UserIcon /> My Dashboard</Link>
+            <Link to="/orders" className="nb-mobile-link"><OrderIcon /> My Orders</Link>
+            <Link to="/account" className="nb-mobile-link"><AdminIcon /> Account Settings</Link>
+            {ADMIN_ROLES.includes(user.role) && (
+              <Link to="/admin" className="nb-mobile-link red"><AdminIcon /> Admin Panel</Link>
+            )}
+            <div className="nb-mobile-sep" />
+            <button onClick={logoutUser} className="nb-mobile-link red" style={{ background:'none', border:'none', cursor:'pointer', width:'100%', textAlign:'left' }}>
+              <LogoutIcon /> Sign Out
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="nb-mobile-sep" />
+            <Link to="/login" className="nb-mobile-link"><UserIcon /> Sign In</Link>
+            <Link to="/register" className="nb-mobile-link">Create Account</Link>
+          </>
+        )}
+
+        <div className="nb-mobile-sep" />
+        <div className="nb-mobile-meta">
+          <span><MapPinIcon /> Phnom Penh, Cambodia</span>
+          <span><PhoneIcon /> +855 12 345 678</span>
+        </div>
+      </div>
     </>
   )
 }

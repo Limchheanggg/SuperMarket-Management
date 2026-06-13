@@ -167,7 +167,16 @@ export default function Checkout() {
       className="page-enter"
       style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}
     >
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');`}</style>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        .checkout-grid { display:grid; grid-template-columns:1fr 380px; gap:28px; align-items:start; }
+        .checkout-2col { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+        .checkout-info-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .checkout-pay-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        @media (max-width: 800px) {
+          .checkout-grid, .checkout-2col, .checkout-info-grid, .checkout-pay-grid { grid-template-columns:1fr; }
+        }
+      `}</style>
 
       {/* Breadcrumb */}
       <div
@@ -208,14 +217,7 @@ export default function Checkout() {
         </h1>
 
         <form onSubmit={placeOrder}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 380px",
-              gap: 28,
-              alignItems: "start",
-            }}
-          >
+          <div className="checkout-grid">
             {/* LEFT COLUMN */}
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               {/* Billing Details */}
@@ -240,19 +242,11 @@ export default function Checkout() {
                 >
                   Billing Details
                 </h3>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 14,
-                    marginBottom: 14,
-                  }}
-                >
-                </div>
+                <div className="checkout-2col"></div>
                 {/* System info display */}
                 <div style={{ background:'#f8fafc', borderRadius:12, padding:'16px', marginBottom:14, border:'1px solid #e5e7eb' }}>
                   <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:12 }}>Your Information</div>
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                  <div className="checkout-info-grid">
                     {[
                       ['Full Name', user?.name || user?.full_name || 'N/A'],
                       ['Email',     user?.email || 'N/A'],
@@ -310,13 +304,7 @@ export default function Checkout() {
                 >
                   Payment Method
                 </h3>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 10,
-                  }}
-                >
+                <div className="checkout-pay-grid">
                   {["ABA", "Acleda", "Cash"].map(
                     (method) => (
                       <div
