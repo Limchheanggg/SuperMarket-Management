@@ -17,7 +17,7 @@ function useInView(threshold = 0.15) {
   return [ref, visible];
 }
 
-function Counter({ target, suffix = "", duration = 2000 }) {
+function Counter({ target, suffix = "", duration = 2000, noFormat = false }) {
   const [count, setCount] = useState(0);
   const [started, setStarted] = useState(false);
   const ref = useRef();
@@ -47,7 +47,7 @@ function Counter({ target, suffix = "", duration = 2000 }) {
   }, [started]);
   return (
     <span ref={ref}>
-      {count.toLocaleString()}
+      {noFormat ? count : count.toLocaleString()}
       {suffix}
     </span>
   );
@@ -185,7 +185,7 @@ const stats = [
   { value: "148", suffix: "", label: "Products", icon: "📦" },
   { value: "12", suffix: "", label: "Categories", icon: "🗂️" },
   { value: "12", suffix: "", label: "Suppliers", icon: "🚚" },
-  { value: "2026", suffix: "", label: "Founded", icon: "📅" },
+  { value: "2026", suffix: "", label: "Founded", icon: "📅", noFormat: true },
 ];
 export default function About() {
   const [heroRef, heroVisible] = useInView(0.1);
@@ -382,7 +382,7 @@ export default function About() {
               animation: heroVisible ? "fadeUp .7s ease .45s forwards" : "none",
             }}
           >
-            {stats.map(({ value, suffix, label, icon }) => (
+            {stats.map(({ value, suffix, label, icon, noFormat }) => (
               <div key={label} className="stat-box">
                 <div
                   style={{
@@ -392,7 +392,7 @@ export default function About() {
                     marginBottom: 2,
                   }}
                 >
-                  <Counter target={value} suffix={suffix} />
+                  <Counter target={value} suffix={suffix} noFormat={noFormat} />
                 </div>
                 <div
                   style={{
