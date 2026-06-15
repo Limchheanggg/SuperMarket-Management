@@ -41,7 +41,7 @@ export default function OrderHistory() {
         customerEmail:   user?.email || info.email || 'N/A',
         customerPhone:   user?.phone || info.phone || 'N/A',
         customerNotes:   info.notes   || '',
-        customerAddress: info.address || 'N/A',
+        customerAddress: user?.address || info.address || 'N/A',
       }))
     } catch { setItems([]) }
     finally { setItemLoading(false) }
@@ -191,8 +191,8 @@ export default function OrderHistory() {
                 {[
                   ['Full Name', selected?.customerName || user?.name || 'Walk-in'],
                   ['Email', selected?.customerEmail || user?.email || 'N/A'],
-                  
                   ['Phone', selected?.customerPhone || 'N/A'],
+                  ['Address', selected?.customerAddress || 'N/A'],
                   ['Notes', selected?.customerNotes || 'None'],
                   ['Payment', selected?.Payment_Method || 'Cash'],
                 ].map(([l,v]) => (
