@@ -275,7 +275,7 @@ export default function Checkout() {
                   </div>
                   <div style={{ fontSize:11, color:'#94a3b8', marginTop:10 }}>
                     To update your info, go to{' '}
-                    <a href="/settings" style={{ color:'#c0272d', fontWeight:700, textDecoration:'none' }}>Account Settings</a>
+                    <a href="/account" style={{ color:'#c0272d', fontWeight:700, textDecoration:'none' }}>Account Settings</a>
                   </div>
                 </div>
                 {/* Optional notes */}

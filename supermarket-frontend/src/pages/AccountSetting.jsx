@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom'
 export default function AccountSetting() {
   const { user, loginUser } = useAuth()
   const [tab, setTab]   = useState('profile')
-  const [form, setForm] = useState({ name: user?.name||'', email: user?.email||'', phone: user?.phone||'' })
+  const [form, setForm] = useState({ name: user?.name||'', email: user?.email||'', phone: user?.phone||'', address: user?.address||'' })
   const [passForm, setPassForm] = useState({ password:'', confirm:'' })
   const [loading, setLoading]   = useState(false)
   const name = user?.full_name || user?.name || 'User'
@@ -15,8 +15,8 @@ export default function AccountSetting() {
   const saveProfile = async () => {
     setLoading(true)
     try {
-      const res = await updateMe({ name: form.name, phone: form.phone })
-      loginUser(localStorage.getItem('token'), { ...user, name: res.data.name, phone: res.data.phone })
+      const res = await updateMe({ name: form.name, phone: form.phone, address: form.address })
+      loginUser(localStorage.getItem('token'), { ...user, name: res.data.name, phone: res.data.phone, address: res.data.address })
       toast.success('Profile updated!')
     } catch { toast.error('Failed to update') }
     finally { setLoading(false) }
@@ -150,18 +150,22 @@ export default function AccountSetting() {
             )}
 
             {tab === 'address' && (
-              <div>
-                <div style={{ background:'#f9fafb', borderRadius:14, padding:20,
-                  border:'1px solid #f0f0f0', marginBottom:14, display:'flex',
-                  justifyContent:'space-between', alignItems:'center' }}>
-                  <div>
-                    <div style={{ fontWeight:700, color:'#0f172a', marginBottom:4 }}>Home</div>
-                    <div style={{ fontSize:13, color:'#94a3b8' }}>123 Street 271, Phnom Penh, Cambodia</div>
-                  </div>
-                  <span style={{ fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:99,
-                    background:'#fff0f0', color:'#c0272d', border:'1px solid #fecaca' }}>Default</span>
+              <div style={{ display:'flex', flexDirection:'column', gap:16, maxWidth:480 }}>
+                <div>
+                  <label style={{ fontSize:12, fontWeight:700, color:'#9ca3af',
+                    textTransform:'uppercase', letterSpacing:1, display:'block', marginBottom:8 }}>Delivery Address</label>
+                  <textarea className="acc-input" value={form.address} onChange={e=>setForm({...form,address:e.target.value})}
+                    placeholder="House 12, Street 289, Sangkat Kakab, Khan Posenchey, Phnom Penh"
+                    rows={3} style={{ ...inputStyle, resize:'vertical', fontFamily:'inherit' }}/>
                 </div>
-
+                <button onClick={saveProfile} disabled={loading} style={{ alignSelf:'flex-start',
+                  padding:'12px 28px', borderRadius:12, border:'none',
+                  background:'linear-gradient(135deg,#c0272d,#e53935)', color:'#fff',
+                  fontWeight:700, fontSize:14, cursor:'pointer',
+                  boxShadow:'0 4px 14px rgba(192,39,45,.3)', transition:'all .25s',
+                  opacity:loading?0.7:1 }}>
+                  {loading ? 'Saving…' : 'Save Address'}
+                </button>
               </div>
             )}
           </div>
