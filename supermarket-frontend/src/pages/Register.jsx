@@ -21,7 +21,7 @@ const FLOAT_ICONS = [
 
 export default function Register() {
   const [step,     setStep]     = useState(1)
-  const [form,     setForm]     = useState({ name:'', email:'', password:'', confirm:'', phone:'' })
+  const [form,     setForm]     = useState({ name:'', email:'', password:'', confirm:'', phone:'', address:'' })
   const [errors,   setErrors]   = useState({})
   const [showPass, setShowPass] = useState(false)
   const [loading,  setLoading]  = useState(false)
@@ -46,6 +46,7 @@ export default function Register() {
     const phoneClean = form.phone.replace(/[\s\-]/g, '')
     if (!phoneClean) e.phone = 'Phone number is required'
     else if (!/^(0\d{8,9}|\+855\d{8,9})$/.test(phoneClean)) e.phone = 'Use format 0XXXXXXXX or +855XXXXXXXX'
+    if (!form.address.trim()) e.address = 'Address is required'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -58,7 +59,7 @@ export default function Register() {
   const handleSubmit = async () => {
     setLoading(true)
     try {
-      const res = await register({ name:form.name, email:form.email, password:form.password, phone:form.phone })
+      const res = await register({ name:form.name, email:form.email, password:form.password, phone:form.phone, address:form.address })
       loginUser(res.data.access_token, res.data.user)
       setStep(3)
       setTimeout(() => {
@@ -224,6 +225,11 @@ export default function Register() {
               <label style={{ fontSize:12, fontWeight:700, color:'#374151', display:'block', marginBottom:8, textTransform:'uppercase', letterSpacing:.8 }}>Phone</label>
               <input placeholder="012345678 or +855 12 345 678" value={form.phone} className="reg-input" style={inputStyle('phone')} inputMode="tel" required onChange={e=>set('phone', e.target.value.replace(/[^0-9+\-\s]/g,''))}/>
               {errors.phone && <div style={{ fontSize:12, color:'#ef4444', marginTop:6 }}>{errors.phone}</div>}
+            </div>
+            <div style={{ marginBottom:24 }}>
+              <label style={{ fontSize:12, fontWeight:700, color:'#374151', display:'block', marginBottom:8, textTransform:'uppercase', letterSpacing:.8 }}>Address *</label>
+              <input placeholder="House 12, Street 289, Sangkat Kakab, Khan Posenchey, Phnom Penh" value={form.address} className="reg-input" style={inputStyle('address')} required onChange={e=>set('address', e.target.value)}/>
+              {errors.address && <div style={{ fontSize:12, color:'#ef4444', marginTop:6 }}>{errors.address}</div>}
             </div>
             <div style={{ background:'#f8fafc', borderRadius:14, padding:'16px 20px', border:'1px solid #e2e8f0', marginBottom:24 }}>
               <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:12 }}>Account Summary</div>
