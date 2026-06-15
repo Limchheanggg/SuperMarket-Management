@@ -230,11 +230,15 @@ def get_sale(sale_id: int, db: Session = Depends(get_db)):
                s.Sale_Time, s.Customer_Note,
                COALESCE(CONCAT(c.First_Name,' ',c.Last_Name),'Walk-in') as customer,
                COALESCE(u.full_name,'Staff') as cashier,
-               cp.Code as coupon_code
+               cp.Code as coupon_code,
+               cu.email as customer_email,
+               cu.phone as customer_phone,
+               cu.address as customer_address
         FROM Sale s
         LEFT JOIN Customer c ON c.Customer_ID = s.Customer_ID
         LEFT JOIN users u    ON u.id           = s.Employee_ID
         LEFT JOIN Coupon cp  ON cp.Coupon_ID   = s.Coupon_ID
+        LEFT JOIN users cu   ON cu.id          = c.User_ID
         WHERE s.Sale_ID = :id
     """), {"id": sale_id}).fetchone()
     if not sale:
@@ -252,10 +256,13 @@ def get_sale(sale_id: int, db: Session = Depends(get_db)):
         "Payment_Method": sale.Payment_Method,
         "Discount":       float(sale.Discount or 0),
         "Tax":            float(sale.Tax or 0),
-        "customer":       sale.customer,
-        "cashier":        sale.cashier,
-        "Customer_Note":  sale.Customer_Note,
-        "Coupon_Code":    sale.coupon_code,
+        "customer":         sale.customer,
+        "cashier":          sale.cashier,
+        "Customer_Note":    sale.Customer_Note,
+        "Coupon_Code":      sale.coupon_code,
+        "customer_email":   sale.customer_email,
+        "customer_phone":   sale.customer_phone,
+        "customer_address": sale.customer_address,
         "items":          [{"Name": i.Name, "Quantity": i.Quantity,
                             "Unit_Price": float(i.Unit_Price),
                             "Subtotal": float(i.Subtotal)} for i in items],
