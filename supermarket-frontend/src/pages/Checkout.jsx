@@ -96,6 +96,11 @@ export default function Checkout() {
 
   const placeOrder = async (e) => {
     e.preventDefault();
+    if (!user) {
+      toast.error("Please sign in to checkout")
+      navigate('/login')
+      return
+    }
     if (cartItems.length === 0) return toast.error("Your cart is empty");
 
     setLoading(true);
