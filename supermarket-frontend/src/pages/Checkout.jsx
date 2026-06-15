@@ -269,6 +269,10 @@ export default function Checkout() {
                       </div>
                     ))}
                   </div>
+                  <div style={{ marginTop:12 }}>
+                    <div style={{ fontSize:11, color:'#94a3b8', fontWeight:600, marginBottom:3 }}>Address</div>
+                    <div style={{ fontSize:13, fontWeight:700, color:'#0f172a' }}>{user?.address || 'N/A'}</div>
+                  </div>
                   <div style={{ fontSize:11, color:'#94a3b8', marginTop:10 }}>
                     To update your info, go to{' '}
                     <a href="/settings" style={{ color:'#c0272d', fontWeight:700, textDecoration:'none' }}>Account Settings</a>
