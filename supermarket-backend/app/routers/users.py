@@ -36,6 +36,7 @@ def get_employees(response: Response, db: Session = Depends(get_db)):
             "full_name": u.full_name,
             "email": u.email,
             "phone": u.phone,
+            "address": u.address,
             "role": u.role or "customer"
         }
         for u in users
@@ -50,6 +51,7 @@ def create_employee(data: dict, db: Session = Depends(get_db)):
         email=data["email"],
         password=hash_password(data["password"]),
         phone=data.get("phone", ""),
+        address=data.get("address", ""),
         role=data.get("role", "employee")
     )
     db.add(user)
@@ -66,6 +68,7 @@ def update_employee(user_id: int, data: dict, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
     if "full_name" in data: user.full_name = data["full_name"]
     if "phone"     in data: user.phone     = data["phone"]
+    if "address"   in data: user.address   = data["address"]
     if "role"      in data: user.role      = data["role"]
     if "password"  in data and data["password"]:
         user.password = hash_password(data["password"])
