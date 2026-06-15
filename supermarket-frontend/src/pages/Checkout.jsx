@@ -25,8 +25,13 @@ export default function Checkout() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect to cart if empty
+  // Redirect to cart if empty, or to login if not authenticated
   useEffect(() => {
+    if (!user) {
+      toast.error("Please sign in to checkout")
+      navigate('/login')
+      return
+    }
     if (cartItems.length === 0) navigate('/cart')
   }, [])
 
