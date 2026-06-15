@@ -45,7 +45,7 @@ export default function AdminUsers() {
   const [page, setPage]         = useState(1)
   const [userModal, setUserModal]   = useState(null)
   const [shiftModal, setShiftModal] = useState(null)
-  const [form, setForm]         = useState({ full_name:'', email:'', phone:'', role:'employee', password:'' })
+  const [form, setForm]         = useState({ full_name:'', email:'', phone:'', address:'', role:'employee', password:'' })
   const [shiftForm, setShiftForm] = useState({ user_id:'', shift_name:'Morning', shift_date:'', start_time:'06:00', end_time:'14:00', status:'scheduled', note:'' })
   const [saving, setSaving]     = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
@@ -157,7 +157,7 @@ export default function AdminUsers() {
           <h1 className='admin-title'>Users and Shifts</h1>
           <p className='admin-subtitle'>Manage all users and employee shift schedules</p>
         </div>
-        <button onClick={() => { setForm({ full_name:'', email:'', phone:'', role:'employee', password:'' }); setUserModal('add') }}
+        <button onClick={() => { setForm({ full_name:'', email:'', phone:'', address:'', role:'employee', password:'' }); setUserModal('add') }}
           style={{ padding:'10px 20px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#15803d,#22c55e)', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:14, boxShadow:'0 4px 12px rgba(21,128,61,.3)' }}>
           + Add User
         </button>
@@ -559,7 +559,7 @@ export default function AdminUsers() {
               <h3 style={{ fontSize:18, fontWeight:800, color:'#0f172a' }}>{userModal==='add'?'+ Add User':'Edit User'}</h3>
               <button onClick={() => setUserModal(null)} style={{ background:'none', border:'none', fontSize:20, cursor:'pointer', color:'#94a3b8' }}>✕</button>
             </div>
-            {[['full_name','Full Name','e.g. Sophea CHAN'],['email','Email','user@email.com'],['phone','Phone','+855 12 345 678']].map(([key,label,ph]) => (
+            {[['full_name','Full Name','e.g. Sophea CHAN'],['email','Email','user@email.com'],['phone','Phone','+855 12 345 678'],['address','Address','House 12, Street 289, Sangkat Kakab, Khan Posenchey']].map(([key,label,ph]) => (
               <div key={key} style={{ marginBottom:14 }}>
                 <label style={{ fontSize:13, fontWeight:700, display:'block', marginBottom:6, color:'#374151' }}>{label}</label>
                 <input value={form[key]||''} onChange={e=>setForm({...form,[key]:e.target.value})} placeholder={ph}
