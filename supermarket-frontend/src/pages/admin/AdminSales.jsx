@@ -33,6 +33,7 @@ export default function AdminSales() {
   const [cashiers, setCashiers]     = useState([])
   const [methods, setMethods]       = useState([])
   const [selectedSale, setSelected] = useState(null)
+  const [saleDetail, setSaleDetail] = useState(null)
   const [detailItems, setDetailItems] = useState([])
   const [detailLoading, setDetailLoading] = useState(false)
 
@@ -103,7 +104,8 @@ export default function AdminSales() {
     try {
       const res = await API.get(`/api/sales/${sale.Sale_ID}`)
       setDetailItems(res.data.items || [])
-    } catch { setDetailItems([]) }
+      setSaleDetail(res.data)
+    } catch { setDetailItems([]); setSaleDetail(null) }
     finally { setDetailLoading(false) }
   }
 
@@ -306,7 +308,7 @@ export default function AdminSales() {
       {/* ── DETAIL MODAL ── */}
       {selectedSale && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }}
-          onClick={e => { if(e.target===e.currentTarget) setSelected(null) }}>
+          onClick={e => { if(e.target===e.currentTarget) { setSelected(null); setSaleDetail(null) } }}>
           <div style={{ background:'#fff', borderRadius:18, padding:32, width:'100%', maxWidth:560, boxShadow:'0 8px 40px rgba(0,0,0,.15)', maxHeight:'90vh', overflowY:'auto' }}>
 
             {/* Header */}
@@ -315,7 +317,7 @@ export default function AdminSales() {
                 <div style={{ fontSize:11, fontWeight:700, color:'#c0272d', textTransform:'uppercase', letterSpacing:1.5, marginBottom:4 }}>Transaction Receipt</div>
                 <h3 style={{ fontSize:22, fontWeight:900, color:'#0f172a', margin:0, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{selectedSale.Sale_ID_fmt}</h3>
               </div>
-              <button onClick={() => setSelected(null)} style={{ background:'#f1f5f9', border:'none', borderRadius:10, width:36, height:36, cursor:'pointer', fontSize:16, color:'#64748b', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700 }}>✕</button>
+              <button onClick={() => { setSelected(null); setSaleDetail(null) }} style={{ background:'#f1f5f9', border:'none', borderRadius:10, width:36, height:36, cursor:'pointer', fontSize:16, color:'#64748b', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700 }}>✕</button>
             </div>
 
             {/* Info grid */}
@@ -340,15 +342,15 @@ export default function AdminSales() {
             </div>
 
             {/* Customer Info */}
-            {selectedSale.customerName && selectedSale.customerName !== 'Walk-in' && (
+            {saleDetail && selectedSale.customer !== 'Walk-in' && (
               <div style={{ background:'#f0f9ff', borderRadius:12, padding:'14px 16px', marginBottom:16, border:'1px solid #bae6fd' }}>
                 <div style={{ fontSize:10, fontWeight:700, color:'#0369a1', textTransform:'uppercase', letterSpacing:1.5, marginBottom:10 }}>Customer Information</div>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
                   {[
-                    ['Name',  selectedSale.customerName],
-                    ['Email', selectedSale.customerEmail],
-                    ['Phone', selectedSale.customerPhone],
-                    ['Notes', selectedSale.customerNotes || '—'],
+                    ['Name',    selectedSale.customer],
+                    ['Email',   saleDetail.customer_email   || '—'],
+                    ['Phone',   saleDetail.customer_phone   || '—'],
+                    ['Address', saleDetail.customer_address || '—'],
                   ].map(([l,v]) => (
                     <div key={l} style={{ background:'#fff', borderRadius:8, padding:'10px 12px', border:'1px solid #e0f2fe' }}>
                       <div style={{ fontSize:10, color:'#94a3b8', fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:3 }}>{l}</div>
