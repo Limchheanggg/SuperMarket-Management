@@ -60,11 +60,16 @@ def register(data: dict, db: Session = Depends(get_db)):
     if db.query(UserModel).filter(UserModel.email == data["email"]).first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
+    address = (data.get("address") or "").strip()
+    if not address:
+        raise HTTPException(status_code=400, detail="Address is required")
+
     user = UserModel(
         full_name=data.get("name", ""),
         email=data["email"],
         password=hash_password(data["password"]),
         phone=phone_clean,
+        address=address,
         role=data.get("role", "customer")
     )
     db.add(user)
