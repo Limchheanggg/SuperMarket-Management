@@ -34,6 +34,7 @@ def user_to_dict(user, db=None):
         "name":  user.full_name,
         "email": user.email,
         "phone": user.phone,
+        "address": user.address,
         "role":  user.role or "customer",
         "membership_tier": "None",
     }
@@ -125,6 +126,7 @@ def update_me(data: dict, authorization: Optional[str] = Header(None), db: Sessi
         raise HTTPException(status_code=404, detail="User not found")
     if "name"     in data: user.full_name = data["name"]
     if "phone"    in data: user.phone     = data["phone"]
+    if "address"  in data: user.address   = data["address"]
     if "password" in data and data["password"]:
         user.password = hash_password(data["password"])
     db.commit()

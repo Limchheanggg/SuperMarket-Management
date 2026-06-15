@@ -9,3 +9,5 @@ class User(Base):
     password = Column(String(255))
     phone = Column(String(20))
     role = Column(String(20), default="customer")
+    address = Column(String(255), nullable=True)
+    address = Column(String(255), nullable=True)
