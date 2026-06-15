@@ -9,7 +9,7 @@ export function AuthProvider({ children }) {
     if (!token) { setLoading(false); return }
     API.get('/api/auth/me')
       .then(res => {
-        const userData = { id:res.data.id, name:res.data.name, email:res.data.email, phone:res.data.phone, role:res.data.role||'customer' }
+        const userData = { id:res.data.id, name:res.data.name, email:res.data.email, phone:res.data.phone, address:res.data.address, role:res.data.role||'customer', customer_id:res.data.customer_id, membership_tier:res.data.membership_tier }
         localStorage.setItem('user', JSON.stringify(userData))
         setUser(userData)
       })
