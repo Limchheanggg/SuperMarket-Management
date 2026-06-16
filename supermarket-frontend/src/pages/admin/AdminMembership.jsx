@@ -274,7 +274,7 @@ export default function AdminMembership() {
                     border:`1.5px solid ${tierFilter===t ? tc.border : '#e5e7eb'}`,
                     background: tierFilter===t ? tc.bg : '#fff',
                     color: tierFilter===t ? tc.color : '#374151' }}>
-                  {t==='All' ? 'All Tiers' : `${tc.icon} ${t}`}
+                  {t==='All' ? 'All Tiers' : t}
                 </button>
               )
             })}
