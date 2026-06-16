@@ -48,6 +48,7 @@ export default function AdminUsers() {
   const [form, setForm]         = useState({ full_name:'', email:'', phone:'', address:'', role:'employee', password:'' })
   const [shiftForm, setShiftForm] = useState({ user_id:'', shift_name:'Morning', shift_date:'', start_time:'06:00', end_time:'14:00', status:'scheduled', note:'' })
   const [saving, setSaving]     = useState(false)
+  const [autoGenerating, setAutoGenerating] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
 
   const today    = new Date().toISOString().split('T')[0]
@@ -91,6 +92,16 @@ export default function AdminUsers() {
     finally { setSaving(false) }
   }
 
+  const handleAutoGenerateShifts = async () => {
+    if (!window.confirm('Auto-generate shifts for all staff for the next 7 days?')) return
+    setAutoGenerating(true)
+    try {
+      const res = await API.post('/api/shifts/auto-generate')
+      toast.success(res.data.message || 'Shifts generated!')
+      fetchAll()
+    } catch(e) { toast.error(e.response?.data?.detail || 'Failed to generate shifts') }
+    finally { setAutoGenerating(false) }
+  }
   const handleDeleteUser = (u) => {
     setDeleteConfirm({ type:'user', id:u.id, title:'Delete User', message:`Are you sure you want to delete "${u.full_name}"? This action cannot be undone.` })
   }
@@ -373,6 +384,10 @@ export default function AdminUsers() {
             <button onClick={() => { setShiftForm({ user_id:'', shift_name:'Morning', shift_date:dayView==='tomorrow'?tomorrow:today, start_time:'06:00', end_time:'14:00', status:'scheduled', note:'' }); setShiftModal('add') }}
               style={{ padding:'10px 20px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#c0272d,#e53935)', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:14, fontFamily:"'Plus Jakarta Sans',sans-serif", boxShadow:'0 4px 14px rgba(192,39,45,.3)' }}>
               + Add Shift
+            </button>
+            <button onClick={handleAutoGenerateShifts} disabled={autoGenerating}
+              style={{ padding:'10px 20px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#0369a1,#0ea5e9)', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:14, fontFamily:"'Plus Jakarta Sans',sans-serif", boxShadow:'0 4px 14px rgba(3,105,161,.3)', opacity:autoGenerating?0.7:1 }}>
+              {autoGenerating ? 'Generating…' : '⚡ Auto 7 Days'}
             </button>
           </div>
 
