@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from datetime import date, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from ..core.database import get_db
@@ -91,6 +92,47 @@ def update_shift(shift_id: int, data: dict, db: Session = Depends(get_db)):
     })
     db.commit()
     return {"message": "Shift updated successfully"}
+
+@router.post("/auto-generate")
+def auto_generate_shifts(db: Session = Depends(get_db)):
+    """Generate shifts for all staff for the next 7 days (skips existing ones)."""
+    staff = db.execute(text("""
+        SELECT id, full_name, role FROM users
+        WHERE role IN ('cashier','employee','manager','admin')
+        ORDER BY id
+    """)).fetchall()
+
+    SHIFT_TIMES = {
+        'Morning':   ('06:00', '14:00'),
+        'Afternoon': ('14:00', '22:00'),
+        'Full Day':  ('08:00', '20:00'),
+    }
+    import random
+    shift_names = list(SHIFT_TIMES.keys())
+
+    today = date.today()
+    created = 0
+    for day_offset in range(1, 8):  # tomorrow through 7 days ahead
+        target_date = today + timedelta(days=day_offset)
+        date_str = str(target_date)
+        for user in staff:
+            existing = db.execute(text(
+                "SELECT id FROM Employee_Shift WHERE user_id=:uid AND shift_date=:d"
+            ), {"uid": user.id, "d": date_str}).first()
+            if existing:
+                continue
+            shift_name = random.choice(shift_names)
+            start, end = SHIFT_TIMES[shift_name]
+            db.execute(text("""
+                INSERT INTO Employee_Shift (user_id, shift_name, shift_date, start_time, end_time, status, note)
+                VALUES (:uid, :sname, :sdate, :stime, :etime, 'scheduled', 'Auto-generated')
+            """), {
+                "uid": user.id, "sname": shift_name,
+                "sdate": date_str, "stime": start, "etime": end
+            })
+            created += 1
+    db.commit()
+    return {"message": f"Generated {created} shifts for the next 7 days."}
 
 @router.delete("/{shift_id}")
 def delete_shift(shift_id: int, db: Session = Depends(get_db)):
