@@ -49,6 +49,7 @@ export default function AdminUsers() {
   const [shiftForm, setShiftForm] = useState({ user_id:'', shift_name:'Morning', shift_date:'', start_time:'06:00', end_time:'14:00', status:'scheduled', note:'' })
   const [saving, setSaving]     = useState(false)
   const [autoGenerating, setAutoGenerating] = useState(false)
+  const [autoConfirm, setAutoConfirm] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
 
   const today    = new Date().toISOString().split('T')[0]
@@ -93,7 +94,6 @@ export default function AdminUsers() {
   }
 
   const handleAutoGenerateShifts = async () => {
-    if (!window.confirm('Auto-generate shifts for all staff for the next 7 days?')) return
     setAutoGenerating(true)
     try {
       const res = await API.post('/api/shifts/auto-generate')
@@ -385,7 +385,7 @@ export default function AdminUsers() {
               style={{ padding:'10px 20px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#c0272d,#e53935)', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:14, fontFamily:"'Plus Jakarta Sans',sans-serif", boxShadow:'0 4px 14px rgba(192,39,45,.3)' }}>
               + Add Shift
             </button>
-            <button onClick={handleAutoGenerateShifts} disabled={autoGenerating}
+            <button onClick={() => setAutoConfirm(true)} disabled={autoGenerating}
               style={{ padding:'10px 20px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#0369a1,#0ea5e9)', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:14, fontFamily:"'Plus Jakarta Sans',sans-serif", boxShadow:'0 4px 14px rgba(3,105,161,.3)', opacity:autoGenerating?0.7:1 }}>
               {autoGenerating ? 'Generating…' : '⚡ Auto 7 Days'}
             </button>
@@ -695,6 +695,33 @@ export default function AdminUsers() {
         </div>
       )}
 
+      {autoConfirm && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }}
+          onClick={() => setAutoConfirm(false)}>
+          <div style={{ background:'#fff', borderRadius:18, padding:32, width:'100%', maxWidth:400, boxShadow:'0 8px 40px rgba(0,0,0,.15)' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:14 }}>
+              <div style={{ width:40, height:40, borderRadius:12, background:'#eff6ff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                <span style={{ fontSize:20 }}>⚡</span>
+              </div>
+              <h3 style={{ margin:0, fontSize:17, fontWeight:800, color:'#0f172a' }}>Auto-Generate Shifts</h3>
+            </div>
+            <p style={{ margin:'0 0 22px', fontSize:14, color:'#64748b', lineHeight:1.6 }}>
+              This will generate <strong>7 days of shifts</strong> for all staff members (Morning, Afternoon, or Full Day), skipping dates that already have shifts.
+            </p>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={() => { setAutoConfirm(false); handleAutoGenerateShifts(); }} disabled={autoGenerating}
+                style={{ flex:1, padding:'12px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#0369a1,#0ea5e9)', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:14, opacity:autoGenerating?0.7:1 }}>
+                {autoGenerating ? 'Generating…' : '⚡ Generate'}
+              </button>
+              <button onClick={() => setAutoConfirm(false)}
+                style={{ flex:1, padding:'12px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#f8fafc', fontWeight:700, cursor:'pointer', fontSize:14, color:'#374151' }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {deleteConfirm && (
         <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,.55)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}
           onClick={() => setDeleteConfirm(null)}>
