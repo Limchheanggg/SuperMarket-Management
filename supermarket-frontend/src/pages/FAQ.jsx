@@ -198,7 +198,7 @@ export default function FAQ() {
       {/* Stats */}
       <div style={{ background:'#fff', borderBottom:'1px solid #f0f0f0' }}>
         <div className="container" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:0 }}>
-          {[['20+','Questions Answered'],['4','Categories'],['7AM–9PM','Store Hours'],['24/7','Online Support']].map(([v,l],i) => (
+          {[['20+','Questions Answered'],['5','Categories'],['7AM–9PM','Store Hours'],['24/7','Online Support']].map(([v,l],i) => (
             <div key={l} style={{ padding:'20px 24px', textAlign:'center', borderRight:i<3?'1px solid #f0f0f0':'none' }}>
               <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:900, color:'#c0272d' }}>{v}</div>
               <div style={{ fontSize:11, color:'#94a3b8', fontWeight:600, marginTop:3, textTransform:'uppercase', letterSpacing:1 }}>{l}</div>
