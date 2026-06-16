@@ -112,7 +112,7 @@ def auto_generate_shifts(db: Session = Depends(get_db)):
 
     today = date.today()
     created = 0
-    for day_offset in range(1, 8):  # tomorrow through 7 days ahead
+    for day_offset in range(0, 7):  # today through 6 days ahead
         target_date = today + timedelta(days=day_offset)
         date_str = str(target_date)
         for user in staff:
