@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "https://supermarket-management-production-d071.up.railway.app",
+  baseURL: import.meta.env.VITE_API_URL || "https://supermarket-management-production-d071.up.railway.app",
   headers: { "Content-Type": "application/json" },
 });
 

@@ -270,7 +270,7 @@ def get_sale(sale_id: int, db: Session = Depends(get_db)):
 
 @router.post("/")
 def create_sale(data: dict, db: Session = Depends(get_db)):
-    now = datetime.now() + timedelta(hours=7)  # convert server UTC time to Cambodia (UTC+7)
+    now = datetime.now()  # use the system's local Cambodia time
     import json
     customer_info = data.get("customer_info", {})
     note = json.dumps(customer_info) if customer_info else None
