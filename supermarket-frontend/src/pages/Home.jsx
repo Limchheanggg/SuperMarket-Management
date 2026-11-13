@@ -215,7 +215,7 @@ function ReviewCarousel() {
 export default function Home() {
   const [productCount, setProductCount] = useState(148)
   useEffect(() => {
-    fetch('https://supermarket-management-production-d071.up.railway.app/api/products/')
+    fetch(`${import.meta.env.VITE_API_URL || 'https://supermarket-management-production-d071.up.railway.app'}/api/products/`)
       .then(r => r.json()).then(d => { if(d?.length) setProductCount(d.length) }).catch(()=>{})
   }, [])
   const [recentProducts,  setRecentProducts]  = useState([])
