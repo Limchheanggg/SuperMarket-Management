@@ -1,357 +1,838 @@
+
 <div align="center">
 
+  <h1>AMS Mart - Supermarket Management System</h1>
 
+  <p>
+    A supermarket management web application developed as part
+    of my studies at the Institute of Technology of Cambodia (ITC).
+  </p>
 
-# 🛒 AMS Mart — Supermarket Management System
+  <p>
+    <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react" alt="React">
+    <img src="https://img.shields.io/badge/FastAPI-Python-009688?logo=fastapi" alt="FastAPI">
+    <img src="https://img.shields.io/badge/MariaDB-Database-003545?logo=mariadb" alt="MariaDB">
+  </p>
 
-**A production-ready full-stack supermarket system built for Cambodia**
-
-[![React](https://img.shields.io/badge/React_19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
-[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://mysql.com)
-[![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)](https://railway.app)
-[![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com)
-
-[🌐 **Live Demo**](https://super-market-management-six.vercel.app) &nbsp;·&nbsp; [⚙️ **API Docs**](https://supermarket-management-production-d071.up.railway.app/docs) &nbsp;·&nbsp; [📊 **Admin Panel**](https://super-market-management-six.vercel.app/admin)
-
----
+  <p>
+    <a href="https://super-market-management-six.vercel.app">Live Website</a>
+    |
+    <a href="https://supermarket-management-production-d071.up.railway.app/docs">API Documentation</a>
+  </p>
 
 </div>
 
-## 📖 Overview
+<hr>
 
-AMS Mart is a **complete supermarket management system** developed as a university project at the **Institute of Technology of Cambodia (ITC)**, Department of Applied Mathematics and Statistics.
+<h2>1. Introduction</h2>
 
-The system bridges the gap between traditional Cambodian supermarket operations and modern digital management — featuring a full online shopping experience for customers and a powerful admin panel for managing every aspect of supermarket operations.
+<p>
+  AMS Mart is a web-based supermarket management system that I developed
+  to practice full-stack web development, database management, and
+  application development.
+</p>
 
-> 🗄️ Backed by a cloud MySQL database with **13,026 sales records**, **549 users**, and **148 products** — all with realistic Cambodia seasonal patterns from 2024–2026.
+<p>
+  The system provides a customer website for browsing and purchasing
+  products, together with an admin dashboard for managing products,
+  inventory, sales, customers, suppliers, and memberships.
+</p>
 
----
+<p>
+  I started this project to understand how a supermarket management
+  system works in practice. While developing it, I also became interested
+  in how data science and machine learning could be used to improve
+  inventory management and support better business decisions.
+</p>
 
-## 👥 Team
+<p>
+  This interest has become the direction of my Research Methodology
+  project, which focuses on integrating computer vision and demand
+  forecasting for supermarket inventory replenishment.
+</p>
 
-| Name | Student ID | Role |
-|------|-----------|------|
-| **KHUN Limchheang** | e20230393 | Core System  |
-| **CHHAY Lyveng** | e20230135 | Database Design |
-| **HORN Hengveasna** | e20230754 | Testing & Documentation |
-| **KHEAN Visal** | — | Supervisor |
+<h2>2. Project Objectives</h2>
 
-**Institution:** Institute of Technology of Cambodia (ITC)  
-**Department:** Applied Mathematics and Statistics
+<h3>2.1 General Objective</h3>
 
----
+<p>
+  To develop a web-based supermarket management system that helps
+  organize supermarket operations, including product management,
+  inventory tracking, sales transactions, and customer information.
+</p>
 
-## ✨ What's Inside
+<h3>2.2 Specific Objectives</h3>
 
-### 👤 Customer Portal — 14 Pages
+<ol>
+  <li>
+    Develop a customer website that allows users to browse products,
+    search for items, manage shopping carts, and complete purchases.
+  </li>
+  <li>
+    Design and implement a relational database to store supermarket
+    information, including products, customers, suppliers, inventory,
+    memberships, and sales records.
+  </li>
+  <li>
+    Develop an admin dashboard for managing supermarket operations
+    and viewing business information.
+  </li>
+  <li>
+    Implement user authentication and role-based access to separate
+    customer and administrative functions.
+  </li>
+  <li>
+    Implement inventory tracking and automatic stock updates
+    when sales are completed.
+  </li>
+  <li>
+    Provide sales reports and visualizations to help understand
+    product performance and business activity.
+  </li>
+</ol>
 
-| Page | Features |
-|------|---------|
-| 🏠 Home | Hero banner, recently added products, best sellers |
-| 🛍️ Shop | Product grid, search, filter by category, sort |
-| 📦 Product Detail | Images, description, add to cart, add to wishlist |
-| 🛒 Cart | Item list, quantity update, subtotal |
-| 💳 Checkout | ABA / ACLEDA / Cash, coupon codes, order summary |
-| 📋 Order History | Transaction list, item-level detail modal |
-| 📊 Dashboard | Loyalty points, tier progress, recent orders |
-| ❤️ Wishlist | Saved products, move to cart |
-| 👤 Account | Profile update, name, phone |
-| 🔐 Login / Register | JWT auth, inline validation |
-| ℹ️ About / Contact / FAQ | Store info, team, mission |
+<h2>3. Research Methodology</h2>
 
-### 🛠️ Admin Panel — 7 Pages
+<p>
+  Apart from developing the management system, I am also exploring
+  how computer vision and demand forecasting can support supermarket
+  inventory management.
+</p>
 
-| Page | Features |
-|------|---------|
-| 📊 Dashboard | Live revenue, sales count, low stock alerts, recent transactions |
-| 📦 Inventory | Product CRUD, restock, Cloudinary image upload, filters |
-| 👥 Users & Shifts | Employee/customer management, shift scheduling |
-| 💰 Sales | Transaction list, date/cashier/payment filters, item details |
-| 🎖️ Membership | Bronze/Silver/Gold/Platinum tiers, coupon management |
-| 📈 Analytics | Revenue charts, top 10 best sellers, payment breakdown |
-| 🏭 Suppliers | Supplier CRUD |
+<p>
+  Traditional inventory management depends on accurate stock information
+  and a good understanding of customer demand. However, manually checking
+  products on shelves and relying only on historical records may not
+  provide enough information for effective replenishment decisions.
+</p>
 
----
+<h3>3.1 Research Topic</h3>
 
-## 🛠️ Tech Stack
+<p>
+  <strong>
+    Integrated Computer Vision and Demand Forecasting for
+    Supermarket Inventory Replenishment
+  </strong>
+</p>
 
-### Frontend
-| Technology | Purpose |
-|-----------|---------|
-| React 19 | UI library |
-| Vite 8 | Build tool / dev server |
-| React Router DOM | Client-side routing |
-| Tailwind CSS | Utility-first styling |
-| shadcn/ui + Radix UI | Component library |
-| Axios | HTTP client |
-| Lucide + Phosphor | Icon libraries |
-| React Hot Toast | Notifications |
+<h3>3.2 Research Problem</h3>
 
-### Backend
-| Technology | Purpose |
-|-----------|---------|
-| FastAPI | Python REST framework |
-| SQLAlchemy ORM | Database abstraction |
-| PyJWT + bcrypt | Auth / password hashing |
-| Pydantic Settings | Config / validation |
-| CORS Middleware | Cross-origin requests |
-| Cloudinary | Cloud image storage |
-| PyMySQL | MySQL connector |
+<p>
+  Inventory management is important in supermarkets because businesses
+  must monitor product quantities and customer demand. Employees need
+  accurate inventory information to identify products requiring
+  replenishment and decide when to reorder. However, manual observations
+  and existing records may not always reflect actual product availability
+  or future demand. Computer vision and demand forecasting offer
+  potential ways to support these activities.
+</p>
 
-### Infrastructure
-| Service | Platform | Cost |
-|---------|---------|------|
-| Frontend | Vercel | 🆓 Free |
-| Backend + MySQL | Railway | 🆓 Free |
-| Image Storage | Cloudinary | 🆓 Free |
+<p>
+  Computer vision and demand forecasting have been studied in retail,
+  but they serve different purposes in inventory management. Computer
+  vision provides information about visible shelf products, while
+  demand forecasting estimates future requirements using historical
+  sales. Previous research has examined grocery product recognition
+  (Melek et al., 2024), retail forecasting (Fildes et al., 2022),
+  and machine-learning approaches to inventory optimization
+  (Bergsma et al., 2025). Further investigation is needed into how
+  visual product counts, human verification, and demand forecasts
+  can be evaluated together in a supermarket replenishment workflow.
+</p>
 
----
+<p>
+  Without proper verification, computer-vision errors may affect
+  inventory information and subsequent replenishment decisions.
+  Inaccurate demand forecasts may also lead to unsuitable order
+  quantities, contributing to stock shortages or excess inventory.
+  These problems can reduce inventory-management reliability and
+  increase operational difficulties.
+</p>
 
-## 🏗️ Architecture
+<p>
+  This study aims to investigate how computer vision and demand
+  forecasting can support supermarket inventory replenishment.
+  It will evaluate product-counting performance, compare forecasting
+  methods using public retail sales data, and examine through simulation
+  whether combining verified visual counts with demand forecasts
+  improves replenishment outcomes across different product categories.
+</p>
 
-```
-👤 User (Browser)
-      │
-      ▼
-┌─────────────────────────────┐
-│  Vercel — React + Vite      │  Frontend
-│  super-market-management-   │
-│  six.vercel.app             │
-└─────────────┬───────────────┘
-              │ Axios (HTTPS)
-              ▼
-┌─────────────────────────────┐
-│  Railway — FastAPI + Python │  Backend
-│  supermarket-management-    │
-│  production-d071.up...      │
-└──────┬──────────────┬───────┘
-       │ SQLAlchemy   │ Cloudinary SDK
-       ▼              ▼
-┌──────────────┐  ┌──────────────┐
-│ Railway MySQL│  │  Cloudinary  │  Storage
-│ 13,026 sales │  │ Product imgs │
-└──────────────┘  └──────────────┘
-```
+<h3>3.3 General Research Objective</h3>
 
-### Backend Layer Structure
-```
-HTTP Request
-    ↓  FastAPI Router  (auth, products, sales, inventory, membership...)
-    ↓  JWT Middleware  (role check: admin / cashier / customer)
-    ↓  Business Logic  (routers/)
-    ↓  SQLAlchemy ORM  (models/)
-    ↓  MySQL Response
-```
+<p>
+  To investigate how computer vision and demand forecasting can be
+  combined to improve inventory monitoring and replenishment decisions
+  in supermarket environments.
+</p>
 
----
+<h3>3.4 Specific Research Objectives</h3>
 
-## 🗄️ Database Design
+<ol>
+  <li>
+    To evaluate the performance of a computer-vision model in detecting
+    and counting products in supermarket shelf images using a publicly
+    available dataset.
+  </li>
+  <li>
+    To investigate how different forecasting techniques perform across
+    selected product categories using historical sales patterns and
+    appropriate evaluation metrics.
+  </li>
+  <li>
+    To evaluate the effectiveness of integrating verified
+    computer-vision-based shelf product counts and forecasted demand
+    in simulated supermarket replenishment decisions.
+  </li>
+</ol>
 
-### 12 Tables
+<h3>3.5 Research Questions</h3>
 
-| Table | Rows | Description |
-|-------|------|-------------|
-| `users` | 550+ | All users — auth + role (admin/manager/cashier/customer) |
-| `Customer` | 520+ | Customer profiles + loyalty points |
-| `Membership` | 550+ | Tier (Bronze/Silver/Gold/Platinum), points, spent |
-| `Product` | 140+ | Products — name, price, category, supplier, image |
-| `Category` | 12 | Product categories |
-| `Supplier` | 12 | Product suppliers |
-| `Inventory` | 140+ | Current stock per product |
-| `StockMovement` | 37 | Stock change history (in/out) |
-| `Sale` | 13,000+ | Sales transactions |
-| `SaleItem` | 39,220 | Line items per sale (M:M junction) |
-| `Coupon` | 10 | Promo codes with tier requirements |
-| `Employee_Shift` | 260 | Employee shift schedules |
+<ol>
+  <li>
+    How accurately can a computer-vision model detect and count
+    products in supermarket shelf images using a publicly available
+    dataset?
+  </li>
+  <li>
+    How do different demand-forecasting techniques perform across
+    selected supermarket product categories using historical sales data?
+  </li>
+  <li>
+    To what extent does integrating verified computer-vision-based
+    shelf product counts and forecasted demand improve simulated
+    supermarket replenishment outcomes compared with a baseline approach?
+  </li>
+</ol>
 
-### Relationships
+<h3>3.6 Research Approach</h3>
 
-```
-Type  │ Pair                          │ Via
-──────┼───────────────────────────────┼──────────────────────────
-1:1   │ users         ↔ Customer      │ Customer.User_ID
-1:1   │ Product       ↔ Inventory     │ Inventory.Product_ID
-1:1   │ Customer      ↔ Membership    │ Membership.Customer_ID
-1:M   │ users         → Sale          │ Sale.Employee_ID
-1:M   │ users         → Employee_Shift│ Employee_Shift.user_id
-1:M   │ Customer      → Sale          │ Sale.Customer_ID
-1:M   │ Category      → Product       │ Product.Category_ID
-1:M   │ Supplier      → Product       │ Product.Supplier_ID
-1:M   │ Product       → StockMovement │ StockMovement.Product_ID
-1:M   │ Sale          → SaleItem      │ SaleItem.Sale_ID
-1:M   │ Coupon        → Sale          │ Sale.Coupon_ID
-M:M   │ Sale          ↔ Product       │ Junction: SaleItem
-```
+<p>
+  The research will use publicly available datasets and a
+  simulation-based evaluation. It has three main parts:
+</p>
 
----
+<h4>Part 1: Computer Vision for Shelf Product Detection</h4>
 
-## 📁 Project Structure
+<p>
+  The first part focuses on detecting and counting visible products
+  in supermarket shelf images. I plan to use the SKU-110K dataset,
+  which contains annotated images of densely packed retail shelves.
+</p>
 
-```
+<p>
+  The planned approach is to use an Ultralytics YOLO model to detect
+  products and generate bounding boxes. The number of detected
+  products can then be compared with the dataset's annotations.
+</p>
+
+<p>
+  The evaluation will consider detection precision, recall, and
+  counting error. Since shelf images only show visible products,
+  the detected count will not automatically represent the total
+  inventory available in a supermarket.
+</p>
+
+<h4>Part 2: Demand Forecasting</h4>
+
+<p>
+  The second part focuses on estimating future product demand using
+  historical retail sales data.
+</p>
+
+<p>
+  I plan to use the Corporación Favorita Grocery Sales Forecasting
+  dataset for this part. Different forecasting techniques will be
+  investigated and compared across selected product categories.
+</p>
+
+<p>
+  Appropriate forecasting evaluation metrics will be used to compare
+  the performance of the selected techniques.
+</p>
+
+<h4>Part 3: Integrated Inventory Replenishment Simulation</h4>
+
+<p>
+  The final part combines the information from computer vision and
+  demand forecasting to investigate how they can support inventory
+  replenishment decisions.
+</p>
+
+<p>
+  Two approaches will be compared:
+</p>
+
+<ul>
+  <li>
+    <strong>Baseline approach:</strong> Uses existing inventory
+    records and demand forecasts without computer-vision shelf counts.
+  </li>
+  <li>
+    <strong>Integrated approach:</strong> Uses verified computer-vision
+    shelf counts, other inventory information, and the same demand
+    forecasts.
+  </li>
+</ul>
+
+<p>
+  The comparison will be conducted through simulation. Possible
+  evaluation measures include stockout rate, excess inventory,
+  and simulated inventory cost.
+</p>
+
+<p>
+  Human verification will be included before computer-vision counts
+  are used in replenishment decisions.
+</p>
+
+<h3>3.7 Datasets</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Dataset</th>
+      <th>Research Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>SKU-110K</td>
+      <td>
+        Supermarket shelf-object detection and product counting.
+      </td>
+    </tr>
+    <tr>
+      <td>Corporación Favorita Grocery Sales Forecasting</td>
+      <td>
+        Historical retail sales analysis and demand forecasting.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  These datasets come from different sources and do not represent
+  the same supermarket. Any connection between visual counts and
+  sales information in the simulation will therefore require a
+  documented synthetic product mapping and clearly stated assumptions.
+</p>
+
+<p>
+  The research will focus on supermarket shelf images rather than
+  arbitrary individual product photographs.
+</p>
+
+<h3>3.8 Research Technologies</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Technology / Tool</th>
+      <th>Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Python</td>
+      <td>Research implementation and data processing.</td>
+    </tr>
+    <tr>
+      <td>Ultralytics YOLO</td>
+      <td>Planned model for shelf-product detection.</td>
+    </tr>
+    <tr>
+      <td>SKU-110K</td>
+      <td>Dataset for computer-vision experiments.</td>
+    </tr>
+    <tr>
+      <td>Corporación Favorita Dataset</td>
+      <td>Dataset for demand-forecasting experiments.</td>
+    </tr>
+    <tr>
+      <td>Data Analysis and Visualization</td>
+      <td>Exploring data and presenting experimental results.</td>
+    </tr>
+    <tr>
+      <td>Simulation</td>
+      <td>Comparing inventory replenishment approaches.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>3.9 Research Limitations</h3>
+
+<ul>
+  <li>
+    SKU-110K supports shelf-object detection and counting, not
+    exact brand or SKU recognition.
+  </li>
+  <li>
+    Shelf images only represent visible shelf stock and do not
+    directly show products stored elsewhere.
+  </li>
+  <li>
+    The image dataset and sales dataset come from different sources.
+    They must not be treated as records from the same supermarket.
+  </li>
+  <li>
+    A documented synthetic product mapping and simulation assumptions
+    will be required to connect the two datasets.
+  </li>
+  <li>
+    Human verification is needed before visual counts influence
+    inventory decisions.
+  </li>
+  <li>
+    The research will evaluate the workflow through public datasets
+    and simulation rather than a real-world supermarket deployment.
+  </li>
+</ul>
+
+<h2>4. Main Features</h2>
+
+<h3>4.1 Customer Website</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Home</td><td>Introduction, featured products, and popular items.</td></tr>
+    <tr><td>Shop</td><td>Browse, search, filter, and sort products.</td></tr>
+    <tr><td>Product Details</td><td>View product information and images.</td></tr>
+    <tr><td>Shopping Cart</td><td>Add products and update quantities.</td></tr>
+    <tr><td>Checkout</td><td>Complete purchases and view order summaries.</td></tr>
+    <tr><td>Order History</td><td>View previous transactions.</td></tr>
+    <tr><td>Customer Dashboard</td><td>View membership information and loyalty points.</td></tr>
+    <tr><td>Wishlist</td><td>Save products for later.</td></tr>
+    <tr><td>Account</td><td>Manage customer information.</td></tr>
+    <tr><td>Authentication</td><td>Register and log in.</td></tr>
+  </tbody>
+</table>
+
+<h3>4.2 Admin Dashboard</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Dashboard</td><td>View sales summaries and business information.</td></tr>
+    <tr><td>Inventory</td><td>Manage products and stock quantities.</td></tr>
+    <tr><td>Users</td><td>Manage customers and employees.</td></tr>
+    <tr><td>Sales</td><td>View sales transactions.</td></tr>
+    <tr><td>Membership</td><td>Manage membership levels and loyalty points.</td></tr>
+    <tr><td>Analytics</td><td>View revenue charts and product performance.</td></tr>
+    <tr><td>Suppliers</td><td>Manage supplier information.</td></tr>
+    <tr><td>Shifts</td><td>Manage employee schedules.</td></tr>
+  </tbody>
+</table>
+
+<h2>5. Technologies Used in AMS Mart</h2>
+
+<h3>Frontend</h3>
+
+<table>
+  <tr><th>Technology</th><th>Purpose</th></tr>
+  <tr><td>React 19</td><td>Building the user interface.</td></tr>
+  <tr><td>Vite</td><td>Development server and build tool.</td></tr>
+  <tr><td>React Router</td><td>Page navigation.</td></tr>
+  <tr><td>Tailwind CSS</td><td>Styling.</td></tr>
+  <tr><td>shadcn/ui and Radix UI</td><td>UI components.</td></tr>
+  <tr><td>Axios</td><td>API communication.</td></tr>
+  <tr><td>Lucide and Phosphor</td><td>Icons.</td></tr>
+</table>
+
+<h3>Backend</h3>
+
+<table>
+  <tr><th>Technology</th><th>Purpose</th></tr>
+  <tr><td>Python</td><td>Main programming language.</td></tr>
+  <tr><td>FastAPI</td><td>Backend API framework.</td></tr>
+  <tr><td>SQLAlchemy</td><td>Database ORM.</td></tr>
+  <tr><td>PyMySQL</td><td>MariaDB connection.</td></tr>
+  <tr><td>Pydantic</td><td>Data validation and settings.</td></tr>
+  <tr><td>JWT</td><td>User authentication.</td></tr>
+  <tr><td>bcrypt</td><td>Password hashing.</td></tr>
+  <tr><td>Cloudinary</td><td>Image storage support.</td></tr>
+</table>
+
+<h3>Database and Development</h3>
+
+<table>
+  <tr><th>Technology</th><th>Purpose</th></tr>
+  <tr><td>MariaDB</td><td>Relational database.</td></tr>
+  <tr><td>DBeaver</td><td>Database management and inspection.</td></tr>
+  <tr><td>Git</td><td>Version control.</td></tr>
+  <tr><td>GitHub</td><td>Source code hosting.</td></tr>
+  <tr><td>VS Code</td><td>Development environment.</td></tr>
+</table>
+
+<h3>Hosting</h3>
+
+<table>
+  <tr><th>Platform</th><th>Purpose</th></tr>
+  <tr><td>Vercel</td><td>Frontend hosting.</td></tr>
+  <tr><td>Railway</td><td>Backend hosting.</td></tr>
+</table>
+
+<h2>6. System Architecture</h2>
+
+<p>
+  AMS Mart uses a frontend-backend-database architecture.
+  The frontend communicates with the backend through REST API
+  endpoints, while the backend handles application logic,
+  authentication, validation, and database operations.
+</p>
+
+<pre>
+Customer / Admin
+       |
+       v
+React 19 + Vite Frontend
+       |
+       | HTTP / REST API
+       v
+FastAPI Backend
+       |
+       | SQLAlchemy ORM
+       v
+MariaDB Database
+       |
+       v
+Products, Customers, Inventory and Sales
+</pre>
+
+<h3>Planned Research Integration</h3>
+
+<p>
+  The following workflow represents a future direction for connecting
+  the research with AMS Mart. It is not yet an implemented feature.
+</p>
+
+<pre>
+Supermarket Shelf Image
+          |
+          v
+     YOLO Detection
+          |
+          v
+  Product Bounding Boxes
+          |
+          v
+   Product Count Results
+          |
+          v
+    Human Verification
+          |
+          v
+   Verified Shelf Counts
+          |
+          +-------------------+
+          |                   |
+          v                   v
+  Inventory Information   Demand Forecasting
+                              |
+                              v
+                       Forecasted Demand
+                              |
+                              v
+                    Replenishment Simulation
+                              |
+                              v
+                    Suggested Replenishment
+</pre>
+
+<h2>7. Database Design</h2>
+
+<p>
+  The local development database uses MariaDB. I created a fresh
+  database setup instead of carrying over the old test records.
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Table</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>users</td><td>User accounts and roles.</td></tr>
+    <tr><td>Customer</td><td>Customer information.</td></tr>
+    <tr><td>Membership</td><td>Membership levels and loyalty points.</td></tr>
+    <tr><td>Product</td><td>Product details and prices.</td></tr>
+    <tr><td>Category</td><td>Product categories.</td></tr>
+    <tr><td>Supplier</td><td>Supplier information.</td></tr>
+    <tr><td>Inventory</td><td>Product stock quantities.</td></tr>
+    <tr><td>StockMovement</td><td>Inventory changes.</td></tr>
+    <tr><td>Sale</td><td>Sales transactions.</td></tr>
+    <tr><td>SaleItem</td><td>Products included in each sale.</td></tr>
+    <tr><td>Coupon</td><td>Promotional coupons.</td></tr>
+    <tr><td>Employee_Shift</td><td>Employee work schedules.</td></tr>
+  </tbody>
+</table>
+
+<h3>Database Setup Files</h3>
+
+<ul>
+  <li>
+    <code>database/schema_mariadb.sql</code> creates the database tables.
+  </li>
+  <li>
+    <code>database/catalogue_seed.sql</code> imports the initial
+    product catalogue, categories, suppliers, and inventory records.
+  </li>
+</ul>
+
+<h2>8. Project Structure</h2>
+
+<pre>
 SuperMarket-Management/
-│
-├── supermarket-frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   └── layout/           # Navbar, Footer, AdminLayout
-│   │   ├── pages/
-│   │   │   ├── admin/            # 7 admin pages
-│   │   │   └── *.jsx             # 14 customer pages
-│   │   ├── services/
-│   │   │   └── api.js            # Axios instance + all endpoints
-│   │   └── utils/
-│   ├── vercel.json               # SPA routing (rewrites all → /)
-│   └── package.json
-│
-├── supermarket-backend/
-│   ├── app/
-│   │   ├── core/
-│   │   │   ├── database.py       # SQLAlchemy engine + session
-│   │   │   ├── config.py         # Pydantic settings
-│   │   │   └── dependencies.py   # JWT decode + role guards
-│   │   ├── models/               # ORM table definitions
-│   │   ├── routers/
-│   │   │   ├── auth.py           # Login, register, /me
-│   │   │   ├── products.py       # Product CRUD + categories
-│   │   │   ├── sales.py          # Sales CRUD + reports
-│   │   │   ├── inventory.py      # Stock management + restock
-│   │   │   ├── membership.py     # Loyalty tiers + points
-│   │   │   ├── users.py          # Employee + customer management
-│   │   │   ├── coupons.py        # Coupon CRUD + validate
-│   │   │   ├── suppliers.py      # Supplier CRUD
-│   │   │   ├── shifts.py         # Employee shift scheduling
-│   │   │   └── upload.py         # Cloudinary image upload
-│   │   └── main.py               # App init + CORS + router mount
-│   ├── static/images/            # Product images (git-tracked)
-│   ├── nixpacks.toml             # Railway Python build config
-│   ├── Procfile                  # uvicorn start command
-│   ├── requirements.txt          # Python dependencies
-│   └── .python-version           # Pins Python 3.11
-│
-└── README.md
-```
+|
+|-- database/
+|   |-- schema_mariadb.sql
+|   |-- catalogue_seed.sql
+|
+|-- supermarket-frontend/
+|   |-- src/
+|   |   |-- components/
+|   |   |-- pages/
+|   |   |   |-- admin/
+|   |   |-- services/
+|   |   |-- utils/
+|   |-- package.json
+|   |-- vercel.json
+|
+|-- supermarket-backend/
+|   |-- app/
+|   |   |-- core/
+|   |   |-- models/
+|   |   |-- routers/
+|   |   |-- main.py
+|   |-- static/
+|   |   |-- images/
+|   |-- requirements.txt
+|   |-- Procfile
+|
+|-- README.md
+</pre>
 
----
+<h2>9. Local Installation and Setup</h2>
 
-## 🚀 Getting Started
+<h3>Requirements</h3>
 
-### Prerequisites
-- Node.js 18+
-- Python 3.11+
-- MySQL 8.0+
+<ul>
+  <li>Python 3.11 or newer</li>
+  <li>Node.js 18 or newer</li>
+  <li>MariaDB</li>
+  <li>Git</li>
+</ul>
 
-### 1. Clone
+<h3>Step 1: Clone the Repository</h3>
 
-```bash
-git clone https://github.com/Limchheanggg/SuperMarket-Management.git
-cd SuperMarket-Management
-```
+<pre><code>git clone https://github.com/Limchheanggg/SuperMarket-Management.git
 
-### 2. Backend
+cd SuperMarket-Management</code></pre>
 
-```bash
-cd supermarket-backend
-python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-pip install -r requirements.txt
+<h3>Step 2: Create the Database</h3>
 
-# Create .env file
-cp .env.example .env            # then fill in your values
+<p>
+  Create a database named <code>SupermarketDB</code> in MariaDB.
+  Import the schema and initial product catalogue:
+</p>
 
-uvicorn app.main:app --reload --host 0.0.0.0
-# → http://localhost:8000
-# → http://localhost:8000/docs
-```
+<pre><code>mysql -u root -p SupermarketDB &lt; database/schema_mariadb.sql
 
-### 3. Frontend
+mysql -u root -p SupermarketDB &lt; database/catalogue_seed.sql</code></pre>
 
-```bash
-cd supermarket-frontend
-npm install
-npm run dev
-# → http://localhost:5173
-```
+<h3>Step 3: Set Up the Backend</h3>
 
----
+<pre><code>cd supermarket-backend
 
-## ⚙️ Environment Variables
+python -m venv .venv
 
-```env
-# Database
-DATABASE_URL=mysql+pymysql://user:password@host:port/dbname
+source .venv/bin/activate
 
-# Auth
+pip install -r requirements.txt</code></pre>
+
+<p>
+  Create a <code>.env</code> file inside
+  <code>supermarket-backend</code>:
+</p>
+
+<pre><code>DATABASE_URL=mysql+pymysql://username:password@localhost:3306/SupermarketDB
+
 SECRET_KEY=your-secret-key
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
 
-# CORS
-ALLOWED_ORIGINS=*
-```
+ALLOWED_ORIGINS=http://localhost:5173</code></pre>
 
----
+<p>Start the backend:</p>
 
-## 📖 API Reference
+<pre><code>uvicorn app.main:app --reload</code></pre>
 
-Full interactive docs at `http://localhost:8000/docs`
+<p>
+  Backend:
+  <a href="http://127.0.0.1:8000">http://127.0.0.1:8000</a>
+  <br>
+  API Documentation:
+  <a href="http://127.0.0.1:8000/docs">http://127.0.0.1:8000/docs</a>
+</p>
 
-| Router | Method | Endpoint | Description |
-|--------|--------|---------|-------------|
-| Auth | POST | `/api/auth/login` | Login, get JWT token |
-| Auth | POST | `/api/auth/register` | Create account |
-| Auth | GET/PUT | `/api/auth/me` | Get / update profile |
-| Products | GET | `/api/products/` | List all products |
-| Products | GET | `/api/products/categories` | All categories |
-| Inventory | POST | `/api/inventory/restock` | Restock product |
-| Sales | GET | `/api/sales/` | All transactions |
-| Sales | GET | `/api/sales/reports/summary` | Revenue summary |
-| Sales | GET | `/api/sales/reports/daily` | Today's stats |
-| Membership | GET | `/api/membership/` | All members |
-| Coupons | POST | `/api/coupons/validate` | Validate coupon code |
-| Upload | POST | `/api/upload/` | Upload image → Cloudinary |
+<h3>Step 4: Set Up the Frontend</h3>
 
----
+<pre><code>cd supermarket-frontend
 
-## ✅ Project Status
+npm install</code></pre>
 
-| Feature | Status |
-|---------|--------|
-| 14 customer pages | ✅ Complete |
-| 7 admin pages | ✅ Complete |
-| 10 API routers / 40+ endpoints | ✅ Complete |
-| MySQL — 12 tables | ✅ Complete |
-| JWT role-based auth | ✅ Complete |
-| Loyalty program (4 tiers) | ✅ Complete |
-| Coupon system | ✅ Complete |
-| Cloudinary image upload | ✅ Complete |
-| Railway backend deployment | ✅ Live |
-| Vercel frontend deployment | ✅ Live |
+<p>
+  Create a <code>.env.local</code> file:
+</p>
 
----
+<pre><code>VITE_API_URL=http://127.0.0.1:8000</code></pre>
 
-## 💡 Future Work
+<p>Start the frontend:</p>
 
-- [ ] Barcode scanner for faster cashier checkout
-- [ ] React Native mobile app for customers
-- [ ] Real ABA / ACLEDA payment gateway integration
-- [ ] AI product recommendations based on purchase history
-- [ ] Multi-branch support for chain supermarkets
-- [ ] Automated supplier reorder notifications
+<pre><code>npm run dev</code></pre>
 
----
+<p>
+  Frontend:
+  <a href="http://localhost:5173">http://localhost:5173</a>
+</p>
 
-## 📚 What We Learned
+<h2>10. API Overview</h2>
 
-- Designing a normalized relational database with 12 tables and 12 relationships
-- Building a RESTful API with FastAPI and SQLAlchemy ORM
-- Implementing JWT authentication with role-based access control
-- Deploying a full-stack app to Railway + Vercel at zero cost
-- Generating realistic e-commerce data with Cambodian seasonal patterns
-- Managing cloud image storage with Cloudinary
+<table>
+  <thead>
+    <tr>
+      <th>Module</th>
+      <th>Endpoint</th>
+      <th>Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Authentication</td><td><code>/api/auth/login</code></td><td>User login.</td></tr>
+    <tr><td>Authentication</td><td><code>/api/auth/register</code></td><td>User registration.</td></tr>
+    <tr><td>Products</td><td><code>/api/products/</code></td><td>Retrieve products.</td></tr>
+    <tr><td>Products</td><td><code>/api/products/categories</code></td><td>Retrieve categories.</td></tr>
+    <tr><td>Inventory</td><td><code>/api/inventory/restock</code></td><td>Restock products.</td></tr>
+    <tr><td>Sales</td><td><code>/api/sales/</code></td><td>Retrieve sales.</td></tr>
+    <tr><td>Sales</td><td><code>/api/sales/reports/summary</code></td><td>Sales summary.</td></tr>
+    <tr><td>Membership</td><td><code>/api/membership/</code></td><td>Membership management.</td></tr>
+    <tr><td>Coupons</td><td><code>/api/coupons/validate</code></td><td>Validate coupons.</td></tr>
+    <tr><td>Upload</td><td><code>/api/upload/</code></td><td>Upload product images.</td></tr>
+  </tbody>
+</table>
 
----
+<p>
+  For complete API documentation, visit <code>/docs</code>
+  on the running backend.
+</p>
+
+<h2>11. Development Progress</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Component</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Customer website</td><td>Implemented and locally tested.</td></tr>
+    <tr><td>Admin dashboard</td><td>Implemented and locally tested.</td></tr>
+    <tr><td>Backend API</td><td>Running locally.</td></tr>
+    <tr><td>MariaDB database</td><td>Fresh local database configured.</td></tr>
+    <tr><td>Product catalogue</td><td>Imported and tested.</td></tr>
+    <tr><td>Product images</td><td>Local image serving configured.</td></tr>
+    <tr><td>User authentication</td><td>Tested locally.</td></tr>
+    <tr><td>Inventory management</td><td>Tested locally.</td></tr>
+    <tr><td>Sales and checkout</td><td>Tested locally.</td></tr>
+    <tr><td>Membership system</td><td>Tested locally.</td></tr>
+    <tr><td>Sales analytics</td><td>Implemented; further testing needed.</td></tr>
+    <tr><td>Research datasets</td><td>Selected for planned experiments.</td></tr>
+    <tr><td>YOLO integration</td><td>Planned.</td></tr>
+    <tr><td>Demand forecasting</td><td>Planned.</td></tr>
+    <tr><td>Replenishment simulation</td><td>Planned.</td></tr>
+  </tbody>
+</table>
+
+<h2>12. Future Improvements</h2>
+
+<p>
+  There are still several things I would like to improve as I continue
+  developing AMS Mart and working on the research.
+</p>
+
+<ul>
+  <li>
+    Integrate a YOLO model for detecting and counting products
+    in supermarket shelf images.
+  </li>
+  <li>
+    Add a human verification step to review and correct detected
+    product counts.
+  </li>
+  <li>
+    Explore demand forecasting using historical retail sales data.
+  </li>
+  <li>
+    Develop an inventory replenishment module that uses verified
+    stock information and forecasted demand.
+  </li>
+  <li>
+    Evaluate different replenishment approaches through simulation.
+  </li>
+  <li>
+    Improve sales analytics and inventory visualizations.
+  </li>
+  <li>
+    Explore additional features that can make the system more useful
+    for supermarket operations.
+  </li>
+</ul>
+
+<h2>13. What I Have Learned</h2>
+
+<p>
+  Working on AMS Mart has helped me gain practical experience in
+  several areas:
+</p>
+
+<ul>
+  <li>Building a full-stack web application using React and FastAPI.</li>
+  <li>Designing and managing relational databases.</li>
+  <li>Developing REST APIs and connecting frontend applications.</li>
+  <li>Implementing authentication and role-based access.</li>
+  <li>Managing product information, inventory, and sales transactions.</li>
+  <li>Using Git and GitHub to manage source code.</li>
+  <li>Setting up a local development environment.</li>
+  <li>Understanding how data science can be applied to business problems.</li>
+</ul>
+
+<p>
+  More importantly, this project has given me a practical starting
+  point for exploring computer vision, demand forecasting, and
+  data-driven inventory management.
+</p>
+
+<hr>
 
 <div align="center">
+
+  <p>
+    <a href="https://github.com/Limchheanggg/SuperMarket-Management">
+      GitHub Repository
+    </a>
+  </p>
 
 </div>
