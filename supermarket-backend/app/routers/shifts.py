@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from ..core.database import get_db
 from ..models.user import User
+from ..core.dependencies import get_current_user, require_admin
 
 router = APIRouter()
 
@@ -28,7 +29,7 @@ def shift_to_dict(r) -> dict:
         d['shift_date'] = str(d['shift_date'])
     return d
 
-@router.get("/")
+@router.get("/", dependencies=[Depends(require_admin)])
 def get_all_shifts(db: Session = Depends(get_db)):
     try:
         result = db.execute(text("""
@@ -43,7 +44,9 @@ def get_all_shifts(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/user/{user_id}")
-def get_user_shifts(user_id: int, db: Session = Depends(get_db)):
+def get_user_shifts(user_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if current_user.role not in ("admin", "manager") and current_user.id != user_id:
+        raise HTTPException(status_code=404, detail="Shifts not found")
     result = db.execute(text("""
         SELECT s.id, s.user_id, u.full_name, u.role,
                s.shift_name, s.shift_date, s.start_time, s.end_time, s.status, s.note
@@ -54,7 +57,7 @@ def get_user_shifts(user_id: int, db: Session = Depends(get_db)):
     """), {"uid": user_id}).fetchall()
     return [shift_to_dict(r) for r in result]
 
-@router.post("/")
+@router.post("/", dependencies=[Depends(require_admin)])
 def create_shift(data: dict, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == data.get("user_id")).first()
     if not user:
@@ -74,7 +77,7 @@ def create_shift(data: dict, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Shift created successfully"}
 
-@router.put("/{shift_id}")
+@router.put("/{shift_id}", dependencies=[Depends(require_admin)])
 def update_shift(shift_id: int, data: dict, db: Session = Depends(get_db)):
     db.execute(text("""
         UPDATE Employee_Shift
@@ -93,7 +96,7 @@ def update_shift(shift_id: int, data: dict, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Shift updated successfully"}
 
-@router.post("/auto-generate")
+@router.post("/auto-generate", dependencies=[Depends(require_admin)])
 def auto_generate_shifts(db: Session = Depends(get_db)):
     """Generate shifts for all staff for the next 7 days (skips existing ones)."""
     staff = db.execute(text("""
@@ -134,7 +137,7 @@ def auto_generate_shifts(db: Session = Depends(get_db)):
     db.commit()
     return {"message": f"Generated {created} shifts for the next 7 days."}
 
-@router.delete("/{shift_id}")
+@router.delete("/{shift_id}", dependencies=[Depends(require_admin)])
 def delete_shift(shift_id: int, db: Session = Depends(get_db)):
     db.execute(text("DELETE FROM Employee_Shift WHERE id=:id"), {"id": shift_id})
     db.commit()
