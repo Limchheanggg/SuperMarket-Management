@@ -46,7 +46,13 @@ export default function AdminSales() {
   const [maxAmount,  setMaxAmount]  = useState('')
   const [search,     setSearch]     = useState('')
 
-  const today = new Date().toISOString().split('T')[0]
+  const formatLocalDate = (date) => {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+  const today = formatLocalDate(new Date())
 
   useEffect(() => {
     fetchSummary()
@@ -208,7 +214,7 @@ export default function AdminSales() {
             <span style={{ fontSize:12, color:'#64748b', alignSelf:'center', fontWeight:600 }}>Quick:</span>
             {[
               ['Today',      today,                    today],
-              ['This Week',  (() => { const d=new Date(); d.setDate(d.getDate()-d.getDay()); return d.toISOString().split('T')[0] })(), today],
+              ['This Week',  (() => { const d=new Date(); d.setDate(d.getDate()-d.getDay()); return formatLocalDate(d) })(), today],
               ['This Month', today.slice(0,7)+'-01',   today],
               ['This Year',  today.slice(0,4)+'-01-01',today],
             ].map(([label, from, to]) => (

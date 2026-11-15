@@ -125,6 +125,8 @@ export default function AdminReports() {
   const [activeChart,  setActiveChart]  = useState('bar')
   const [chartYear,    setChartYear]    = useState(new Date().getFullYear())
   const [dateRange,    setDateRange]    = useState({ from:'', to:'' })
+  const today = new Date()
+  const localToday = [today.getFullYear(), String(today.getMonth()+1).padStart(2,'0'), String(today.getDate()).padStart(2,'0')].join('-')
 
   const [kpiRef,  kpiVisible]  = useInView()
   const [chartRef,chartVisible]= useInView()
@@ -202,10 +204,10 @@ export default function AdminReports() {
         </div>
         {/* Date range */}
         <div style={{display:'flex',alignItems:'center',gap:10,animation:'fadeLeft .5s ease .1s both'}}>
-          <input type="date" value={dateRange.from} min="2024-06-10" max={new Date().toISOString().split("T")[0]} onChange={e=>setDateRange({...dateRange,from:e.target.value})}
+          <input type="date" value={dateRange.from} min="2024-06-10" max={localToday} onChange={e=>setDateRange({...dateRange,from:e.target.value})}
             style={{padding:'8px 12px',border:'1.5px solid #e5e7eb',borderRadius:10,fontSize:13,outline:'none',fontFamily:"'Plus Jakarta Sans',sans-serif"}}/>
           <span style={{color:'#94a3b8',fontSize:13}}>to</span>
-          <input type="date" value={dateRange.to} min={dateRange.from||"2024-06-10"} max={new Date().toISOString().split("T")[0]} onChange={e=>setDateRange({...dateRange,to:e.target.value})}
+          <input type="date" value={dateRange.to} min={dateRange.from||"2024-06-10"} max={localToday} onChange={e=>setDateRange({...dateRange,to:e.target.value})}
             style={{padding:'8px 12px',border:'1.5px solid #e5e7eb',borderRadius:10,fontSize:13,outline:'none',fontFamily:"'Plus Jakarta Sans',sans-serif"}}/>
           <button onClick={()=>fetchAll(dateRange.from, dateRange.to)}
             style={{padding:'8px 18px',borderRadius:10,border:'none',background:'linear-gradient(135deg,#c0272d,#e53935)',color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
