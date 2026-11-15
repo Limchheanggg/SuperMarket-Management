@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from ..core.database import get_db
+from ..core.dependencies import get_current_user
 from datetime import datetime, date, timedelta
 from typing import Optional
 
@@ -269,16 +270,26 @@ def get_sale(sale_id: int, db: Session = Depends(get_db)):
     }
 
 @router.post("/")
-def create_sale(data: dict, db: Session = Depends(get_db)):
+def create_sale(
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
     import json
-    import math
+    from decimal import Decimal, ROUND_HALF_UP
     from collections import defaultdict
+
+    def money(value):
+        return Decimal(str(value)).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
 
     items = data.get("items")
     if not isinstance(items, list) or not items:
         raise HTTPException(status_code=400, detail="Your cart is empty")
 
     quantities = defaultdict(int)
+    cart_lines = []
     validated_items = []
 
     for item in items:
@@ -287,38 +298,186 @@ def create_sale(data: dict, db: Session = Depends(get_db)):
 
         pid = item.get("Product_ID")
         qty = item.get("qty")
-        price = item.get("Unit_Price")
 
         if isinstance(pid, bool) or not isinstance(pid, int) or pid <= 0:
             raise HTTPException(status_code=400, detail="Invalid product ID")
         if isinstance(qty, bool) or not isinstance(qty, int) or qty <= 0:
-            raise HTTPException(status_code=400, detail=f"Invalid quantity for product {pid}")
-        if isinstance(price, bool) or not isinstance(price, (int, float)):
-            raise HTTPException(status_code=400, detail=f"Invalid price for product {pid}")
-        if not math.isfinite(price) or price < 0:
-            raise HTTPException(status_code=400, detail=f"Invalid price for product {pid}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid quantity for product {pid}",
+            )
 
         quantities[pid] += qty
-        validated_items.append({
-            "Product_ID": pid,
-            "qty": qty,
-            "Unit_Price": price,
-        })
+        cart_lines.append({"Product_ID": pid, "qty": qty})
 
-    now = datetime.now()
+    payment_method = data.get("payment_method", "Cash")
+    if payment_method not in ("Cash", "ABA", "Acleda"):
+        raise HTTPException(status_code=400, detail="Invalid payment method")
+
     customer_info = data.get("customer_info", {})
+    if customer_info and not isinstance(customer_info, dict):
+        raise HTTPException(status_code=400, detail="Invalid customer information")
+
     note = json.dumps(customer_info) if customer_info else None
+    now = datetime.now()
 
     try:
+        # Resolve the customer from the authenticated account, never from
+        # the customer_id supplied by the browser.
+        role = current_user.role or "customer"
+        customer_id = None
+
+        if role == "customer":
+            customer = db.execute(text("""
+                SELECT Customer_ID
+                FROM Customer
+                WHERE User_ID = :uid
+                LIMIT 1
+                FOR UPDATE
+            """), {"uid": current_user.id}).fetchone()
+
+            customer_id = customer.Customer_ID if customer else None
+
+        cashier_id = (
+            current_user.id
+            if role in ("cashier", "employee")
+            else 527
+        )
+
+        membership = None
+        tier = "None"
+
+        if customer_id:
+            membership = db.execute(text("""
+                SELECT Membership_ID, Tier, Total_Spent
+                FROM Membership
+                WHERE Customer_ID = :cid
+                ORDER BY Membership_ID DESC
+                LIMIT 1
+                FOR UPDATE
+            """), {"cid": customer_id}).fetchone()
+
+            if membership and membership.Tier:
+                tier = membership.Tier
+
+        # Fetch authoritative prices and reject inactive/missing products.
+        for pid, qty in sorted(quantities.items()):
+            product = db.execute(text("""
+                SELECT Product_ID, Unit_Price, Is_Active
+                FROM Product
+                WHERE Product_ID = :pid
+                FOR UPDATE
+            """), {"pid": pid}).fetchone()
+
+            if not product:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Product {pid} does not exist",
+                )
+
+            if product.Is_Active is not None and int(product.Is_Active) != 1:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Product {pid} is unavailable",
+                )
+
+            price = money(product.Unit_Price)
+            if price < 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid database price for product {pid}",
+                )
+
+            for line in cart_lines:
+                if line["Product_ID"] == pid:
+                    validated_items.append({
+                        "Product_ID": pid,
+                        "qty": line["qty"],
+                        "Unit_Price": price,
+                    })
+
+        subtotal = money(sum(
+            (item["Unit_Price"] * item["qty"] for item in validated_items),
+            Decimal("0.00"),
+        ))
+        tax = money(subtotal * Decimal("0.10"))
+        purchase_total = money(subtotal + tax)
+
+        # Lock and revalidate coupons during checkout.
         coupon_id = None
+        discount = Decimal("0.00")
         coupon_code = data.get("coupon")
+
         if coupon_code:
-            crow = db.execute(
-                text("SELECT Coupon_ID FROM Coupon WHERE Code=:code"),
-                {"code": coupon_code}
-            ).fetchone()
-            if crow:
-                coupon_id = crow.Coupon_ID
+            code = str(coupon_code).strip().upper()
+            coupon = db.execute(text("""
+                SELECT *
+                FROM Coupon
+                WHERE Code = :code
+                FOR UPDATE
+            """), {"code": code}).fetchone()
+
+            if not coupon or not coupon.Is_Active:
+                raise HTTPException(status_code=400, detail="Coupon not found or inactive")
+
+            if coupon.Expiry_Date < date.today():
+                raise HTTPException(status_code=400, detail="Coupon has expired")
+
+            if coupon.Uses_Count >= coupon.Uses_Limit:
+                raise HTTPException(status_code=400, detail="Coupon usage limit reached")
+
+            if purchase_total < money(coupon.Min_Purchase or 0):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Minimum purchase ${float(coupon.Min_Purchase):.2f} required",
+                )
+
+            tier_order = {
+                "Bronze": 0, "Silver": 1, "Gold": 2, "Platinum": 3
+            }
+
+            if tier == "None":
+                raise HTTPException(
+                    status_code=400,
+                    detail="Membership required to use coupons",
+                )
+
+            if tier not in tier_order or coupon.Tier_Required not in tier_order:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid membership tier",
+                )
+
+            if tier_order[tier] < tier_order[coupon.Tier_Required]:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"{coupon.Tier_Required} membership required",
+                )
+
+            discount_value = Decimal(str(coupon.Discount_Value))
+
+            if discount_value < 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid coupon discount value",
+                )
+
+            if coupon.Discount_Type == "percentage":
+                if discount_value > 100:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Coupon percentage cannot exceed 100%",
+                    )
+                discount = money(purchase_total * discount_value / Decimal("100"))
+            elif coupon.Discount_Type == "fixed":
+                discount = min(money(discount_value), purchase_total)
+            else:
+                raise HTTPException(status_code=400, detail="Invalid coupon discount type")
+
+            coupon_id = coupon.Coupon_ID
+
+        discount = min(discount, purchase_total)
+        total = money(purchase_total - discount)
 
         result = db.execute(text("""
             INSERT INTO Sale (
@@ -335,19 +494,18 @@ def create_sale(data: dict, db: Session = Depends(get_db)):
             "m": now.month,
             "y": now.year,
             "t": now.strftime("%H:%M:%S"),
-            "eid": data.get("cashier_id") or 1,
-            "cid": data.get("customer_id"),
-            "total": data.get("total", 0),
-            "disc": data.get("discount", 0),
-            "tax": data.get("tax", 0),
-            "method": data.get("payment_method", "Cash"),
+            "eid": cashier_id,
+            "cid": customer_id,
+            "total": total,
+            "disc": discount,
+            "tax": tax,
+            "method": payment_method,
             "note": note,
             "coupon_id": coupon_id,
         })
         sale_id = result.lastrowid
 
-        # Deduct each product's combined quantity atomically.
-        # A failed deduction aborts the entire checkout.
+        # Deduct stock atomically.
         for pid, qty in sorted(quantities.items()):
             deduction = db.execute(text("""
                 UPDATE Inventory
@@ -360,14 +518,10 @@ def create_sale(data: dict, db: Session = Depends(get_db)):
             if deduction.rowcount != 1:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Product {pid} is out of stock or has insufficient quantity"
+                    detail=f"Product {pid} is out of stock or has insufficient quantity",
                 )
 
         for item in validated_items:
-            pid = item["Product_ID"]
-            qty = item["qty"]
-            price = item["Unit_Price"]
-
             db.execute(text("""
                 INSERT INTO SaleItem (
                     Sale_ID, Product_ID, Quantity, Unit_Price, Subtotal
@@ -375,10 +529,10 @@ def create_sale(data: dict, db: Session = Depends(get_db)):
                 VALUES (:sid, :pid, :qty, :price, :sub)
             """), {
                 "sid": sale_id,
-                "pid": pid,
-                "qty": qty,
-                "price": price,
-                "sub": price * qty,
+                "pid": item["Product_ID"],
+                "qty": item["qty"],
+                "price": item["Unit_Price"],
+                "sub": item["Unit_Price"] * item["qty"],
             })
 
         for pid, qty in sorted(quantities.items()):
@@ -394,44 +548,77 @@ def create_sale(data: dict, db: Session = Depends(get_db)):
             })
 
         if coupon_id:
-            db.execute(text("""
+            updated = db.execute(text("""
                 UPDATE Coupon
                 SET Uses_Count = Uses_Count + 1
                 WHERE Coupon_ID = :cid
-            """), {"cid": coupon_id})
+                  AND Is_Active = 1
+                  AND Uses_Count < Uses_Limit
+                  AND Expiry_Date >= :today
+            """), {
+                "cid": coupon_id,
+                "today": date.today(),
+            })
 
-        cid = data.get("customer_id")
-        if cid:
-            total = float(data.get("total", 0))
-            tax = float(data.get("tax", 0))
-            subtotal = round(total - tax, 2)
-            pts = round(subtotal)
+            if updated.rowcount != 1:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Coupon is no longer available",
+                )
 
-            db.execute(text("""
-                UPDATE Membership
-                SET Points = Points + :pts,
-                    Total_Spent = Total_Spent + :subtotal,
-                    Tier = CASE
-                        WHEN Total_Spent + :subtotal >= 500 THEN 'Platinum'
-                        WHEN Total_Spent + :subtotal >= 200 THEN 'Gold'
-                        WHEN Total_Spent + :subtotal >= 50 THEN 'Silver'
-                        ELSE 'Bronze'
-                    END
-                WHERE Customer_ID = :cid
-            """), {"pts": pts, "subtotal": subtotal, "cid": cid})
+        # Award points based on the discounted amount before tax.
+        if customer_id:
+            discount_before_tax = (
+                money(discount * subtotal / purchase_total)
+                if purchase_total > 0
+                else Decimal("0.00")
+            )
+            eligible_spend = max(
+                Decimal("0.00"),
+                money(subtotal - discount_before_tax),
+            )
+            points = int(eligible_spend.quantize(
+                Decimal("1"), rounding=ROUND_HALF_UP
+            ))
 
             db.execute(text("""
                 UPDATE Customer
                 SET Loyalty_Points = Loyalty_Points + :pts
                 WHERE Customer_ID = :cid
-            """), {"pts": pts, "cid": cid})
+            """), {"pts": points, "cid": customer_id})
 
-        # One commit for the complete checkout.
+            if membership:
+                new_total_spent = money(
+                    Decimal(str(membership.Total_Spent or 0)) + eligible_spend
+                )
+
+                if new_total_spent >= 500:
+                    new_tier = "Platinum"
+                elif new_total_spent >= 200:
+                    new_tier = "Gold"
+                elif new_total_spent >= 50:
+                    new_tier = "Silver"
+                else:
+                    new_tier = "Bronze"
+
+                db.execute(text("""
+                    UPDATE Membership
+                    SET Points = COALESCE(Points, 0) + :pts,
+                        Total_Spent = :total_spent,
+                        Tier = :tier
+                    WHERE Membership_ID = :mid
+                """), {
+                    "pts": points,
+                    "total_spent": new_total_spent,
+                    "tier": new_tier,
+                    "mid": membership.Membership_ID,
+                })
+
         db.commit()
 
         return {
             "Sale_ID": f"S{str(sale_id).zfill(4)}",
-            "Total_Amount": data.get("total", 0),
+            "Total_Amount": float(total),
         }
 
     except Exception:
