@@ -49,7 +49,9 @@ export default function Dashboard() {
         ])
         const mem = memRes.data
         const sales = Array.isArray(salesRes.data) ? salesRes.data : []
-        const spent = mem?.total_spent || 0
+        const spent = mem?.total_spent || sales.reduce(
+          (sum, sale) => sum + Number(sale.Total_Amount || 0), 0
+        )
         setOrders(sales.slice(0,5))
         setStats({
           orders: mem?.total_orders || sales.length,

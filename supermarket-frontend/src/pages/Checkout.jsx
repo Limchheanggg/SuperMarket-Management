@@ -105,11 +105,12 @@ export default function Checkout() {
 
     setLoading(true);
     try {
-      let cid = user?.customer_id || null
+      let cid = user?.customer_id || null;
+
       if (!cid && user?.id) {
         try {
-          const memRes = await API.get(`/api/membership/me?user_id=${user.id}`)
-          cid = memRes.data?.Customer_ID || null
+          const meRes = await API.get("/api/auth/me");
+          cid = meRes.data?.customer_id || null;
         } catch {}
       }
       const saleData = {
@@ -133,7 +134,7 @@ export default function Checkout() {
         },
       }
       console.log("Sale data:", JSON.stringify(saleData))
-      await createSale(saleData);
+      const result = await createSale(saleData);
       clearCart();
       toast.success("Order placed successfully!");
       try {
@@ -253,6 +254,7 @@ export default function Checkout() {
                   Billing Details
                 </h3>
                 <div className="checkout-2col"></div>
+
                 {/* System info display */}
                 <div style={{ background:'#f8fafc', borderRadius:12, padding:'16px', marginBottom:14, border:'1px solid #e5e7eb' }}>
                   <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:12 }}>Your Information</div>
