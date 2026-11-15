@@ -270,93 +270,170 @@ def get_sale(sale_id: int, db: Session = Depends(get_db)):
 
 @router.post("/")
 def create_sale(data: dict, db: Session = Depends(get_db)):
-    now = datetime.now()  # use the system's local Cambodia time
     import json
+    import math
+    from collections import defaultdict
+
+    items = data.get("items")
+    if not isinstance(items, list) or not items:
+        raise HTTPException(status_code=400, detail="Your cart is empty")
+
+    quantities = defaultdict(int)
+    validated_items = []
+
+    for item in items:
+        if not isinstance(item, dict):
+            raise HTTPException(status_code=400, detail="Invalid cart item")
+
+        pid = item.get("Product_ID")
+        qty = item.get("qty")
+        price = item.get("Unit_Price")
+
+        if isinstance(pid, bool) or not isinstance(pid, int) or pid <= 0:
+            raise HTTPException(status_code=400, detail="Invalid product ID")
+        if isinstance(qty, bool) or not isinstance(qty, int) or qty <= 0:
+            raise HTTPException(status_code=400, detail=f"Invalid quantity for product {pid}")
+        if isinstance(price, bool) or not isinstance(price, (int, float)):
+            raise HTTPException(status_code=400, detail=f"Invalid price for product {pid}")
+        if not math.isfinite(price) or price < 0:
+            raise HTTPException(status_code=400, detail=f"Invalid price for product {pid}")
+
+        quantities[pid] += qty
+        validated_items.append({
+            "Product_ID": pid,
+            "qty": qty,
+            "Unit_Price": price,
+        })
+
+    now = datetime.now()
     customer_info = data.get("customer_info", {})
     note = json.dumps(customer_info) if customer_info else None
-    # Check stock availability before creating sale
-    for item in data.get("items", []):
-        pid = item["Product_ID"]
-        qty = item["qty"]
-        row = db.execute(text("SELECT Quantity FROM Inventory WHERE Product_ID = :pid"), {"pid": pid}).fetchone()
-        if not row or row[0] < qty:
-            raise HTTPException(status_code=400, detail=f"Product {pid} is out of stock or insufficient quantity")
 
-    coupon_code = data.get("coupon")
-    coupon_id = None
-    if coupon_code:
-        crow = db.execute(text("SELECT Coupon_ID FROM Coupon WHERE Code=:code"), {"code": coupon_code}).fetchone()
-        if crow:
-            coupon_id = crow.Coupon_ID
+    try:
+        coupon_id = None
+        coupon_code = data.get("coupon")
+        if coupon_code:
+            crow = db.execute(
+                text("SELECT Coupon_ID FROM Coupon WHERE Code=:code"),
+                {"code": coupon_code}
+            ).fetchone()
+            if crow:
+                coupon_id = crow.Coupon_ID
 
-    result = db.execute(text("""
-        INSERT INTO Sale (Sale_Day, Sale_Month, Sale_Year, Sale_Time,
-                          Employee_ID, Customer_ID, Total_Amount, Discount, Tax, Payment_Method, Customer_Note, Coupon_ID)
-        VALUES (:d,:m,:y,:t,:eid,:cid,:total,:disc,:tax,:method,:note,:coupon_id)
-    """), {
-        "d": now.day, "m": now.month, "y": now.year, "t": now.strftime("%H:%M:%S"),
-        "eid":    data.get("cashier_id") or 1,
-        "cid":    data.get("customer_id"),
-        "total":  data.get("total", 0),
-        "disc":   data.get("discount", 0),
-        "tax":    data.get("tax", 0),
-        "method": data.get("payment_method", "Cash"),
-        "note":   note,
-        "coupon_id": coupon_id,
-    })
-    db.commit()
-    sale_id = result.lastrowid
+        result = db.execute(text("""
+            INSERT INTO Sale (
+                Sale_Day, Sale_Month, Sale_Year, Sale_Time,
+                Employee_ID, Customer_ID, Total_Amount, Discount, Tax,
+                Payment_Method, Customer_Note, Coupon_ID
+            )
+            VALUES (
+                :d, :m, :y, :t, :eid, :cid, :total, :disc, :tax,
+                :method, :note, :coupon_id
+            )
+        """), {
+            "d": now.day,
+            "m": now.month,
+            "y": now.year,
+            "t": now.strftime("%H:%M:%S"),
+            "eid": data.get("cashier_id") or 1,
+            "cid": data.get("customer_id"),
+            "total": data.get("total", 0),
+            "disc": data.get("discount", 0),
+            "tax": data.get("tax", 0),
+            "method": data.get("payment_method", "Cash"),
+            "note": note,
+            "coupon_id": coupon_id,
+        })
+        sale_id = result.lastrowid
 
-    if coupon_id:
-        db.execute(text("UPDATE Coupon SET Uses_Count = Uses_Count + 1 WHERE Coupon_ID=:cid"), {"cid": coupon_id})
+        # Deduct each product's combined quantity atomically.
+        # A failed deduction aborts the entire checkout.
+        for pid, qty in sorted(quantities.items()):
+            deduction = db.execute(text("""
+                UPDATE Inventory
+                SET Quantity = Quantity - :qty,
+                    Last_Updated = NOW()
+                WHERE Product_ID = :pid
+                  AND Quantity >= :qty
+            """), {"pid": pid, "qty": qty})
+
+            if deduction.rowcount != 1:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Product {pid} is out of stock or has insufficient quantity"
+                )
+
+        for item in validated_items:
+            pid = item["Product_ID"]
+            qty = item["qty"]
+            price = item["Unit_Price"]
+
+            db.execute(text("""
+                INSERT INTO SaleItem (
+                    Sale_ID, Product_ID, Quantity, Unit_Price, Subtotal
+                )
+                VALUES (:sid, :pid, :qty, :price, :sub)
+            """), {
+                "sid": sale_id,
+                "pid": pid,
+                "qty": qty,
+                "price": price,
+                "sub": price * qty,
+            })
+
+        for pid, qty in sorted(quantities.items()):
+            db.execute(text("""
+                INSERT INTO StockMovement (
+                    Product_ID, Movement_Type, Quantity, Note, Created_At
+                )
+                VALUES (:pid, 'out', :qty, :note, NOW())
+            """), {
+                "pid": pid,
+                "qty": qty,
+                "note": f"Sale #{sale_id}",
+            })
+
+        if coupon_id:
+            db.execute(text("""
+                UPDATE Coupon
+                SET Uses_Count = Uses_Count + 1
+                WHERE Coupon_ID = :cid
+            """), {"cid": coupon_id})
+
+        cid = data.get("customer_id")
+        if cid:
+            total = float(data.get("total", 0))
+            tax = float(data.get("tax", 0))
+            subtotal = round(total - tax, 2)
+            pts = round(subtotal)
+
+            db.execute(text("""
+                UPDATE Membership
+                SET Points = Points + :pts,
+                    Total_Spent = Total_Spent + :subtotal,
+                    Tier = CASE
+                        WHEN Total_Spent + :subtotal >= 500 THEN 'Platinum'
+                        WHEN Total_Spent + :subtotal >= 200 THEN 'Gold'
+                        WHEN Total_Spent + :subtotal >= 50 THEN 'Silver'
+                        ELSE 'Bronze'
+                    END
+                WHERE Customer_ID = :cid
+            """), {"pts": pts, "subtotal": subtotal, "cid": cid})
+
+            db.execute(text("""
+                UPDATE Customer
+                SET Loyalty_Points = Loyalty_Points + :pts
+                WHERE Customer_ID = :cid
+            """), {"pts": pts, "cid": cid})
+
+        # One commit for the complete checkout.
         db.commit()
-    for item in data.get("items", []):
-        pid = item["Product_ID"]
-        qty = item["qty"]
 
-        # Insert sale item
-        db.execute(text("""
-            INSERT INTO SaleItem (Sale_ID, Product_ID, Quantity, Unit_Price, Subtotal)
-            VALUES (:sid,:pid,:qty,:price,:sub)
-        """), {"sid": sale_id, "pid": pid,
-               "qty": qty, "price": item["Unit_Price"],
-               "sub": item["Unit_Price"] * qty})
+        return {
+            "Sale_ID": f"S{str(sale_id).zfill(4)}",
+            "Total_Amount": data.get("total", 0),
+        }
 
-        # Deduct stock from Inventory
-        db.execute(text("""
-            UPDATE Inventory
-            SET Quantity = GREATEST(0, Quantity - :qty), Last_Updated = NOW()
-            WHERE Product_ID = :pid
-        """), {"pid": pid, "qty": qty})
-
-        # Log stock movement
-        db.execute(text("""
-            INSERT INTO StockMovement (Product_ID, Movement_Type, Quantity, Note)
-            VALUES (:pid, 'out', :qty, :note)
-        """), {"pid": pid, "qty": qty, "note": f"Sale #{sale_id}"})
-
-    # Update membership points and total spent
-    cid = data.get("customer_id")
-    if cid:
-        total = float(data.get("total", 0))
-        tax = float(data.get("tax", 0))
-        subtotal = round(total - tax, 2)  # points based on subtotal before tax
-        pts = round(subtotal)  # 1 point per $1 spent before tax
-        db.execute(text("""
-            UPDATE Membership
-            SET Points = Points + :pts,
-                Total_Spent = Total_Spent + :subtotal,
-                Tier = CASE
-                    WHEN Total_Spent + :subtotal >= 500 THEN 'Platinum'
-                    WHEN Total_Spent + :subtotal >= 200 THEN 'Gold'
-                    WHEN Total_Spent + :subtotal >= 50  THEN 'Silver'
-                    ELSE 'Bronze'
-                END
-            WHERE Customer_ID = :cid
-        """), {"pts": pts, "subtotal": subtotal, "cid": cid})
-        # Also update Customer loyalty points
-        db.execute(text("""
-            UPDATE Customer SET Loyalty_Points = Loyalty_Points + :pts WHERE Customer_ID = :cid
-        """), {"pts": pts, "cid": cid})
-    db.commit()
-    return {"Sale_ID": f"S{str(sale_id).zfill(4)}", "Total_Amount": data.get("total",0)}
+    except Exception:
+        db.rollback()
+        raise
