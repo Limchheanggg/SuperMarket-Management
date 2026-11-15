@@ -358,5 +358,5 @@ def create_sale(data: dict, db: Session = Depends(get_db)):
         db.execute(text("""
             UPDATE Customer SET Loyalty_Points = Loyalty_Points + :pts WHERE Customer_ID = :cid
         """), {"pts": pts, "cid": cid})
-        db.commit()
+    db.commit()
     return {"Sale_ID": f"S{str(sale_id).zfill(4)}", "Total_Amount": data.get("total",0)}
